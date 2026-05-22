@@ -14,8 +14,8 @@ const config = defineConfig({
     tailwindcss(),
     tanstackStart({
       router: {
-        routesDirectory: "./src/app/routes",
-        generatedRouteTree: "./src/routeTree.gen.ts",
+        routesDirectory: "./app/routes",
+        generatedRouteTree: "./routeTree.gen.ts",
       },
     }),
     viteReact(),
