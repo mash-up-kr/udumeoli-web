@@ -1,5 +1,5 @@
 ---
-name: udumeoli-coordinator
+name: coordinator
 description: "Use for complex udumeoli-web changes that benefit from an explicit plan, human approval, scoped implementation, and final review across the TanStack Start frontend."
 disable-model-invocation: true
 category: AI / Prompt

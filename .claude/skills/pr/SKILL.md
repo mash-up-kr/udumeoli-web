@@ -1,8 +1,8 @@
 ---
-name: udumeoli-pr
+name: pr
 description: |
   Creates a GitHub Pull Request by analyzing branch changes and filling in the project PR template.
-  TRIGGER when: user invokes /udumeoli-pr directly, or says 'PR 만들어줘', 'PR 작성해줘'.
+  TRIGGER when: user invokes /pr directly, or says 'PR 만들어줘', 'PR 작성해줘'.
 ---
 
 # PR 생성
