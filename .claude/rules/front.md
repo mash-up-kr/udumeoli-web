@@ -33,3 +33,6 @@ FSD(Feature-Sliced Design) 구조를 따른다.
 - **API**: graphql-request + GraphQL
 - **스타일링**: Tailwind CSS 4 + shadcn/ui (radix-ui 기반)
 - **아이콘**: lucide-react
+- **컴포넌트 개발**: Storybook (`@storybook/react-vite`)
+  - stories는 컴포넌트와 같은 폴더에 위치 (`*.stories.tsx`)
+  - Storybook 환경에서 TanStack 플러그인 제외됨 — 라우팅 의존 컴포넌트는 props로 추상화
