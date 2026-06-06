@@ -1,8 +1,8 @@
 ---
-name: udumeoli-commit
+name: commit
 description: |
   Analyzes staged/unstaged changes and performs atomic commits separated by concern.
-  TRIGGER when: user invokes /udumeoli-commit directly, or says '커밋해줘', '커밋', 'commit'.
+  TRIGGER when: user invokes /commit directly, or says '커밋해줘', '커밋', 'commit'.
 ---
 
 # Atomic Commit
@@ -19,8 +19,6 @@ description: |
 4. 커밋 후 push는 하지 않는다.
 
 ## 커밋 메시지 규칙
-
-프로젝트 커밋 규칙을 따른다:
 
 ```
 <type>: <한 줄 요약 (한글)>
