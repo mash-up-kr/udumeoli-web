@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -Command \"$raw = [Console]::In.ReadToEnd(); try { $j = $raw | ConvertFrom-Json; $fp = $j.tool_input.file_path; if ($fp -match '\\.tsx$') { Write-Output '[Quality Gate] good-code + good-a11y 체크리스트 확인 필요' } elseif ($fp -match '\\.ts$') { Write-Output '[Quality Gate] good-code 체크리스트 확인 필요' } elseif ($fp -match 'vite\\.config|tsconfig') { Write-Output '[Quality Gate] good-bundling 체크리스트 확인 필요' }; if ($fp -match '\\.tsx?$') { pnpm typecheck 2>&1 } } catch {}\""
+          }
+        ]
+      }
+    ]
+  }
+}
