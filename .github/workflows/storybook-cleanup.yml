@@ -22,8 +22,10 @@ jobs:
     steps:
       - name: Check gh-pages exists
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git ls-remote --exit-code --heads origin gh-pages; then
+          if gh api repos/${{ github.repository }}/branches/gh-pages --silent 2>/dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
