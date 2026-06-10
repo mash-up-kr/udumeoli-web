@@ -46,6 +46,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: storybook
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           message: |
             ## 📚 Storybook 배포 완료
 
