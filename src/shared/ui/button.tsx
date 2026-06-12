@@ -1,7 +1,7 @@
 import * as React from "react"
-import {  cva } from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import type {VariantProps} from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority"
 
 import { cn } from "@/shared/lib/utils"
 
@@ -34,7 +34,7 @@ const buttonVariants = cva(
         "icon-sm":
           "size-8 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-md",
         "icon-lg": "size-10",
-        xl: "h-14 text-base px-6 gap-2",
+        xl: "h-14 gap-2 px-6 text-base",
       },
     },
     defaultVariants: {
