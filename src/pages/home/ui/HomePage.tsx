@@ -1,7 +1,9 @@
 import { AppHeader } from "@/widgets/app-header"
+import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { Button } from "@/shared/ui/button"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { openAlert, openConfirm } from "@/shared/ui/modal"
+import { DialogTitle } from "@/shared/ui/dialog"
 
 const FEED = [
   { id: 1, title: "제주 3박 4일", desc: "성산일출봉 · 우도 · 협재", days: "4일" },
@@ -24,6 +26,22 @@ export function HomePage() {
           }}
         >
           모달 동작 확인
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            openBottomSheet(({ close }) => (
+              <>
+                <DialogTitle>여행팟 정보를 확인해 주세요</DialogTitle>
+                <p className="text-b5 text-muted-foreground">바텀시트 동작 확인용 예시</p>
+                <Button className="w-full" onClick={close}>
+                  맞아요
+                </Button>
+              </>
+            ))
+          }
+        >
+          바텀시트 동작 확인
         </Button>
 
         {FEED.map((item) => (
