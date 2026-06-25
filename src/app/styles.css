@@ -2,12 +2,13 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', sans-serif;
+    --font-sans: 'Pretendard Variable', 'Inter Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,24 +50,25 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    /* 시맨틱 토큰 → 디자인 시스템 팔레트 매핑 (v1.0.0) */
+    --background: #ffffff; /* neutral-0 */
+    --foreground: #141820; /* neutral-900 */
+    --card: #ffffff;
+    --card-foreground: #141820;
+    --popover: #ffffff;
+    --popover-foreground: #141820;
+    --primary: #141820; /* neutral-900 */
+    --primary-foreground: #ffffff;
+    --secondary: #eff1f5; /* neutral-100 */
+    --secondary-foreground: #141820;
+    --muted: #eff1f5; /* neutral-100 */
+    --muted-foreground: #6b7384; /* neutral-500 */
+    --accent: #eff1f5;
+    --accent-foreground: #141820;
+    --destructive: #e8453a; /* red-500 */
+    --border: #e4e7ed; /* neutral-150 */
+    --input: #e4e7ed;
+    --ring: #6cbcf9; /* blue-500 */
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -115,6 +117,140 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme {
+    /* ===== Color Palette (Design System v1.0.0) ===== */
+    --color-neutral-0: #ffffff;
+    --color-neutral-50: #f7f8fa;
+    --color-neutral-100: #eff1f5;
+    --color-neutral-150: #e4e7ed;
+    --color-neutral-200: #d5d9e2;
+    --color-neutral-300: #b2b8c6;
+    --color-neutral-400: #8e96a9;
+    --color-neutral-500: #6b7384;
+    --color-neutral-600: #4f5566;
+    --color-neutral-700: #363d4e;
+    --color-neutral-800: #232936;
+    --color-neutral-900: #141820;
+
+    --color-blue-50: #f0f8fe;
+    --color-blue-100: #d1eafd;
+    --color-blue-200: #bbe0fc;
+    --color-blue-300: #9dd2fb;
+    --color-blue-400: #89c9fa;
+    --color-blue-500: #6cbcf9;
+    --color-blue-600: #62abe3;
+    --color-blue-700: #4d85b1;
+    --color-blue-800: #3b6789;
+    --color-blue-900: #2d4f69;
+
+    --color-red-50: #fff2f1;
+    --color-red-100: #ffc5bf;
+    --color-red-500: #e8453a;
+    --color-red-600: #c42e24;
+
+    --color-orange-100: #ffdab5;
+    --color-yellow-100: #fff0b1;
+    --color-green-100: #c8f0c0;
+    --color-indigo-100: #c4c8ff;
+    --color-violet-100: #e4bfff;
+
+    /* ===== Typography — Head ===== */
+    --text-h0: 36px;
+    --text-h0--line-height: 48px;
+    --text-h0--font-weight: 700;
+    --text-h0--letter-spacing: -0.2px;
+    --text-h1: 32px;
+    --text-h1--line-height: 40px;
+    --text-h1--font-weight: 700;
+    --text-h1--letter-spacing: -0.2px;
+    --text-h2: 28px;
+    --text-h2--line-height: 36px;
+    --text-h2--font-weight: 700;
+    --text-h2--letter-spacing: -0.2px;
+    --text-h3: 24px;
+    --text-h3--line-height: 32px;
+    --text-h3--font-weight: 700;
+    --text-h3--letter-spacing: -0.2px;
+    --text-h3-1: 24px;
+    --text-h3-1--line-height: 32px;
+    --text-h3-1--font-weight: 600;
+    --text-h3-1--letter-spacing: -0.2px;
+    --text-h4: 20px;
+    --text-h4--line-height: 28px;
+    --text-h4--font-weight: 600;
+    --text-h4--letter-spacing: -0.2px;
+    --text-h5: 18px;
+    --text-h5--line-height: 24px;
+    --text-h5--font-weight: 700;
+    --text-h5--letter-spacing: -0.2px;
+    --text-h5-1: 18px;
+    --text-h5-1--line-height: 24px;
+    --text-h5-1--font-weight: 600;
+    --text-h5-1--letter-spacing: -0.2px;
+    --text-h6: 16px;
+    --text-h6--line-height: 20px;
+    --text-h6--font-weight: 700;
+    --text-h6--letter-spacing: -0.1px;
+    --text-h6-1: 16px;
+    --text-h6-1--line-height: 20px;
+    --text-h6-1--font-weight: 600;
+    --text-h6-1--letter-spacing: -0.1px;
+    --text-h7: 15px;
+    --text-h7--line-height: 20px;
+    --text-h7--font-weight: 700;
+    --text-h7--letter-spacing: -0.1px;
+    --text-h8: 14px;
+    --text-h8--line-height: 20px;
+    --text-h8--font-weight: 700;
+    --text-h8--letter-spacing: -0.1px;
+    --text-h8-1: 14px;
+    --text-h8-1--line-height: 20px;
+    --text-h8-1--font-weight: 600;
+    --text-h8-1--letter-spacing: -0.1px;
+    --text-h9: 13px;
+    --text-h9--line-height: 16px;
+    --text-h9--font-weight: 600;
+    --text-h9--letter-spacing: -0.1px;
+
+    /* ===== Typography — Body ===== */
+    --text-b0: 28px;
+    --text-b0--line-height: 36px;
+    --text-b0--font-weight: 500;
+    --text-b0--letter-spacing: -0.2px;
+    --text-b1: 24px;
+    --text-b1--line-height: 32px;
+    --text-b1--font-weight: 500;
+    --text-b1--letter-spacing: -0.2px;
+    --text-b2: 20px;
+    --text-b2--line-height: 28px;
+    --text-b2--font-weight: 500;
+    --text-b2--letter-spacing: -0.2px;
+    --text-b3: 18px;
+    --text-b3--line-height: 24px;
+    --text-b3--font-weight: 500;
+    --text-b3--letter-spacing: -0.2px;
+    --text-b4: 16px;
+    --text-b4--line-height: 24px;
+    --text-b4--font-weight: 500;
+    --text-b4--letter-spacing: -0.1px;
+    --text-b5: 15px;
+    --text-b5--line-height: 20px;
+    --text-b5--font-weight: 500;
+    --text-b5--letter-spacing: -0.1px;
+    --text-b6: 14px;
+    --text-b6--line-height: 20px;
+    --text-b6--font-weight: 500;
+    --text-b6--letter-spacing: -0.1px;
+    --text-b7: 13px;
+    --text-b7--line-height: 20px;
+    --text-b7--font-weight: 400;
+    --text-b7--letter-spacing: -0.1px;
+    --text-b8: 12px;
+    --text-b8--line-height: 16px;
+    --text-b8--font-weight: 400;
+    --text-b8--letter-spacing: -0.1px;
 }
 
 @layer base {
