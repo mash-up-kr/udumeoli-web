@@ -9,7 +9,8 @@ const meta: Meta<typeof Header> = {
     layout: "fullscreen",
     docs: {
       description: {
-        component: "뒤로가기 · 타이틀 · 우측 액션, 세 슬롯을 필요한 조합으로 쓰는 상단 바. 타이틀은 항상 화면 중앙 기준.",
+        component:
+          "뒤로가기 · 타이틀 · 우측 액션, 세 슬롯을 필요한 조합으로 쓰는 범용 상단 바. 타이틀은 좌측 정렬(시안 #17/#19 기준), padding 20 · gap 27. transparent prop으로 배경 투명 처리 가능.",
       },
     },
   },
@@ -17,12 +18,25 @@ const meta: Meta<typeof Header> = {
 export default meta
 type Story = StoryObj<typeof Header>
 
+/** 시안 #17/#19 — 뒤로가기 + 좌측 정렬 타이틀. */
 export const Default: Story = {
   render: () => (
     <Header>
       <Header.Back />
-      <Header.Title>타이틀</Header.Title>
+      <Header.Title>여행팟 생성</Header.Title>
     </Header>
+  ),
+}
+
+/** 배경 투명 — 지도·이미지 위에 올리는 헤더용. (체커보드는 투명 표시용 배경) */
+export const Transparent: Story = {
+  render: () => (
+    <div className="bg-blue-200">
+      <Header transparent>
+        <Header.Back />
+        <Header.Title>회원가입</Header.Title>
+      </Header>
+    </div>
   ),
 }
 

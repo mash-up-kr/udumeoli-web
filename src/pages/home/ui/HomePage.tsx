@@ -1,4 +1,4 @@
-import { Header } from "@/shared/ui/header"
+import { AppHeader } from "@/widgets/app-header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 
 const FEED = [
@@ -11,9 +11,7 @@ const FEED = [
 export function HomePage() {
   return (
     <MobileLayout>
-      <Header className="sticky top-0 z-10 border-b">
-        <Header.Title>우두머리</Header.Title>
-      </Header>
+      <AppHeader />
 
       <main className="flex flex-col gap-3 p-4">
         {FEED.map((item) => (
@@ -23,11 +21,11 @@ export function HomePage() {
           >
             <div className="size-16 shrink-0 rounded-md bg-muted" />
             <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{item.title}</span>
-              <span className="truncate text-sm text-muted-foreground">
+              <span className="truncate text-b4">{item.title}</span>
+              <span className="truncate text-b7 text-muted-foreground">
                 {item.desc}
               </span>
-              <span className="mt-auto text-xs text-muted-foreground">
+              <span className="mt-auto text-b8 text-muted-foreground">
                 {item.days}
               </span>
             </div>

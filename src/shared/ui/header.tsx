@@ -8,20 +8,17 @@ function HeaderBack({ className, ...props }: React.ComponentProps<"button">) {
     <button
       type="button"
       aria-label="뒤로 가기"
-      className={cn("flex items-center justify-center p-1", className)}
+      className={cn("flex shrink-0 items-center justify-center", className)}
       {...props}
     >
-      <ArrowLeft className="size-5" />
+      <ArrowLeft className="size-6" />
     </button>
   )
 }
 
 function HeaderTitle({ children, className, ...props }: React.ComponentProps<"h1">) {
   return (
-    <h1
-      className={cn("absolute left-1/2 -translate-x-1/2 text-base font-medium", className)}
-      {...props}
-    >
+    <h1 className={cn("truncate text-h5", className)} {...props}>
       {children}
     </h1>
   )
@@ -36,10 +33,19 @@ function HeaderRight({ children, className, ...props }: React.ComponentProps<"di
 }
 
 const Header = Object.assign(
-  function HeaderRoot({ children, className, ...props }: React.ComponentProps<"header">) {
+  function HeaderRoot({
+    children,
+    className,
+    transparent = false,
+    ...props
+  }: React.ComponentProps<"header"> & { transparent?: boolean }) {
     return (
       <header
-        className={cn("relative flex h-12 items-center px-4 bg-background", className)}
+        className={cn(
+          "flex w-full items-center gap-[27px] px-5 py-5",
+          transparent ? "bg-transparent" : "bg-background",
+          className
+        )}
         {...props}
       >
         {children}
