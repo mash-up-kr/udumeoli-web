@@ -4,7 +4,7 @@ import { cn } from "@/shared/lib/utils"
 
 function MobileLayout({ children, className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("mx-auto w-full max-w-[430px] min-h-svh", className)} {...props}>
+    <div className={cn("mx-auto min-h-dvh w-full max-w-md bg-background", className)} {...props}>
       {children}
     </div>
   )
