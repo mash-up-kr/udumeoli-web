@@ -1,5 +1,7 @@
 import { AppHeader } from "@/widgets/app-header"
+import { Button } from "@/shared/ui/button"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { openAlert, openConfirm } from "@/shared/ui/modal"
 
 const FEED = [
   { id: 1, title: "제주 3박 4일", desc: "성산일출봉 · 우도 · 협재", days: "4일" },
@@ -14,6 +16,16 @@ export function HomePage() {
       <AppHeader />
 
       <main className="flex flex-col gap-3 p-4">
+        {/* 모달 동작 확인용 (임시) */}
+        <Button
+          onClick={async () => {
+            const ok = await openConfirm({ title: "로그아웃하시겠습니까?", confirmText: "로그아웃" })
+            await openAlert({ title: ok ? "로그아웃됐어요!" : "취소했어요" })
+          }}
+        >
+          모달 동작 확인
+        </Button>
+
         {FEED.map((item) => (
           <article
             key={item.id}
