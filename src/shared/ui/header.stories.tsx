@@ -40,7 +40,7 @@ export const Compositions: Story = {
         <Header.Back />
         <Header.Title>뒤로가기 + 타이틀 + 우측 액션</Header.Title>
         <Header.Right>
-          <Button variant="ghost" size="sm">
+          <Button variant="text" size="sm">
             완료
           </Button>
         </Header.Right>
@@ -49,7 +49,7 @@ export const Compositions: Story = {
         <Header.Back />
         <Header.Title>뒤로가기 + 타이틀 + 텍스트 액션</Header.Title>
         <Header.Right>
-          <Button variant="ghost" size="sm" className="text-primary">
+          <Button variant="text" size="sm" className="text-primary">
             + 추가
           </Button>
         </Header.Right>
@@ -57,7 +57,7 @@ export const Compositions: Story = {
       <Header>
         <Header.Back />
         <Header.Right>
-          <Button variant="ghost" size="sm">
+          <Button variant="text" size="sm">
             건너뛰기
           </Button>
         </Header.Right>
