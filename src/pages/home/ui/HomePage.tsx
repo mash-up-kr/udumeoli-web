@@ -10,13 +10,6 @@ const FEED = [
   { id: 4, title: "부산 주말", desc: "광안리 · 감천문화마을", days: "2일" },
 ]
 
-const FEED = [
-  { id: 1, title: "제주 3박 4일", desc: "성산일출봉 · 우도 · 협재", days: "4일" },
-  { id: 2, title: "도쿄 미식 투어", desc: "츠키지 · 시부야 · 신주쿠", days: "3일" },
-  { id: 3, title: "다낭 휴양", desc: "미케 비치 · 바나힐", days: "5일" },
-  { id: 4, title: "부산 주말", desc: "광안리 · 감천문화마을", days: "2일" },
-]
-
 export function HomePage() {
   return (
     <MobileLayout>
