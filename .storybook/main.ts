@@ -29,6 +29,7 @@ function withoutTanStackPlugins(
 const storybookConfig: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
   addons: ["@storybook/addon-docs"],
+  staticDirs: ["../public"],
   framework: {
     name: "@storybook/react-vite",
     options: {},
