@@ -8,7 +8,6 @@ import { Header } from "@/shared/ui/header"
 import { Label } from "@/shared/ui/label"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { OtpInput } from "@/shared/ui/otp-input"
-import { ProfileContainer } from "@/shared/ui/profile-container"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { usePotStore } from "@/entities/travel-pot"
@@ -30,11 +29,13 @@ function JoinConfirm({
         <p className="text-b4">
           <span className="font-semibold">{pot.name}</span> {pot.members.length}명 참여 중
         </p>
-        <div className="mt-3 flex flex-wrap gap-3">
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2">
           {pot.members.map((m) => (
             <div key={m.id} className="flex flex-col items-center gap-1">
-              <ProfileContainer size="sm" name={m.nickname} />
-              <span className="text-b7">{m.nickname}</span>
+              <span className="flex size-9 items-center justify-center rounded-full bg-neutral-300 text-b8 text-white">
+                {m.nickname.slice(0, 2)}
+              </span>
+              <span className="text-b8 text-muted-foreground">{m.nickname}</span>
             </div>
           ))}
         </div>
@@ -42,11 +43,7 @@ function JoinConfirm({
       <Button className="w-full" onClick={onYes}>
         맞아요
       </Button>
-      <button
-        type="button"
-        className="text-center text-b6 text-muted-foreground underline"
-        onClick={onNo}
-      >
+      <button type="button" className="text-center text-b6 text-muted-foreground" onClick={onNo}>
         참여하지 않고 홈으로 이동
       </button>
     </div>

@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 import { Image as ImageIcon, MapPin } from "lucide-react"
 
 import { Button } from "@/shared/ui/button"
-import { DialogTitle } from "@/shared/ui/dialog"
+import { DialogHeader, DialogSeparator, DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { ProfileContainer } from "@/shared/ui/profile-container"
@@ -12,35 +12,38 @@ import { openAlert, openModal } from "@/shared/ui/modal"
 import { MOCK_USER, useSessionStore } from "@/entities/user"
 import { openProfilePhotoSheet } from "@/features/profile-photo"
 
-// 접근 권한 안내 (최초 진입 모달)
+// 접근 권한 안내 (최초 진입 모달) — 디자인시스템 권한 모달 정렬
 function PermissionContent({ onConfirm }: { onConfirm: () => void }) {
   return (
-    <div className="flex flex-col gap-5">
-      <DialogTitle className="text-h5 leading-snug">
-        편리한 앱 이용을 위해
-        <br />
-        접근 권한을 허용해주세요.
-      </DialogTitle>
-      <ul className="flex flex-col gap-4">
+    <>
+      <DialogHeader>
+        <DialogTitle>
+          편리한 앱 이용을 위해
+          <br />
+          접근 권한을 허용해주세요.
+        </DialogTitle>
+      </DialogHeader>
+      <DialogSeparator />
+      <ul className="flex flex-col gap-5">
         <li className="flex items-center gap-3">
-          <MapPin className="size-6 shrink-0" />
-          <div>
-            <p className="text-b4">위치</p>
-            <p className="text-b6 text-muted-foreground">위치 공유</p>
+          <MapPin className="size-7 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-h6-1">위치</span>
+            <span className="text-b6 text-muted-foreground">위치 공유</span>
           </div>
         </li>
         <li className="flex items-center gap-3">
-          <ImageIcon className="size-6 shrink-0" />
-          <div>
-            <p className="text-b4">앨범</p>
-            <p className="text-b6 text-muted-foreground">이미지 저장 및 업로드</p>
+          <ImageIcon className="size-7 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-h6-1">앨범</span>
+            <span className="text-b6 text-muted-foreground">이미지 저장 및 업로드</span>
           </div>
         </li>
       </ul>
       <Button className="w-full" onClick={onConfirm}>
         확인
       </Button>
-    </div>
+    </>
   )
 }
 
