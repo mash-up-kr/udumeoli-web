@@ -53,7 +53,11 @@ export function SignupPage() {
   const [nickname, setNickname] = React.useState("")
   const [profileImage, setProfileImage] = React.useState<string | null>(null)
 
+  // StrictMode/리렌더로 두 번 열리는 것 방지 (1회만)
+  const permissionShown = React.useRef(false)
   React.useEffect(() => {
+    if (permissionShown.current) return
+    permissionShown.current = true
     openModal(({ close }) => <PermissionContent onConfirm={close} />)
   }, [])
 
