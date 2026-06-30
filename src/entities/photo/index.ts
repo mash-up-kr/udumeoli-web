@@ -1,4 +1,6 @@
 export type { Photo } from "./model/types"
-export { usePhotos, photoKeys } from "./api/queries"
+export { usePhotos, useAllPhotos, photoKeys } from "./api/queries"
+export { usePhotoUploadStore } from "./model/upload.store"
+export { REGION_CENTERS } from "./model/regions"
 export { fetchPhotos } from "./api/photo.api"
 export { MOCK_PHOTOS } from "./api/photo.mock"

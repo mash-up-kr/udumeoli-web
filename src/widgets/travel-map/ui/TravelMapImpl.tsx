@@ -5,7 +5,8 @@ import Supercluster from "supercluster"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { StyleSpecification } from "maplibre-gl"
 
-import { usePhotos } from "@/entities/photo"
+import { useAllPhotos } from "@/entities/photo"
+import { openGallerySheet } from "@/features/photo-gallery"
 
 // 한국 중심 초기 뷰
 const KOREA_VIEW = { longitude: 127.8, latitude: 36.2, zoom: 6 }
@@ -24,10 +25,10 @@ const RASTER_OSM_STYLE: StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 }
 
-type PhotoPointProps = { photoId: string; thumbnailUrl: string }
+type PhotoPointProps = { photoId: string; thumbnailUrl: string; region: string }
 
 export function TravelMapImpl() {
-  const { data: photos = [] } = usePhotos()
+  const photos = useAllPhotos()
   const mapRef = React.useRef<MapRef>(null)
   const [bounds, setBounds] = React.useState<[number, number, number, number] | null>(null)
   const [zoom, setZoom] = React.useState(KOREA_VIEW.zoom)
@@ -37,7 +38,7 @@ export function TravelMapImpl() {
     const sc = new Supercluster<PhotoPointProps>({ radius: 60, maxZoom: 16 })
     const points: Array<GeoJSON.Feature<GeoJSON.Point, PhotoPointProps>> = photos.map((p) => ({
       type: "Feature",
-      properties: { photoId: p.id, thumbnailUrl: p.thumbnailUrl },
+      properties: { photoId: p.id, thumbnailUrl: p.thumbnailUrl, region: p.region },
       geometry: { type: "Point", coordinates: [p.lng, p.lat] },
     }))
     sc.load(points)
@@ -93,9 +94,14 @@ export function TravelMapImpl() {
 
         return (
           <Marker key={`photo-${properties.photoId}`} longitude={lng} latitude={lat}>
-            <div className="size-12 overflow-hidden rounded-xl border-2 border-white shadow">
+            <button
+              type="button"
+              aria-label={`${properties.region} 사진`}
+              onClick={() => openGallerySheet(properties.region)}
+              className="size-12 overflow-hidden rounded-xl border-2 border-white shadow"
+            >
               <img src={properties.thumbnailUrl} alt="" className="size-full object-cover" />
-            </div>
+            </button>
           </Marker>
         )
       })}
