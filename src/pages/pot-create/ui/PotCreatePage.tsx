@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
+import { X } from "lucide-react"
 
 import { Button } from "@/shared/ui/button"
 import { Header } from "@/shared/ui/header"
@@ -24,40 +25,56 @@ export function PotCreatePage() {
     <RequireAuth>
       <MobileLayout className="flex min-h-dvh flex-col">
         <Header>
-          <Header.Back onClick={() => router.navigate({ to: "/map" })} />
+          {created ? (
+            <button
+              type="button"
+              aria-label="닫기"
+              onClick={() => router.navigate({ to: "/map" })}
+              className="flex shrink-0 items-center justify-center"
+            >
+              <X className="size-6" />
+            </button>
+          ) : (
+            <Header.Back onClick={() => router.navigate({ to: "/map" })} />
+          )}
           <Header.Title>여행팟 생성</Header.Title>
         </Header>
 
         {created ? (
-          <main className="flex flex-1 flex-col items-center gap-8 px-5 pt-12">
-            <p className="text-center text-h5 leading-snug">
+          <main className="flex flex-1 flex-col gap-8 px-5 pt-6">
+            <p className="text-h5 leading-snug font-semibold">
               {created.name}
               <br />
               여행팟 코드가 발급되었어요
             </p>
-            <div className="flex gap-2">
+
+            <div className="grid w-full grid-cols-6 gap-2">
               {created.code.split("").map((digit, i) => (
                 <span
                   key={i}
-                  className="flex h-16 w-12 items-center justify-center rounded-[10px] bg-neutral-150 text-h4"
+                  className="flex h-13 items-center justify-center rounded-[10px] bg-neutral-150 text-h4"
                 >
                   {digit}
                 </span>
               ))}
             </div>
-            <Button
-              className="w-full"
-              onClick={() => showToast({ message: "초대코드를 복사했어요", type: "success" })}
-            >
-              공유하기
-            </Button>
-            <button
-              type="button"
-              className="text-b6 text-muted-foreground underline"
-              onClick={() => router.navigate({ to: "/map" })}
-            >
-              홈으로 이동
-            </button>
+
+            <div className="flex flex-col items-center gap-4 pt-2">
+              <Button
+                radius="full"
+                className="bg-neutral-400 px-14 text-white hover:bg-neutral-400/90"
+                onClick={() => showToast({ message: "초대코드를 복사했어요", type: "success" })}
+              >
+                공유하기
+              </Button>
+              <button
+                type="button"
+                className="text-b6 text-muted-foreground"
+                onClick={() => router.navigate({ to: "/map" })}
+              >
+                홈으로 이동
+              </button>
+            </div>
           </main>
         ) : (
           <>
