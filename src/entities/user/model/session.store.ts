@@ -8,6 +8,7 @@ interface SessionState {
   isAuthenticated: boolean
   login: (user: User) => void
   logout: () => void
+  updateUser: (partial: Partial<User>) => void
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -17,6 +18,10 @@ export const useSessionStore = create<SessionState>()(
       isAuthenticated: false,
       login: (user) => set({ currentUser: user, isAuthenticated: true }),
       logout: () => set({ currentUser: null, isAuthenticated: false }),
+      updateUser: (partial) =>
+        set((s) => ({
+          currentUser: s.currentUser ? { ...s.currentUser, ...partial } : s.currentUser,
+        })),
     }),
     { name: "photato-session" }
   )
