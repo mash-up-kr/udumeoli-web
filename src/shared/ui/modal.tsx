@@ -8,8 +8,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogSeparator,
   DialogTitle,
 } from "@/shared/ui/dialog"
+import { cn } from "@/shared/lib/utils"
 
 /**
  * overlay-kit 기반 명령형 모달 헬퍼.
@@ -49,27 +51,45 @@ type ConfirmOptions = {
   description?: ReactNode
   confirmText?: string
   cancelText?: string
+  /** 위험 동작(계정 삭제 등) — 확인 버튼을 빨강 솔리드로. */
+  destructive?: boolean
 }
 
-/** 확인/취소 모달(버튼 2개). 확인=true, 취소·바깥클릭·ESC=false로 resolve. (시안 #30) */
+/**
+ * 확인/취소 모달(버튼 2개). 확인=true, 취소·바깥클릭·ESC=false로 resolve. (시안 #30)
+ * description이 있으면 제목 아래 구분선 노출. destructive면 확인 버튼 빨강.
+ */
 export function openConfirm({
   title,
   description,
   confirmText = "확인",
   cancelText = "취소",
+  destructive = false,
 }: ConfirmOptions): Promise<boolean> {
   return overlay.openAsync<boolean>(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close(false)}>
       <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()} className="gap-6">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
+          {description ? (
+            <>
+              <DialogSeparator className="my-1" />
+              <DialogDescription>{description}</DialogDescription>
+            </>
+          ) : null}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => close(false)}>
+          <Button variant="secondary" size="lg" className="px-7" onClick={() => close(false)}>
             {cancelText}
           </Button>
-          <Button className="flex-1" onClick={() => close(true)}>
+          <Button
+            size="lg"
+            className={cn(
+              "flex-1",
+              destructive && "bg-destructive text-white hover:bg-destructive/90"
+            )}
+            onClick={() => close(true)}
+          >
             {confirmText}
           </Button>
         </DialogFooter>

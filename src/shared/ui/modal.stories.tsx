@@ -77,6 +77,25 @@ function ConfirmDemo() {
 /** 시안 #30 — 확인/취소(버튼 2개). promise로 boolean 결과. */
 export const Confirm: Story = { render: () => <ConfirmDemo /> }
 
+/** 계정 삭제 — destructive(빨강 확인 버튼) + 설명 구분선. */
+export const DestructiveConfirm: Story = {
+  render: () => (
+    <Button
+      variant="destructive"
+      onClick={() =>
+        openConfirm({
+          title: "계정을 영구적으로 삭제하시겠습니까?",
+          description: "복구할 수 없습니다.",
+          confirmText: "삭제",
+          destructive: true,
+        })
+      }
+    >
+      계정 삭제 모달 열기
+    </Button>
+  ),
+}
+
 /** 시안 #28 — 커스텀 내용 모달(권한 리스트). openModal로 호출부가 내용 주입. */
 export const PermissionContent: Story = {
   render: () => (

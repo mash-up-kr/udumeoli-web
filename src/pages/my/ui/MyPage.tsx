@@ -28,6 +28,7 @@ export function MyPage() {
       title: "계정을 영구적으로 삭제하시겠습니까?",
       description: "복구할 수 없습니다.",
       confirmText: "삭제",
+      destructive: true,
     })
     if (!ok) return
     logout()
