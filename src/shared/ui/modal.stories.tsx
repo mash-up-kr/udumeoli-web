@@ -8,7 +8,7 @@ import { openAlert, openConfirm, openModal } from "./modal"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta = {
-  title: "Modal",
+  title: "Overlays/Modal",
   tags: ["autodocs"],
   decorators: [
     (Story) => (
@@ -23,6 +23,7 @@ const meta: Meta = {
         component:
           "overlay-kit 기반 명령형 모달 헬퍼 — openAlert / openConfirm / openModal. 어디서든 함수 호출로 열고 promise로 결과를 받음. 텍스트는 예시 placeholder.",
       },
+      story: { inline: false, height: "400px" },
     },
   },
 }
@@ -57,13 +58,18 @@ function ConfirmDemo() {
     <div className="flex flex-col items-start gap-2">
       <Button
         onClick={async () => {
-          const ok = await openConfirm({ title: "로그아웃하시겠습니까?", confirmText: "로그아웃" })
+          const ok = await openConfirm({
+            title: "로그아웃하시겠습니까?",
+            confirmText: "로그아웃",
+          })
           setResult(ok ? "로그아웃 확인됨" : "취소됨")
         }}
       >
         Confirm 열기
       </Button>
-      {result ? <span className="text-b6 text-muted-foreground">결과: {result}</span> : null}
+      {result ? (
+        <span className="text-b6 text-muted-foreground">결과: {result}</span>
+      ) : null}
     </div>
   )
 }
@@ -91,14 +97,18 @@ export const PermissionContent: Story = {
                 <MapPin className="size-7 shrink-0" />
                 <div className="flex flex-col">
                   <span className="text-h6-1">위치</span>
-                  <span className="text-b6 text-muted-foreground">위치 공유</span>
+                  <span className="text-b6 text-muted-foreground">
+                    위치 공유
+                  </span>
                 </div>
               </li>
               <li className="flex items-center gap-3">
                 <ImageIcon className="size-7 shrink-0" />
                 <div className="flex flex-col">
                   <span className="text-h6-1">앨범</span>
-                  <span className="text-b6 text-muted-foreground">이미지 저장 및 업로드</span>
+                  <span className="text-b6 text-muted-foreground">
+                    이미지 저장 및 업로드
+                  </span>
                 </div>
               </li>
             </ul>
