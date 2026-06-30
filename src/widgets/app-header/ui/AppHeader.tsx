@@ -33,6 +33,7 @@ function AppHeader({
             size="icon"
             radius="full"
             shadow="sm"
+            className="bg-white/60 backdrop-blur-[2px]"
             aria-label="리캡 생성"
             onClick={onRecapClick}
           >
@@ -43,6 +44,7 @@ function AppHeader({
             size="icon"
             radius="full"
             shadow="sm"
+            className="bg-white/60 backdrop-blur-[2px]"
             aria-label="마이"
             onClick={onProfileClick}
           >

@@ -21,13 +21,20 @@ export function PotSelector() {
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>
-        <Button variant="surface" size="sm" radius="full" shadow="sm" className="gap-1">
+        <Button
+          variant="surface"
+          size="sm"
+          radius="full"
+          shadow="sm"
+          className="h-[42px] gap-2.5 bg-white/60 px-[15px] backdrop-blur-[2px]"
+        >
           {current.name}
           <ChevronDown className="size-4" />
         </Button>
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
+        {open ? <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" /> : null}
         <DropdownMenu.Content
           align="start"
           sideOffset={8}
