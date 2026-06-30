@@ -7,6 +7,11 @@ import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { REGION_CENTERS, useAllPhotos, usePhotoUploadStore } from "@/entities/photo"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 
+function formatKoreanDate(iso: string): string {
+  const [y, m, d] = iso.split("-")
+  return `${y}년 ${Number(m)}월 ${Number(d)}일`
+}
+
 function GallerySheet({ region }: { region: string }) {
   const photos = useAllPhotos().filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
@@ -37,7 +42,7 @@ function GallerySheet({ region }: { region: string }) {
     <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto">
       <div className="flex items-center justify-between">
         <DialogTitle className="flex items-center gap-1 text-h5">
-          <MapPin className="size-5" /> {region}
+          <MapPin className="size-5 text-[#F45B69]" /> {region}
         </DialogTitle>
         <button
           type="button"
@@ -55,7 +60,7 @@ function GallerySheet({ region }: { region: string }) {
       ) : (
         dates.map((date) => (
           <div key={date} className="flex flex-col gap-2">
-            <p className="text-b6 text-muted-foreground">{date}</p>
+            <p className="text-b6 text-muted-foreground">{formatKoreanDate(date)}</p>
             <div className="grid grid-cols-4 gap-2">
               {(byDate.get(date) ?? []).map((p) => (
                 <ImageContainer key={p.id} src={p.thumbnailUrl} aspectRatio="square" />

@@ -93,14 +93,23 @@ export function TravelMapImpl() {
         }
 
         return (
-          <Marker key={`photo-${properties.photoId}`} longitude={lng} latitude={lat}>
+          <Marker
+            key={`photo-${properties.photoId}`}
+            longitude={lng}
+            latitude={lat}
+            anchor="bottom"
+          >
             <button
               type="button"
               aria-label={`${properties.region} 사진`}
               onClick={() => openGallerySheet(properties.region)}
-              className="size-12 overflow-hidden rounded-xl border-2 border-white shadow"
+              className="relative block"
             >
-              <img src={properties.thumbnailUrl} alt="" className="size-full object-cover" />
+              <span className="block size-12 overflow-hidden rounded-xl border-2 border-white shadow">
+                <img src={properties.thumbnailUrl} alt="" className="size-full object-cover" />
+              </span>
+              {/* 말풍선 꼬리 */}
+              <span className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 border-x-[6px] border-t-[8px] border-x-transparent border-t-white" />
             </button>
           </Marker>
         )
