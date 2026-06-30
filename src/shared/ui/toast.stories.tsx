@@ -5,7 +5,7 @@ import { showToast } from "./toast"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta = {
-  title: "Toast",
+  title: "Overlays/Toast",
   tags: ["autodocs"],
   decorators: [
     (Story) => (
@@ -22,6 +22,7 @@ const meta: Meta = {
         component:
           "화면 하단에 잠깐 표시되는 알림. `showToast()` 명령형으로 호출. 기본 3초 후 자동 dismiss.",
       },
+      story: { inline: false, height: "200px" },
     },
   },
 }

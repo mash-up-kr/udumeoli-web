@@ -6,7 +6,7 @@ import { DialogSeparator, DialogTitle } from "./dialog"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta = {
-  title: "BottomSheet",
+  title: "Overlays/BottomSheet",
   tags: ["autodocs"],
   decorators: [
     (Story) => (
@@ -21,6 +21,7 @@ const meta: Meta = {
         component:
           "overlay-kit 기반 하단 슬라이드업 시트. default=풀폭 상단둥금(#32), floating=떠있는 카드(#35). 텍스트는 예시 placeholder.",
       },
+      story: { inline: false, height: "400px" },
     },
   },
 }
@@ -38,7 +39,9 @@ export const InfoSheet: Story = {
             <div className="flex w-full flex-col gap-3 rounded-2xl bg-secondary p-4">
               <p className="flex items-baseline gap-2">
                 <span className="text-h5">{"{여행팟 이름}"}</span>
-                <span className="text-b6 text-muted-foreground">5명 참여 중</span>
+                <span className="text-b6 text-muted-foreground">
+                  5명 참여 중
+                </span>
               </p>
               <div className="grid grid-cols-3 gap-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -80,7 +83,10 @@ export const ActionSheet: Story = {
                   갤러리에서 선택
                 </button>
                 <DialogSeparator />
-                <button className="py-3 text-left text-b3 text-destructive" onClick={close}>
+                <button
+                  className="py-3 text-left text-b3 text-destructive"
+                  onClick={close}
+                >
                   프로필 삭제
                 </button>
               </div>

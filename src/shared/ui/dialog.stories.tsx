@@ -18,7 +18,8 @@ const meta: Meta<typeof Dialog> = {
   parameters: {
     docs: {
       description: {
-        component: "화면 위에 떠오르는 팝업. 안내 메시지, 권한 요청, 완료 알림 등에 사용.",
+        component:
+          "화면 위에 떠오르는 팝업. 안내 메시지, 권한 요청, 완료 알림 등에 사용.",
       },
     },
   },
@@ -54,7 +55,9 @@ export const WithCloseButton: Story = {
       <DialogContent showCloseButton>
         <DialogHeader>
           <DialogTitle>접근 권한 확인</DialogTitle>
-          <DialogDescription>편리한 앱 이용을 위해 접근 권한을 허용해주세요.</DialogDescription>
+          <DialogDescription>
+            편리한 앱 이용을 위해 접근 권한을 허용해주세요.
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button className="w-full">확인</Button>
@@ -71,7 +74,9 @@ function ImperativeExample() {
         <DialogContent onCloseAutoFocus={() => unmount()}>
           <DialogHeader>
             <DialogTitle>overlay.open() 방식</DialogTitle>
-            <DialogDescription>overlay-kit을 사용한 명령형 다이얼로그입니다.</DialogDescription>
+            <DialogDescription>
+              overlay-kit을 사용한 명령형 다이얼로그입니다.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button className="w-full" onClick={close}>
@@ -87,6 +92,13 @@ function ImperativeExample() {
 }
 
 export const Imperative: Story = {
-  decorators: [(Story) => <OverlayProvider><Story /></OverlayProvider>],
+  decorators: [
+    (Story) => (
+      <OverlayProvider>
+        <Story />
+      </OverlayProvider>
+    ),
+  ],
+  parameters: { docs: { story: { inline: false, height: "400px" } } },
   render: () => <ImperativeExample />,
 }
