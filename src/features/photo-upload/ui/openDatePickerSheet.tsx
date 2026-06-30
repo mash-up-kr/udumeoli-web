@@ -12,10 +12,13 @@ function toISODate(d: Date): string {
 function DatePickerSheet({ onConfirm }: { onConfirm: (dateISO: string) => void }) {
   const [selected, setSelected] = React.useState<Date>()
   return (
-    <div className="flex flex-col items-center gap-5">
+    <div className="flex flex-col gap-5">
       <DialogTitle className="text-h5">다녀온 날짜를 선택해 주세요</DialogTitle>
-      <Calendar mode="single" selected={selected} onSelect={setSelected} />
+      <div className="flex justify-center">
+        <Calendar mode="single" selected={selected} onSelect={setSelected} />
+      </div>
       <Button
+        size="cta"
         className="w-full"
         disabled={!selected}
         onClick={() => selected && onConfirm(toISODate(selected))}
