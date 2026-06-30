@@ -19,5 +19,6 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (isAuthenticated) router.navigate({ to: "/map" })
   }, [isAuthenticated, router])
+  if (isAuthenticated) return null
   return <>{children}</>
 }
