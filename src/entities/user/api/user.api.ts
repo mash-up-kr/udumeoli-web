@@ -1,7 +1,7 @@
+import { MOCK_USER } from "./user.mock"
+import type { User } from "../model/types"
 import { USE_MOCK, mockResponse } from "@/shared/api/client"
 
-import type { User } from "../model/types"
-import { MOCK_USER } from "./user.mock"
 
 export function fetchMe(): Promise<User> {
   if (USE_MOCK) return mockResponse(MOCK_USER)
