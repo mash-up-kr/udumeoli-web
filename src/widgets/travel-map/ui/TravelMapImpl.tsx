@@ -1,11 +1,11 @@
 import "maplibre-gl/dist/maplibre-gl.css"
 import * as React from "react"
-import { Map, Marker } from "react-map-gl/maplibre"
+import { Layer, Map, Marker, Source } from "react-map-gl/maplibre"
 import Supercluster from "supercluster"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { StyleSpecification } from "maplibre-gl"
 
-import { useAllPhotos } from "@/entities/photo"
+import { REGION_CENTERS, useAllPhotos } from "@/entities/photo"
 import { openGallerySheet } from "@/features/photo-gallery"
 
 // 한국 중심 초기 뷰
@@ -25,6 +25,22 @@ const RASTER_OSM_STYLE: StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 }
 
+// 선택 지역 하이라이트용 원형 폴리곤 (러프 — 추후 행정구역 경계 GeoJSON으로 교체)
+function makeCircle(
+  center: { lat: number; lng: number },
+  radiusKm: number
+): GeoJSON.Feature<GeoJSON.Polygon> {
+  const steps = 64
+  const latR = radiusKm / 110.574
+  const lngR = radiusKm / (111.32 * Math.cos((center.lat * Math.PI) / 180))
+  const ring: Array<[number, number]> = []
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * 2 * Math.PI
+    ring.push([center.lng + lngR * Math.cos(t), center.lat + latR * Math.sin(t)])
+  }
+  return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [ring] } }
+}
+
 type PhotoPointProps = { photoId: string; thumbnailUrl: string; region: string }
 
 export function TravelMapImpl() {
@@ -32,6 +48,7 @@ export function TravelMapImpl() {
   const mapRef = React.useRef<MapRef>(null)
   const [bounds, setBounds] = React.useState<[number, number, number, number] | null>(null)
   const [zoom, setZoom] = React.useState(KOREA_VIEW.zoom)
+  const [activeRegion, setActiveRegion] = React.useState<string | null>(null)
 
   // 줌 레벨별 클러스터링 인덱스
   const index = React.useMemo(() => {
@@ -58,6 +75,11 @@ export function TravelMapImpl() {
     [index, bounds, zoom]
   )
 
+  const highlight = React.useMemo(() => {
+    if (!activeRegion || !(activeRegion in REGION_CENTERS)) return null
+    return makeCircle(REGION_CENTERS[activeRegion], 25)
+  }, [activeRegion])
+
   return (
     <Map
       ref={mapRef}
@@ -67,6 +89,21 @@ export function TravelMapImpl() {
       onLoad={syncView}
       onMoveEnd={syncView}
     >
+      {highlight ? (
+        <Source id="region-highlight" type="geojson" data={highlight}>
+          <Layer
+            id="region-highlight-fill"
+            type="fill"
+            paint={{ "fill-color": "#F45B69", "fill-opacity": 0.18 }}
+          />
+          <Layer
+            id="region-highlight-line"
+            type="line"
+            paint={{ "line-color": "#F45B69", "line-width": 2 }}
+          />
+        </Source>
+      ) : null}
+
       {clusters.map((feature) => {
         const [lng, lat] = feature.geometry.coordinates as [number, number]
         const properties = feature.properties
@@ -102,7 +139,10 @@ export function TravelMapImpl() {
             <button
               type="button"
               aria-label={`${properties.region} 사진`}
-              onClick={() => openGallerySheet(properties.region)}
+              onClick={() => {
+                setActiveRegion(properties.region)
+                openGallerySheet(properties.region)
+              }}
               className="relative block"
             >
               <span className="block size-12 overflow-hidden rounded-xl border-2 border-white shadow">
