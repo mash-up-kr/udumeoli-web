@@ -5,9 +5,8 @@ import type { TravelPot } from "@/entities/travel-pot"
 import { Button } from "@/shared/ui/button"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
-import { Label } from "@/shared/ui/label"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { OtpInput } from "@/shared/ui/otp-input"
+import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { usePotStore } from "@/entities/travel-pot"
@@ -57,7 +56,7 @@ export function PotJoinPage() {
   const [code, setCode] = React.useState("")
 
   const handleConfirm = () => {
-    const pot = previewJoin(code)
+    const pot = previewJoin(code.trim())
     openModal(({ close }) => (
       <JoinConfirm
         pot={pot}
@@ -83,13 +82,19 @@ export function PotJoinPage() {
           <Header.Title>여행팟 참여</Header.Title>
         </Header>
 
-        <main className="flex flex-1 flex-col gap-3 px-5 pt-6">
-          <Label>초대코드 입력</Label>
-          <OtpInput value={code} onChange={setCode} />
+        <main className="flex flex-1 flex-col px-5 pt-6">
+          <TextField
+            label="초대코드 입력"
+            placeholder="우리 방의 초대코드를 입력해 주세요"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            maxLength={6}
+            inputMode="numeric"
+          />
         </main>
 
         <div className="px-5 pb-8">
-          <Button size="cta" className="w-full" disabled={code.length < 6} onClick={handleConfirm}>
+          <Button size="cta" className="w-full" disabled={!code.trim()} onClick={handleConfirm}>
             확인
           </Button>
         </div>
