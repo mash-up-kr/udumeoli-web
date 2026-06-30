@@ -1,13 +1,101 @@
+import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
+
+import type { TravelPot } from "@/entities/travel-pot"
+import { Button } from "@/shared/ui/button"
+import { DialogTitle } from "@/shared/ui/dialog"
+import { Header } from "@/shared/ui/header"
+import { Label } from "@/shared/ui/label"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { OtpInput } from "@/shared/ui/otp-input"
+import { ProfileContainer } from "@/shared/ui/profile-container"
+import { openModal } from "@/shared/ui/modal"
+import { showToast } from "@/shared/ui/toast"
+import { usePotStore } from "@/entities/travel-pot"
 import { RequireAuth } from "@/features/auth"
 
+function JoinConfirm({
+  pot,
+  onYes,
+  onNo,
+}: {
+  pot: TravelPot
+  onYes: () => void
+  onNo: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <DialogTitle className="text-h5">여행팟 정보를 확인해 주세요</DialogTitle>
+      <div className="rounded-2xl bg-muted p-4">
+        <p className="text-b4">
+          <span className="font-semibold">{pot.name}</span> {pot.members.length}명 참여 중
+        </p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {pot.members.map((m) => (
+            <div key={m.id} className="flex flex-col items-center gap-1">
+              <ProfileContainer size="sm" name={m.nickname} />
+              <span className="text-b7">{m.nickname}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Button className="w-full" onClick={onYes}>
+        맞아요
+      </Button>
+      <button
+        type="button"
+        className="text-center text-b6 text-muted-foreground underline"
+        onClick={onNo}
+      >
+        참여하지 않고 홈으로 이동
+      </button>
+    </div>
+  )
+}
+
 export function PotJoinPage() {
+  const router = useRouter()
+  const previewJoin = usePotStore((s) => s.previewJoin)
+  const confirmJoin = usePotStore((s) => s.confirmJoin)
+  const [code, setCode] = React.useState("")
+
+  const handleConfirm = () => {
+    const pot = previewJoin(code)
+    openModal(({ close }) => (
+      <JoinConfirm
+        pot={pot}
+        onYes={() => {
+          confirmJoin(pot)
+          close()
+          showToast({ message: `${pot.name}에 참여했어요`, type: "success" })
+          router.navigate({ to: "/map" })
+        }}
+        onNo={() => {
+          close()
+          router.navigate({ to: "/map" })
+        }}
+      />
+    ))
+  }
+
   return (
     <RequireAuth>
-      <MobileLayout>
-        <main className="flex min-h-dvh items-center justify-center p-6">
-          <p className="text-b5 text-muted-foreground">여행팟 참여 (placeholder)</p>
+      <MobileLayout className="flex min-h-dvh flex-col">
+        <Header>
+          <Header.Back onClick={() => router.navigate({ to: "/map" })} />
+          <Header.Title>여행팟 참여</Header.Title>
+        </Header>
+
+        <main className="flex flex-1 flex-col gap-3 px-5 pt-6">
+          <Label>초대코드 입력</Label>
+          <OtpInput value={code} onChange={setCode} />
         </main>
+
+        <div className="px-5 pb-8">
+          <Button size="cta" className="w-full" disabled={code.length < 6} onClick={handleConfirm}>
+            확인
+          </Button>
+        </div>
       </MobileLayout>
     </RequireAuth>
   )
