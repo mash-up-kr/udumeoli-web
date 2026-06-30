@@ -7,7 +7,7 @@ import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { TextField } from "@/shared/ui/text-field"
-import { openModal } from "@/shared/ui/modal"
+import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { showToast } from "@/shared/ui/toast"
 import { usePotStore } from "@/entities/travel-pot"
 import { RequireAuth } from "@/features/auth"
@@ -22,7 +22,7 @@ function JoinConfirm({
   onNo: () => void
 }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <DialogTitle className="text-h5">여행팟 정보를 확인해 주세요</DialogTitle>
       <div className="rounded-2xl bg-muted p-4">
         <p className="text-b4">
@@ -57,7 +57,7 @@ export function PotJoinPage() {
 
   const handleConfirm = () => {
     const pot = previewJoin(code.trim())
-    openModal(({ close }) => (
+    openBottomSheet(({ close }) => (
       <JoinConfirm
         pot={pot}
         onYes={() => {
