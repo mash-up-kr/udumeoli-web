@@ -4,6 +4,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { OverlayProvider } from "overlay-kit"
 
 import appCss from "../styles.css?url"
+import { QueryProvider } from "@/shared/api/QueryProvider"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -30,9 +31,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <OverlayProvider>
-          {children}
-        </OverlayProvider>
+        <QueryProvider>
+          <OverlayProvider>
+            {children}
+          </OverlayProvider>
+        </QueryProvider>
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
