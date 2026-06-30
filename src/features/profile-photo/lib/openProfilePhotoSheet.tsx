@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
-import { DialogTitle } from "@/shared/ui/dialog"
+import { DialogSeparator, DialogTitle } from "@/shared/ui/dialog"
 
 interface ProfilePhotoSheetProps {
   close: () => void
@@ -23,6 +23,7 @@ function ProfilePhotoSheet({ close, onPick, onRemove }: ProfilePhotoSheetProps) 
       >
         갤러리에서 선택
       </button>
+      <DialogSeparator />
       <button
         type="button"
         className="py-4 text-left text-b4 text-destructive"
@@ -54,5 +55,7 @@ export function openProfilePhotoSheet(opts: {
   onPick: (url: string) => void
   onRemove: () => void
 }) {
-  openBottomSheet(({ close }) => <ProfilePhotoSheet close={close} {...opts} />)
+  openBottomSheet(({ close }) => <ProfilePhotoSheet close={close} {...opts} />, {
+    showCloseButton: false,
+  })
 }

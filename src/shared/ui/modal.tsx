@@ -34,7 +34,12 @@ export function openAlert({ title, description, confirmText = "확인" }: AlertO
       <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
+          {description ? (
+            <>
+              <DialogSeparator className="my-1" />
+              <DialogDescription>{description}</DialogDescription>
+            </>
+          ) : null}
         </DialogHeader>
         <DialogFooter>
           <Button className="w-full" onClick={() => close()}>
