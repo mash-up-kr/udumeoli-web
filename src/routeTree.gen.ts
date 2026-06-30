@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './app/routes/__root'
+import { Route as SignupRouteImport } from './app/routes/signup'
 import { Route as MyRouteImport } from './app/routes/my'
 import { Route as MapRouteImport } from './app/routes/map'
 import { Route as IndexRouteImport } from './app/routes/index'
@@ -16,6 +17,11 @@ import { Route as PotsNewRouteImport } from './app/routes/pots.new'
 import { Route as PotsJoinRouteImport } from './app/routes/pots.join'
 import { Route as MyProfileRouteImport } from './app/routes/my.profile'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyRoute = MyRouteImport.update({
   id: '/my',
   path: '/my',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
   '/my': typeof MyRouteWithChildren
+  '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
   '/pots/join': typeof PotsJoinRoute
   '/pots/new': typeof PotsNewRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
   '/my': typeof MyRouteWithChildren
+  '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
   '/pots/join': typeof PotsJoinRoute
   '/pots/new': typeof PotsNewRoute
@@ -68,20 +76,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
   '/my': typeof MyRouteWithChildren
+  '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
   '/pots/join': typeof PotsJoinRoute
   '/pots/new': typeof PotsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/my' | '/my/profile' | '/pots/join' | '/pots/new'
+  fullPaths:
+    | '/'
+    | '/map'
+    | '/my'
+    | '/signup'
+    | '/my/profile'
+    | '/pots/join'
+    | '/pots/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/my' | '/my/profile' | '/pots/join' | '/pots/new'
+  to:
+    | '/'
+    | '/map'
+    | '/my'
+    | '/signup'
+    | '/my/profile'
+    | '/pots/join'
+    | '/pots/new'
   id:
     | '__root__'
     | '/'
     | '/map'
     | '/my'
+    | '/signup'
     | '/my/profile'
     | '/pots/join'
     | '/pots/new'
@@ -91,12 +115,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapRoute: typeof MapRoute
   MyRoute: typeof MyRouteWithChildren
+  SignupRoute: typeof SignupRoute
   PotsJoinRoute: typeof PotsJoinRoute
   PotsNewRoute: typeof PotsNewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my': {
       id: '/my'
       path: '/my'
@@ -156,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapRoute: MapRoute,
   MyRoute: MyRouteWithChildren,
+  SignupRoute: SignupRoute,
   PotsJoinRoute: PotsJoinRoute,
   PotsNewRoute: PotsNewRoute,
 }
