@@ -4,7 +4,11 @@ import type { Photo } from "@/entities/photo"
 import { ImageContainer } from "@/shared/ui/image-container"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
-import { REGION_CENTERS, useAllPhotos, usePhotoUploadStore } from "@/entities/photo"
+import {
+  REGION_CENTERS,
+  useAllPhotos,
+  usePhotoUploadStore,
+} from "@/entities/photo"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 
 function formatKoreanDate(iso: string): string {
@@ -16,7 +20,6 @@ function GallerySheet({ region }: { region: string }) {
   const photos = useAllPhotos().filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
 
-  // 날짜별 그룹 (최신순)
   const byDate = new Map<string, Array<Photo>>()
   for (const p of photos) {
     byDate.set(p.date, [...(byDate.get(p.date) ?? []), p])
@@ -60,10 +63,16 @@ function GallerySheet({ region }: { region: string }) {
       ) : (
         dates.map((date) => (
           <div key={date} className="flex flex-col gap-2">
-            <p className="text-b6 text-muted-foreground">{formatKoreanDate(date)}</p>
+            <p className="text-b6 text-muted-foreground">
+              {formatKoreanDate(date)}
+            </p>
             <div className="grid grid-cols-4 gap-2">
               {(byDate.get(date) ?? []).map((p) => (
-                <ImageContainer key={p.id} src={p.thumbnailUrl} aspectRatio="square" />
+                <ImageContainer
+                  key={p.id}
+                  src={p.thumbnailUrl}
+                  aspectRatio="square"
+                />
               ))}
               <button
                 type="button"
