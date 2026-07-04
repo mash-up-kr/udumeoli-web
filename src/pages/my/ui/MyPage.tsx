@@ -5,7 +5,7 @@ import { AppBottomNav, useBottomNavController } from "@/widgets/bottom-nav"
 import { Button } from "@/shared/ui/button"
 import { LinkList } from "@/shared/ui/link-list"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { ProfileContainer } from "@/shared/ui/profile-container"
+import { Profile } from "@/shared/ui/profile"
 import { openConfirm } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { useSessionStore } from "@/entities/user"
@@ -50,10 +50,10 @@ export function MyPage() {
             onClick={() => router.navigate({ to: "/my/profile" })}
             className="flex items-center gap-3 px-5 py-2 text-left"
           >
-            <ProfileContainer
-              size="md"
+            <Profile
+              size="lg"
               src={user?.profileImageUrl ?? undefined}
-              name={user?.nickname}
+              alt={user?.nickname}
             />
             <div className="flex flex-col">
               <span className="text-h5">{user?.nickname ?? "사용자"}</span>
