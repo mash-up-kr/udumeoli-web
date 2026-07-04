@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { Profile } from "@/shared/ui/profile"
@@ -55,14 +55,9 @@ export function ProfilePage() {
         </main>
 
         <div className="px-5 pb-8">
-          <Button
-            size="cta"
-            className="w-full"
-            disabled={!nickname.trim()}
-            onClick={handleSave}
-          >
+          <ButtonCta disabled={!nickname.trim()} onClick={handleSave}>
             완료
-          </Button>
+          </ButtonCta>
         </div>
       </MobileLayout>
     </RequireAuth>

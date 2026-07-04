@@ -2,6 +2,7 @@ import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
 import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { TextField } from "@/shared/ui/text-field"
@@ -80,14 +81,9 @@ export function PotCreatePage() {
               />
             </main>
             <div className="px-5 pb-8">
-              <Button
-                size="cta"
-                className="w-full"
-                disabled={!name.trim()}
-                onClick={handleCreate}
-              >
+              <ButtonCta disabled={!name.trim()} onClick={handleCreate}>
                 초대하기
-              </Button>
+              </ButtonCta>
             </div>
           </>
         )}

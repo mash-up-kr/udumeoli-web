@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 
 import type { TravelPot } from "@/entities/travel-pot"
 import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
@@ -101,14 +102,9 @@ export function PotJoinPage() {
         </main>
 
         <div className="px-5 pb-8">
-          <Button
-            size="cta"
-            className="w-full"
-            disabled={!code.trim()}
-            onClick={handleConfirm}
-          >
+          <ButtonCta disabled={!code.trim()} onClick={handleConfirm}>
             확인
-          </Button>
+          </ButtonCta>
         </div>
       </MobileLayout>
     </RequireAuth>
