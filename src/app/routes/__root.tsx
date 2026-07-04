@@ -10,7 +10,10 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
       { title: "udumeoli" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
@@ -32,13 +35,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <QueryProvider>
-          <OverlayProvider>
-            {children}
-          </OverlayProvider>
+          <OverlayProvider>{children}</OverlayProvider>
         </QueryProvider>
         <TanStackDevtools
           config={{ position: "bottom-right" }}
-          plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+          ]}
         />
         <Scripts />
       </body>

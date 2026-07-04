@@ -17,11 +17,13 @@ export function MapPage() {
           <TravelMap className="absolute inset-0" />
 
           {/* 지도 위에 떠 있는 브랜드 헤더 + 여행팟 선택 */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
             <AppHeader
               className="pointer-events-auto"
               potSelector={<PotSelector />}
-              onRecapClick={() => showToast({ message: "준비 중인 기능이에요", type: "info" })}
+              onRecapClick={() =>
+                showToast({ message: "준비 중인 기능이에요", type: "info" })
+              }
               onProfileClick={() => router.navigate({ to: "/my" })}
             />
           </div>

@@ -16,7 +16,11 @@ function HeaderBack({ className, ...props }: React.ComponentProps<"button">) {
   )
 }
 
-function HeaderTitle({ children, className, ...props }: React.ComponentProps<"h1">) {
+function HeaderTitle({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"h1">) {
   return (
     <h1 className={cn("truncate text-h5", className)} {...props}>
       {children}
@@ -24,9 +28,16 @@ function HeaderTitle({ children, className, ...props }: React.ComponentProps<"h1
   )
 }
 
-function HeaderRight({ children, className, ...props }: React.ComponentProps<"div">) {
+function HeaderRight({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
-    <div className={cn("ml-auto flex items-center gap-2", className)} {...props}>
+    <div
+      className={cn("ml-auto flex items-center gap-2", className)}
+      {...props}
+    >
       {children}
     </div>
   )
@@ -42,7 +53,8 @@ const Header = Object.assign(
     return (
       <header
         className={cn(
-          "flex w-full items-center gap-[27px] px-5 py-5",
+          // pt: 상태바(설치형 PWA) safe-area + 기본 20px. 브라우저 탭에선 inset=0.
+          "flex w-full items-center gap-[27px] px-5 pt-[calc(env(safe-area-inset-top)_+_1.25rem)] pb-5",
           transparent ? "bg-transparent" : "bg-background",
           className
         )}
