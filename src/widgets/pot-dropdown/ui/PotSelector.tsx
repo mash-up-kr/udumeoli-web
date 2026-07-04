@@ -39,7 +39,7 @@ export function PotSelector() {
           <button
             type="button"
             aria-label="닫기"
-            className="fixed inset-0 z-40 cursor-default bg-[#2a2a2c]/50"
+            className="fixed inset-0 z-40 cursor-default bg-bg-dim-solid"
             onClick={() => setOpen(false)}
           />
 
