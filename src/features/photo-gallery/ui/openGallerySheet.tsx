@@ -45,7 +45,7 @@ function GallerySheet({ region }: { region: string }) {
     <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto">
       <div className="flex items-center justify-between">
         <DialogTitle className="flex items-center gap-1 text-h5">
-          <MapPin className="size-5 text-[#F45B69]" /> {region}
+          <MapPin className="size-5 text-highlight" /> {region}
         </DialogTitle>
         <button
           type="button"

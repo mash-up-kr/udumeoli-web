@@ -18,6 +18,7 @@ const PROVINCES_URL =
 const MUNICIPALITIES_URL =
   "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-topo-simple.json"
 
+// = --color-highlight. maplibre paint(WebGL)은 CSS 토큰을 못 읽어 리터럴 유지
 const HIGHLIGHT_COLOR = "#F45B69"
 
 const PROV_SRC = "provinces"
