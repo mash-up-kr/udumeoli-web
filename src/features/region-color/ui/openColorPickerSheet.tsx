@@ -1,6 +1,7 @@
 import * as React from "react"
 import { ImagePlus, MapPin, X } from "lucide-react"
 
+import type { RegionFill } from "@/entities/region"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { useRegionColorStore } from "@/entities/region"
