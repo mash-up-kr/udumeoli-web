@@ -3,12 +3,16 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "@fontsource/anton";
+@import "@fontsource/special-gothic-condensed-one";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Pretendard Variable', 'Inter Variable', sans-serif;
+    --font-anton: 'Anton', sans-serif;
+    --font-eng: 'Special Gothic Condensed One', 'Anton', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -156,25 +160,68 @@
     --color-indigo-100: #c4c8ff;
     --color-violet-100: #e4bfff;
 
+    /* ===== Semantic Color (Design System v1.0.0) ===== */
+    /* 이름 규칙: color-<property: bg|fg|stroke>-<role>-<variant>[-state] → primitive 참조 */
+
+    /* Background */
+    --color-bg-neutral-weak: var(--color-neutral-0);
+    --color-bg-neutral-weak-disabled: var(--color-neutral-50);
+    --color-bg-neutral-subtle: var(--color-neutral-50);
+    --color-bg-neutral-subtle-disabled: var(--color-neutral-100);
+    --color-bg-neutral-solid: var(--color-neutral-100);
+    --color-bg-neutral-inverse: var(--color-neutral-800);
+    --color-bg-neutral-inverse-disabled: var(--color-neutral-300);
+    --color-bg-brand-weak: var(--color-blue-50);
+    --color-bg-brand-solid: var(--color-blue-500);
+    --color-bg-danger-solid: var(--color-red-500);
+    --color-bg-danger-solid-disabled: var(--color-neutral-200);
+    --color-bg-dim-solid: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+    --color-bg-layer-basement: var(--color-neutral-0);
+
+    /* Foreground */
+    --color-fg-neutral-subtle: var(--color-neutral-400);
+    --color-fg-neutral-solid: var(--color-neutral-600);
+    --color-fg-neutral-bold: var(--color-neutral-800);
+    --color-fg-neutral-bold-disabled: var(--color-neutral-300);
+    --color-fg-neutral-inverse: var(--color-neutral-0);
+    --color-fg-neutral-inverse-disabled: var(--color-neutral-500);
+    --color-fg-brand-solid: var(--color-blue-500);
+    --color-fg-danger-solid: var(--color-red-500);
+
+    /* Stroke */
+    --color-stroke-neutral-weak: var(--color-neutral-150);
+    --color-stroke-neutral-subtle: var(--color-neutral-300);
+    --color-stroke-neutral-subtle-disabled: var(--color-neutral-150);
+    --color-stroke-neutral-bold: var(--color-neutral-800);
+    --color-stroke-neutral-inverse: var(--color-neutral-0);
+    --color-stroke-danger-subtle: var(--color-red-100);
+    --color-stroke-danger-solid: var(--color-red-500);
+
+    /* ===== App 전용 색 (Figma primitive/semantic 외 · 추후 확정 시 교체) ===== */
+    --color-highlight: #f45b69; /* 지도 경로·핀 하이라이트 */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #f33838; /* toast error/info */
+
     /* ===== Typography — Head ===== */
     --text-h0: 36px;
     --text-h0--line-height: 48px;
     --text-h0--font-weight: 700;
     --text-h0--letter-spacing: -0.2px;
     --text-h1: 32px;
-    --text-h1--line-height: 40px;
+    --text-h1--line-height: 44px;
     --text-h1--font-weight: 700;
     --text-h1--letter-spacing: -0.2px;
     --text-h2: 28px;
-    --text-h2--line-height: 36px;
+    --text-h2--line-height: 40px;
     --text-h2--font-weight: 700;
     --text-h2--letter-spacing: -0.2px;
     --text-h3: 24px;
-    --text-h3--line-height: 32px;
+    --text-h3--line-height: 36px;
     --text-h3--font-weight: 700;
     --text-h3--letter-spacing: -0.2px;
     --text-h3-1: 24px;
-    --text-h3-1--line-height: 32px;
+    --text-h3-1--line-height: 36px;
     --text-h3-1--font-weight: 600;
     --text-h3-1--letter-spacing: -0.2px;
     --text-h4: 20px;
@@ -182,23 +229,23 @@
     --text-h4--font-weight: 600;
     --text-h4--letter-spacing: -0.2px;
     --text-h5: 18px;
-    --text-h5--line-height: 24px;
+    --text-h5--line-height: 28px;
     --text-h5--font-weight: 700;
     --text-h5--letter-spacing: -0.2px;
     --text-h5-1: 18px;
-    --text-h5-1--line-height: 24px;
+    --text-h5-1--line-height: 28px;
     --text-h5-1--font-weight: 600;
     --text-h5-1--letter-spacing: -0.2px;
     --text-h6: 16px;
-    --text-h6--line-height: 20px;
+    --text-h6--line-height: 24px;
     --text-h6--font-weight: 700;
     --text-h6--letter-spacing: -0.1px;
     --text-h6-1: 16px;
-    --text-h6-1--line-height: 20px;
+    --text-h6-1--line-height: 24px;
     --text-h6-1--font-weight: 600;
     --text-h6-1--letter-spacing: -0.1px;
     --text-h7: 15px;
-    --text-h7--line-height: 20px;
+    --text-h7--line-height: 24px;
     --text-h7--font-weight: 700;
     --text-h7--letter-spacing: -0.1px;
     --text-h8: 14px;
@@ -210,17 +257,17 @@
     --text-h8-1--font-weight: 600;
     --text-h8-1--letter-spacing: -0.1px;
     --text-h9: 13px;
-    --text-h9--line-height: 16px;
+    --text-h9--line-height: 20px;
     --text-h9--font-weight: 600;
     --text-h9--letter-spacing: -0.1px;
 
     /* ===== Typography — Body ===== */
     --text-b0: 28px;
-    --text-b0--line-height: 36px;
+    --text-b0--line-height: 40px;
     --text-b0--font-weight: 500;
     --text-b0--letter-spacing: -0.2px;
     --text-b1: 24px;
-    --text-b1--line-height: 32px;
+    --text-b1--line-height: 36px;
     --text-b1--font-weight: 500;
     --text-b1--letter-spacing: -0.2px;
     --text-b2: 20px;
@@ -236,7 +283,7 @@
     --text-b4--font-weight: 500;
     --text-b4--letter-spacing: -0.1px;
     --text-b5: 15px;
-    --text-b5--line-height: 20px;
+    --text-b5--line-height: 24px;
     --text-b5--font-weight: 500;
     --text-b5--letter-spacing: -0.1px;
     --text-b6: 14px;
@@ -251,6 +298,29 @@
     --text-b8--line-height: 16px;
     --text-b8--font-weight: 400;
     --text-b8--letter-spacing: -0.1px;
+
+    /* ===== Typography — English (Special Gothic Condensed One, font-eng) ===== */
+    /* 사용: `font-eng text-e0`. E0·E1은 시안상 0.5px 텍스트 스트로크가 있음(별도 처리 필요) */
+    --text-e0: 44px;
+    --text-e0--line-height: 44px;
+    --text-e0--font-weight: 400;
+    --text-e0--letter-spacing: 0px;
+    --text-e1: 36px;
+    --text-e1--line-height: 36px;
+    --text-e1--font-weight: 400;
+    --text-e1--letter-spacing: 0px;
+    --text-e2: 20px;
+    --text-e2--line-height: 20px;
+    --text-e2--font-weight: 400;
+    --text-e2--letter-spacing: 0px;
+    --text-e3: 16px;
+    --text-e3--line-height: 16px;
+    --text-e3--font-weight: 400;
+    --text-e3--letter-spacing: 0px;
+    --text-e4: 12px;
+    --text-e4--line-height: 16px;
+    --text-e4--font-weight: 400;
+    --text-e4--letter-spacing: 0px;
 }
 
 @layer base {

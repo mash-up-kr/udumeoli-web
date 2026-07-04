@@ -1,0 +1,2 @@
+# TanStack Router가 LF로 재생성하는 파일. autocrlf(CRLF)로 인한 유령 diff 방지 위해 LF 고정
+/src/routeTree.gen.ts text eol=lf

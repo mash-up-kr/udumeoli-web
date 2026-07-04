@@ -22,39 +22,50 @@ function AppHeader({
 }) {
   return (
     <header
-      className={cn("flex w-full flex-col items-start gap-2 bg-transparent px-4 py-3", className)}
+      className={cn(
+        "flex w-full flex-col items-start gap-2 bg-transparent px-4 py-3",
+        className
+      )}
       {...props}
     >
       <div className="flex w-full items-center justify-between">
-        <span className="text-h2">PHOTATO</span>
-        <div className="flex items-center gap-2">
+        <span className="font-anton text-[28px] leading-[1.5] tracking-[-0.56px]">
+          PHOTATO
+        </span>
+        <div className="flex items-center gap-3">
           <Button
             variant="surface"
             size="icon"
             radius="full"
             shadow="sm"
-            className="bg-white/60 backdrop-blur-[2px]"
+            className="size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
             aria-label="리캡 생성"
             onClick={onRecapClick}
           >
-            <Upload className="size-5" />
+            <Upload className="size-[18px]" />
           </Button>
           <Button
             variant="surface"
             size="icon"
             radius="full"
             shadow="sm"
-            className="bg-white/60 backdrop-blur-[2px]"
+            className="size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
             aria-label="마이"
             onClick={onProfileClick}
           >
-            <User className="size-5" />
+            <User className="size-[18px]" />
           </Button>
         </div>
       </div>
 
       {potSelector ?? (
-        <Button variant="surface" size="sm" radius="full" shadow="sm" className="gap-1">
+        <Button
+          variant="surface"
+          size="sm"
+          radius="full"
+          shadow="sm"
+          className="gap-1"
+        >
           정민이와나
           <ChevronDown className="size-4" />
         </Button>
