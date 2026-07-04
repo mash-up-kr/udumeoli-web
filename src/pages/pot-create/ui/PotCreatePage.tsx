@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
-import { X } from "lucide-react"
 
 import { Button } from "@/shared/ui/button"
 import { Header } from "@/shared/ui/header"
@@ -14,7 +13,10 @@ export function PotCreatePage() {
   const router = useRouter()
   const createPot = usePotStore((s) => s.createPot)
   const [name, setName] = React.useState("")
-  const [created, setCreated] = React.useState<{ name: string; code: string } | null>(null)
+  const [created, setCreated] = React.useState<{
+    name: string
+    code: string
+  } | null>(null)
 
   const handleCreate = () => {
     const pot = createPot(name.trim())
@@ -24,21 +26,11 @@ export function PotCreatePage() {
   return (
     <RequireAuth>
       <MobileLayout className="flex min-h-dvh flex-col">
-        <Header>
-          {created ? (
-            <button
-              type="button"
-              aria-label="닫기"
-              onClick={() => router.navigate({ to: "/map" })}
-              className="flex shrink-0 items-center justify-center"
-            >
-              <X className="size-6" />
-            </button>
-          ) : (
-            <Header.Back onClick={() => router.navigate({ to: "/map" })} />
-          )}
-          <Header.Title>여행팟 생성</Header.Title>
-        </Header>
+        <Header
+          type={created ? "close" : "screen-info"}
+          title="여행팟 생성"
+          onIconClick={() => router.navigate({ to: "/map" })}
+        />
 
         {created ? (
           <main className="flex flex-1 flex-col gap-8 px-5 pt-6">
@@ -63,7 +55,12 @@ export function PotCreatePage() {
               <Button
                 radius="full"
                 className="bg-neutral-400 px-14 text-white hover:bg-neutral-400/90"
-                onClick={() => showToast({ message: "초대코드를 복사했어요", type: "success" })}
+                onClick={() =>
+                  showToast({
+                    message: "초대코드를 복사했어요",
+                    type: "success",
+                  })
+                }
               >
                 공유하기
               </Button>
@@ -88,7 +85,12 @@ export function PotCreatePage() {
               />
             </main>
             <div className="px-5 pb-8">
-              <Button size="cta" className="w-full" disabled={!name.trim()} onClick={handleCreate}>
+              <Button
+                size="cta"
+                className="w-full"
+                disabled={!name.trim()}
+                onClick={handleCreate}
+              >
                 초대하기
               </Button>
             </div>

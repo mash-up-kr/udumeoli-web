@@ -27,10 +27,10 @@ export function ProfilePage() {
   return (
     <RequireAuth>
       <MobileLayout className="flex min-h-dvh flex-col">
-        <Header>
-          <Header.Back onClick={() => router.navigate({ to: "/my" })} />
-          <Header.Title>프로필 수정</Header.Title>
-        </Header>
+        <Header
+          title="프로필 수정"
+          onIconClick={() => router.navigate({ to: "/my" })}
+        />
 
         <main className="flex flex-1 flex-col items-center gap-8 px-5 pt-8">
           <ProfileContainer
@@ -54,7 +54,12 @@ export function ProfilePage() {
         </main>
 
         <div className="px-5 pb-8">
-          <Button size="cta" className="w-full" disabled={!nickname.trim()} onClick={handleSave}>
+          <Button
+            size="cta"
+            className="w-full"
+            disabled={!nickname.trim()}
+            onClick={handleSave}
+          >
             완료
           </Button>
         </div>

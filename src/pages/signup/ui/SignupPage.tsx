@@ -36,7 +36,9 @@ function PermissionContent({ onConfirm }: { onConfirm: () => void }) {
             <ImageIcon className="size-7 shrink-0" />
             <div className="flex flex-col">
               <span className="text-h6-1">앨범</span>
-              <span className="text-b6 text-muted-foreground">이미지 저장 및 업로드</span>
+              <span className="text-b6 text-muted-foreground">
+                이미지 저장 및 업로드
+              </span>
             </div>
           </li>
         </ul>
@@ -75,10 +77,10 @@ export function SignupPage() {
 
   return (
     <MobileLayout className="flex min-h-dvh flex-col">
-      <Header>
-        <Header.Back onClick={() => router.navigate({ to: "/" })} />
-        <Header.Title>회원가입</Header.Title>
-      </Header>
+      <Header
+        title="회원가입"
+        onIconClick={() => router.navigate({ to: "/" })}
+      />
 
       <main className="flex flex-1 flex-col items-center gap-8 px-5 pt-8">
         <ProfileContainer
@@ -101,7 +103,12 @@ export function SignupPage() {
       </main>
 
       <div className="px-5 pb-8">
-        <Button size="cta" className="w-full" disabled={!nickname.trim()} onClick={handleSubmit}>
+        <Button
+          size="cta"
+          className="w-full"
+          disabled={!nickname.trim()}
+          onClick={handleSubmit}
+        >
           완료
         </Button>
       </div>
