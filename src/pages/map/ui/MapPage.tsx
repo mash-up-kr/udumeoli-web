@@ -22,7 +22,7 @@ export function MapPage() {
               className="pointer-events-auto"
               potSelector={<PotSelector />}
               onRecapClick={() =>
-                showToast({ message: "준비 중인 기능이에요", type: "info" })
+                showToast({ message: "준비 중인 기능이에요" })
               }
               onProfileClick={() => router.navigate({ to: "/my" })}
             />

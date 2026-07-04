@@ -70,7 +70,7 @@ export function PotJoinPage() {
         onYes={() => {
           confirmJoin(pot)
           close()
-          showToast({ message: `${pot.name}에 참여했어요`, type: "success" })
+          showToast({ message: `${pot.name}에 참여했어요` })
           router.navigate({ to: "/map" })
         }}
         onNo={() => {

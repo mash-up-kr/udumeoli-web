@@ -55,12 +55,7 @@ export function PotCreatePage() {
               <Button
                 radius="full"
                 className="bg-neutral-400 px-14 text-white hover:bg-neutral-400/90"
-                onClick={() =>
-                  showToast({
-                    message: "초대코드를 복사했어요",
-                    type: "success",
-                  })
-                }
+                onClick={() => showToast({ message: "초대코드를 복사했어요" })}
               >
                 공유하기
               </Button>

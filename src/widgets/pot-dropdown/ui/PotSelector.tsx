@@ -15,8 +15,7 @@ export function PotSelector() {
   const [open, setOpen] = React.useState(false)
 
   const current = pots.find((p) => p.id === currentPotId) ?? pots[0]
-  const notReady = () =>
-    showToast({ message: "준비 중인 기능이에요", type: "info" })
+  const notReady = () => showToast({ message: "준비 중인 기능이에요" })
 
   return (
     <div className="relative">
