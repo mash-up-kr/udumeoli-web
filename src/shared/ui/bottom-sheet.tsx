@@ -121,7 +121,7 @@ function BottomSheetGraphicSlot({
   )
 }
 
-/** ButtonCta 나열 영역. 보조 버튼은 `w-[100px] shrink-0`으로 고정 폭. */
+/** ButtonCta 나열 영역. 보조 버튼은 `w-25 shrink-0`으로 고정 폭. */
 function BottomSheetActions({ className, ...props }: ComponentProps<"div">) {
   return (
     <div

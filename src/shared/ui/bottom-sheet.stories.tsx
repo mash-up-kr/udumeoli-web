@@ -55,7 +55,7 @@ export const Default: Story = {
               <BottomSheetActions>
                 <ButtonCta
                   variant="secondary"
-                  className="w-[100px] shrink-0"
+                  className="w-25 shrink-0"
                   onClick={close}
                 >
                   Label
@@ -89,11 +89,11 @@ export const InformationSlot: Story = {
                   {"{닉네임}님\n회원가입이 완료됐어요!"}
                 </BottomSheetDescription>
               </BottomSheetHeader>
-              <BottomSheetGraphicSlot className="h-[120px]" />
+              <BottomSheetGraphicSlot className="h-30" />
               <BottomSheetActions>
                 <ButtonCta
                   variant="secondary"
-                  className="w-[100px] shrink-0"
+                  className="w-25 shrink-0"
                   onClick={close}
                 >
                   Label
@@ -119,7 +119,7 @@ export const GraphicSlot: Story = {
         openBottomSheet(
           ({ close }) => (
             <>
-              <BottomSheetGraphicSlot className="h-[120px]" />
+              <BottomSheetGraphicSlot className="h-30" />
               <BottomSheetHeader>
                 <BottomSheetTitle>
                   여행팟 정보를 확인해 주세요.
@@ -131,7 +131,7 @@ export const GraphicSlot: Story = {
               <BottomSheetActions>
                 <ButtonCta
                   variant="secondary"
-                  className="w-[100px] shrink-0"
+                  className="w-25 shrink-0"
                   onClick={close}
                 >
                   Label
@@ -166,7 +166,7 @@ export const WithdrawExample: Story = {
               <BottomSheetActions>
                 <ButtonCta
                   variant="secondary"
-                  className="w-[100px] shrink-0"
+                  className="w-25 shrink-0"
                   onClick={close}
                 >
                   취소
@@ -199,11 +199,11 @@ export const PermissionExample: Story = {
                   {"서비스 이용을 위해\n권한을 달라!"}
                 </BottomSheetTitle>
               </BottomSheetHeader>
-              <BottomSheetGraphicSlot className="h-[120px]" />
+              <BottomSheetGraphicSlot className="h-30" />
               <BottomSheetActions>
                 <ButtonCta
                   variant="secondary"
-                  className="w-[100px] shrink-0"
+                  className="w-25 shrink-0"
                   onClick={close}
                 >
                   싫어요
