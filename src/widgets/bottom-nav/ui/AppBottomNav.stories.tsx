@@ -3,6 +3,7 @@ import { AppBottomNav } from "./AppBottomNav"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta<typeof AppBottomNav> = {
+  title: "Widgets/AppBottomNav",
   component: AppBottomNav,
   parameters: { layout: "fullscreen" },
   args: { activeKey: "map", onSelect: () => {} },

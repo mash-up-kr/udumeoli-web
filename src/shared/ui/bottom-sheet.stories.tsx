@@ -14,7 +14,6 @@ import { DialogSeparator, DialogTitle } from "./dialog"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta = {
-  title: "Overlays/BottomSheet",
   tags: ["autodocs"],
   decorators: [
     (Story) => (

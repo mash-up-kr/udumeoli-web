@@ -5,7 +5,6 @@ import { showToast } from "./toast"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta: Meta = {
-  title: "Overlays/Toast",
   tags: ["autodocs"],
   decorators: [
     (Story) => (

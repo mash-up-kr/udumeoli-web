@@ -27,7 +27,13 @@ function withoutTanStackPlugins(
 }
 
 const storybookConfig: StorybookConfig = {
-  stories: ["../src/**/*.stories.@(ts|tsx)"],
+  // 사이드바 그룹 = 코드 위치 (shared/ui → "shared/*", ui 세그먼트 생략).
+  // 새 레이어(features 등)에 스토리가 생기면 여기에 specifier를 추가해야 한다.
+  stories: [
+    { directory: "../src/shared/config/theme" }, // Foundations/* (파일별 명시 title)
+    { directory: "../src/shared/ui", titlePrefix: "shared" },
+    { directory: "../src/widgets" }, // Widgets/* (파일별 명시 title 필수)
+  ],
   addons: ["@storybook/addon-docs"],
   staticDirs: ["../public"],
   framework: {
