@@ -1,10 +1,11 @@
 import { Camera } from "lucide-react"
 import type { ComponentProps } from "react"
 
+import profileDefaultSrc from "@/shared/assets/profile-default.svg"
 import { cn } from "@/shared/lib/utils"
 
-/** 기본 프로필 이미지 (추후 교체 예정). */
-export const DEFAULT_PROFILE_SRC = "/profile-default.svg"
+/** 기본 프로필 이미지 (추후 교체 예정). 번들 import라 배포 base path와 무관하게 동작. */
+export const DEFAULT_PROFILE_SRC = profileDefaultSrc
 
 export type ProfileSize = "xs" | "sm" | "md" | "lg" | "xl"
 export type ProfileType = "default" | "selected" | "add-image"
