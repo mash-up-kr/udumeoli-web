@@ -1,11 +1,13 @@
-import { Image as ImageIcon, MapPin } from "lucide-react"
 import { OverlayProvider } from "overlay-kit"
 import { useState } from "react"
 
 import { Button } from "./button"
-import { DialogHeader, DialogSeparator, DialogTitle } from "./dialog"
+import { ButtonCta } from "./button-cta"
+import { DialogTitle } from "./dialog"
 import { openAlert, openConfirm, openModal } from "./modal"
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import iconCloseSrc from "@/shared/assets/icon-close.svg"
+import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 
 const meta: Meta = {
   tags: ["autodocs"],
@@ -95,46 +97,58 @@ export const DestructiveConfirm: Story = {
   ),
 }
 
-/** 시안 #28 — 커스텀 내용 모달(권한 리스트). openModal로 호출부가 내용 주입. */
+/** 커스텀 내용 모달(권한 팝업, Figma Bottom Sheet v1.0.0). openModal 옵션으로 스타일·닫기 버튼 제어. */
 export const PermissionContent: Story = {
   render: () => (
     <Button
       onClick={() =>
-        openModal(({ close }) => (
-          <>
-            <DialogHeader>
-              <DialogTitle>
-                편리한 앱 이용을 위해
+        openModal(
+          ({ close }) => (
+            <>
+              <button
+                type="button"
+                aria-label="닫기"
+                className="absolute top-4 right-4 flex size-7 items-center justify-center"
+                onClick={close}
+              >
+                <img src={iconCloseSrc} alt="" className="size-5" />
+              </button>
+              <DialogTitle className="py-2 text-center text-h5-1 text-fg-neutral-bold">
+                서비스 이용을 위해
                 <br />
-                접근 권한을 허용해주세요.
+                접근 권한을 허용해 주세요.
               </DialogTitle>
-            </DialogHeader>
-            <DialogSeparator />
-            <ul className="flex flex-col gap-5">
-              <li className="flex items-center gap-3">
-                <MapPin className="size-7 shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-h6-1">위치</span>
-                  <span className="text-b6 text-muted-foreground">
-                    위치 공유
-                  </span>
+              <div className="flex h-[100px] items-center rounded-[12px] bg-bg-neutral-subtle p-5">
+                <div className="flex items-center gap-3">
+                  <img src={iconCameraSrc} alt="" className="size-9 shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-h6-1 text-fg-neutral-bold">앨범</span>
+                    <span className="text-b8 text-fg-neutral-subtle">
+                      이미지 저장 및 업로드
+                    </span>
+                  </div>
                 </div>
-              </li>
-              <li className="flex items-center gap-3">
-                <ImageIcon className="size-7 shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-h6-1">앨범</span>
-                  <span className="text-b6 text-muted-foreground">
-                    이미지 저장 및 업로드
-                  </span>
-                </div>
-              </li>
-            </ul>
-            <Button className="w-full" onClick={close}>
-              확인
-            </Button>
-          </>
-        ))
+              </div>
+              <div className="flex gap-3">
+                <ButtonCta
+                  variant="secondary"
+                  className="w-25 shrink-0"
+                  onClick={close}
+                >
+                  취소
+                </ButtonCta>
+                <ButtonCta className="flex-1" onClick={close}>
+                  확인
+                </ButtonCta>
+              </div>
+            </>
+          ),
+          {
+            className:
+              "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+            showCloseButton: false,
+          }
+        )
       }
     >
       권한 모달 열기
