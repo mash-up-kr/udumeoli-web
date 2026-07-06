@@ -1,7 +1,9 @@
 import type { PotMember, TravelPot } from "../model/types"
 
 export function makeInviteCode(): string {
-  return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join("")
+  return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join(
+    ""
+  )
 }
 
 function members(names: Array<string>): Array<PotMember> {
@@ -13,8 +15,23 @@ function members(names: Array<string>): Array<PotMember> {
 }
 
 export const MOCK_POTS: Array<TravelPot> = [
-  { id: "pot-1", name: "우두머리", inviteCode: "260619", members: members(["정민", "유저"]) },
-  { id: "pot-2", name: "강릉 여행팟", inviteCode: "260618", members: members(["정민", "유지", "성아"]) },
+  {
+    id: "pot-1",
+    name: "우두머리",
+    inviteCode: "260619",
+    members: [
+      { id: "user-1", nickname: "정민", profileImageUrl: null },
+      { id: "user-2", nickname: "유지", profileImageUrl: null },
+      { id: "user-3", nickname: "성아", profileImageUrl: null },
+      { id: "user-4", nickname: "가연", profileImageUrl: null },
+    ],
+  },
+  {
+    id: "pot-2",
+    name: "강릉 여행팟",
+    inviteCode: "260618",
+    members: members(["정민", "유지", "성아"]),
+  },
 ]
 
 // 참여 코드 입력 시 확인 모달 미리보기 (러프: 코드와 무관하게 동일 샘플)
