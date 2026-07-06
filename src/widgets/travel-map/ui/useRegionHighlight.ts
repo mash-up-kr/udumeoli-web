@@ -42,11 +42,19 @@ export function useRegionHighlight() {
   )
 
   const setupClickHandler = React.useCallback(
-    (map: MapLibreMap, fillId: string, srcId: string) => {
+    (
+      map: MapLibreMap,
+      fillId: string,
+      srcId: string,
+      onRegionClick?: (name: string, feature: GeoJSON.Feature) => void
+    ) => {
       map.on("click", fillId, (e) => {
         const feature = e.features?.[0]
         if (!feature) return
         activate(map, srcId, feature.id)
+        if (onRegionClick && feature.properties.name) {
+          onRegionClick(String(feature.properties.name), feature)
+        }
       })
       map.on("mouseenter", fillId, () => {
         map.getCanvas().style.cursor = "pointer"
