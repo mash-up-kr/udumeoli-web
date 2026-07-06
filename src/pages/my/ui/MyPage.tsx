@@ -5,7 +5,7 @@ import { AppBottomNav, useBottomNavController } from "@/widgets/bottom-nav"
 import { Button } from "@/shared/ui/button"
 import { LinkList } from "@/shared/ui/link-list"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { ProfileContainer } from "@/shared/ui/profile-container"
+import { Profile } from "@/shared/ui/profile"
 import { openConfirm } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { useSessionStore } from "@/entities/user"
@@ -17,7 +17,10 @@ export function MyPage() {
   const logout = useSessionStore((s) => s.logout)
 
   const handleLogout = async () => {
-    const ok = await openConfirm({ title: "로그아웃하시겠습니까?", confirmText: "로그아웃" })
+    const ok = await openConfirm({
+      title: "로그아웃하시겠습니까?",
+      confirmText: "로그아웃",
+    })
     if (!ok) return
     logout()
     router.navigate({ to: "/" })
@@ -32,11 +35,11 @@ export function MyPage() {
     })
     if (!ok) return
     logout()
-    showToast({ message: "계정 삭제가 완료되었습니다. 감사합니다.", type: "info" })
+    showToast({ message: "계정 삭제가 완료되었습니다. 감사합니다." })
     router.navigate({ to: "/" })
   }
 
-  const notReady = () => showToast({ message: "준비 중인 기능이에요", type: "info" })
+  const notReady = () => showToast({ message: "준비 중인 기능이에요" })
 
   return (
     <RequireAuth>
@@ -47,10 +50,10 @@ export function MyPage() {
             onClick={() => router.navigate({ to: "/my/profile" })}
             className="flex items-center gap-3 px-5 py-2 text-left"
           >
-            <ProfileContainer
-              size="md"
+            <Profile
+              size="lg"
               src={user?.profileImageUrl ?? undefined}
-              name={user?.nickname}
+              alt={user?.nickname}
             />
             <div className="flex flex-col">
               <span className="text-h5">{user?.nickname ?? "사용자"}</span>
@@ -74,7 +77,11 @@ export function MyPage() {
           </div>
 
           <div className="mt-auto flex flex-col items-center gap-3 px-5 py-6">
-            <Button variant="secondary" className="w-full" onClick={handleLogout}>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={handleLogout}
+            >
               로그아웃
             </Button>
             <button

@@ -1,10 +1,10 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { ProfileContainer } from "@/shared/ui/profile-container"
+import { Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { useSessionStore } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
@@ -27,17 +27,18 @@ export function ProfilePage() {
   return (
     <RequireAuth>
       <MobileLayout className="flex min-h-dvh flex-col">
-        <Header>
-          <Header.Back onClick={() => router.navigate({ to: "/my" })} />
-          <Header.Title>프로필 수정</Header.Title>
-        </Header>
+        <Header
+          title="프로필 수정"
+          onIconClick={() => router.navigate({ to: "/my" })}
+        />
 
         <main className="flex flex-1 flex-col items-center gap-8 px-5 pt-8">
-          <ProfileContainer
-            size="lg"
+          <Profile
+            size="xl"
+            type="add-image"
             src={profileImage ?? undefined}
-            name={nickname}
-            onEdit={() =>
+            alt={nickname}
+            onImageClick={() =>
               openProfilePhotoSheet({
                 onPick: setProfileImage,
                 onRemove: () => setProfileImage(null),
@@ -54,9 +55,9 @@ export function ProfilePage() {
         </main>
 
         <div className="px-5 pb-8">
-          <Button size="cta" className="w-full" disabled={!nickname.trim()} onClick={handleSave}>
+          <ButtonCta disabled={!nickname.trim()} onClick={handleSave}>
             완료
-          </Button>
+          </ButtonCta>
         </div>
       </MobileLayout>
     </RequireAuth>

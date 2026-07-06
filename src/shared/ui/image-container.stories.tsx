@@ -1,5 +1,6 @@
 import { ImageContainer } from "./image-container"
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import sampleImageSrc from "@/shared/assets/sample.jpeg"
 
 const meta: Meta<typeof ImageContainer> = {
   component: ImageContainer,
@@ -22,7 +23,7 @@ const meta: Meta<typeof ImageContainer> = {
     alt: { control: "text", description: "이미지 설명." },
   },
   args: {
-    src: "/sample.jpeg",
+    src: sampleImageSrc,
     alt: "샘플 이미지",
     aspectRatio: "square",
   },
@@ -44,19 +45,19 @@ export const AspectRatios: Story = {
   render: () => (
     <div className="flex items-start gap-4">
       <ImageContainer
-        src="/sample.jpeg"
+        src={sampleImageSrc}
         alt="해변"
         aspectRatio="square"
         className="w-25.75"
       />
       <ImageContainer
-        src="/sample.jpeg"
+        src={sampleImageSrc}
         alt="해변"
         aspectRatio="video"
         className="w-25.75"
       />
       <ImageContainer
-        src="/sample.jpeg"
+        src={sampleImageSrc}
         alt="해변"
         aspectRatio="portrait"
         className="w-25.75"
@@ -79,7 +80,7 @@ export const Error: Story = {
 export const WithRemoveButton: Story = {
   render: () => (
     <ImageContainer
-      src="/sample.jpeg"
+      src={sampleImageSrc}
       alt="해변"
       aspectRatio="square"
       className="w-25.75"

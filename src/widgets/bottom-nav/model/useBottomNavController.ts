@@ -9,7 +9,7 @@ export function useBottomNavController(activeKey: BottomNavKey) {
     activeKey,
     onSelect: (key: BottomNavKey) => {
       if (key === "recap") {
-        showToast({ message: "준비 중인 기능이에요", type: "info" })
+        showToast({ message: "준비 중인 기능이에요" })
         return
       }
       router.navigate({ to: key === "map" ? "/map" : "/my" })

@@ -36,6 +36,12 @@ const METRO_CITIES = new Set([
 ])
 
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
+
+const PROV_SRC = "provinces"
+const PROV_FILL = "province-fill"
+const PROV_LINE = "province-line"
+const PROV_MAX_ZOOM = 8
+
 const MUNI_SRC = "municipalities"
 const MUNI_FILL = "municipality-fill"
 const MUNI_LINE = "municipality-line"

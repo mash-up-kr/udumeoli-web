@@ -197,12 +197,6 @@
     --color-stroke-danger-subtle: var(--color-red-100);
     --color-stroke-danger-solid: var(--color-red-500);
 
-    /* ===== App 전용 색 (Figma primitive/semantic 외 · 추후 확정 시 교체) ===== */
-    --color-highlight: #f45b69; /* 지도 경로·핀 하이라이트 */
-    --color-success: #22c55e;
-    --color-warning: #f59e0b;
-    --color-error: #f33838; /* toast error/info */
-
     /* ===== Typography — Head ===== */
     --text-h0: 36px;
     --text-h0--line-height: 48px;

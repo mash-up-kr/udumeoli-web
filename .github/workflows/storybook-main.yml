@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# gh-pages 브랜치 동시 push 시 Pages 빌드가 경합해 배포가 실패하므로 직렬화
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

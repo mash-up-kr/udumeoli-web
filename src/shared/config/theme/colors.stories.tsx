@@ -61,14 +61,6 @@ const SINGLES: Array<Swatch> = [
   { cls: "bg-violet-100", step: "Violet 100", hex: "#E4BFFF" },
 ]
 
-// 앱 전용 색 (Figma primitive/semantic 외 · 추후 확정 시 교체)
-const APP: Array<Swatch> = [
-  { cls: "bg-highlight", step: "highlight", hex: "#F45B69" },
-  { cls: "bg-success", step: "success", hex: "#22C55E" },
-  { cls: "bg-warning", step: "warning", hex: "#F59E0B" },
-  { cls: "bg-error", step: "error", hex: "#F33838" },
-]
-
 function Row({ title, items }: { title: string; items: Array<Swatch> }) {
   return (
     <div className="flex flex-col gap-2">
@@ -93,7 +85,6 @@ export const Palette: Story = {
       <Row title="Blue" items={BLUE} />
       <Row title="Red" items={RED} />
       <Row title="Accent" items={SINGLES} />
-      <Row title="App" items={APP} />
     </div>
   ),
 }

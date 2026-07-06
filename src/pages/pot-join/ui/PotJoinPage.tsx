@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 
 import type { TravelPot } from "@/entities/travel-pot"
 import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
@@ -26,7 +27,8 @@ function JoinConfirm({
       <DialogTitle className="text-h5">여행팟 정보를 확인해 주세요</DialogTitle>
       <div className="rounded-2xl bg-muted p-4">
         <p className="text-b4">
-          <span className="font-semibold">{pot.name}</span> {pot.members.length}명 참여 중
+          <span className="font-semibold">{pot.name}</span> {pot.members.length}
+          명 참여 중
         </p>
         <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2">
           {pot.members.map((m) => (
@@ -34,7 +36,9 @@ function JoinConfirm({
               <span className="flex size-9 items-center justify-center rounded-full bg-neutral-300 text-b8 text-white">
                 {m.nickname.slice(0, 2)}
               </span>
-              <span className="text-b8 text-muted-foreground">{m.nickname}</span>
+              <span className="text-b8 text-muted-foreground">
+                {m.nickname}
+              </span>
             </div>
           ))}
         </div>
@@ -42,7 +46,11 @@ function JoinConfirm({
       <Button className="w-full" onClick={onYes}>
         맞아요
       </Button>
-      <button type="button" className="text-center text-b6 text-muted-foreground" onClick={onNo}>
+      <button
+        type="button"
+        className="text-center text-b6 text-muted-foreground"
+        onClick={onNo}
+      >
         참여하지 않고 홈으로 이동
       </button>
     </div>
@@ -63,7 +71,7 @@ export function PotJoinPage() {
         onYes={() => {
           confirmJoin(pot)
           close()
-          showToast({ message: `${pot.name}에 참여했어요`, type: "success" })
+          showToast({ message: `${pot.name}에 참여했어요` })
           router.navigate({ to: "/map" })
         }}
         onNo={() => {
@@ -77,10 +85,10 @@ export function PotJoinPage() {
   return (
     <RequireAuth>
       <MobileLayout className="flex min-h-dvh flex-col">
-        <Header>
-          <Header.Back onClick={() => router.navigate({ to: "/map" })} />
-          <Header.Title>여행팟 참여</Header.Title>
-        </Header>
+        <Header
+          title="여행팟 참여"
+          onIconClick={() => router.navigate({ to: "/map" })}
+        />
 
         <main className="flex flex-1 flex-col px-5 pt-6">
           <TextField
@@ -94,9 +102,9 @@ export function PotJoinPage() {
         </main>
 
         <div className="px-5 pb-8">
-          <Button size="cta" className="w-full" disabled={!code.trim()} onClick={handleConfirm}>
+          <ButtonCta disabled={!code.trim()} onClick={handleConfirm}>
             확인
-          </Button>
+          </ButtonCta>
         </div>
       </MobileLayout>
     </RequireAuth>

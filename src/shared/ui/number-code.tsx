@@ -2,19 +2,25 @@ import * as React from "react"
 
 import { cn } from "@/shared/lib/utils"
 
-export interface OtpInputProps {
+export interface NumberCodeProps {
   length?: number
   value: string
   onChange: (value: string) => void
   className?: string
 }
 
-export function OtpInput({
+/**
+ * NumberCode (Figma NumberCode v1.0.0).
+ *
+ * 초대코드 등 숫자를 한 자리씩 입력하는 코드 인풋. 붙여넣기 지원.
+ * 셀 44×60 · radius 12 · `bg-neutral-subtle`, 포커스 시 `stroke-neutral-bold` 테두리.
+ */
+export function NumberCode({
   length = 6,
   value,
   onChange,
   className,
-}: OtpInputProps) {
+}: NumberCodeProps) {
   const refs = React.useRef<Array<HTMLInputElement | null>>([])
 
   const handleChange = (index: number, raw: string) => {
@@ -65,14 +71,15 @@ export function OtpInput({
           type="text"
           inputMode="numeric"
           maxLength={1}
+          aria-label={`${i + 1}번째 숫자`}
           value={value[i] ?? ""}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
           className={cn(
-            "h-16 w-12 rounded-[10px] bg-neutral-150",
-            "text-center text-h4 text-foreground caret-transparent",
-            "outline-none focus:ring-2 focus:ring-primary"
+            "h-[60px] w-11 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
+            "text-center text-b2 text-fg-neutral-bold caret-transparent",
+            "outline-none focus:border-stroke-neutral-bold"
           )}
         />
       ))}
