@@ -1,6 +1,6 @@
-import { Camera } from "lucide-react"
 import type { ComponentProps } from "react"
 
+import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
 import profileDefaultSrc from "@/shared/assets/profile-default.svg"
 import { cn } from "@/shared/lib/utils"
 
@@ -80,7 +80,11 @@ function Profile({
             size === "xl" ? "p-2" : "p-1"
           )}
         >
-          <Camera className={size === "xl" ? "size-6" : "size-3"} />
+          <img
+            src={iconCameraAddSrc}
+            alt=""
+            className={size === "xl" ? "size-6" : "size-3"}
+          />
         </button>
       ) : null}
     </div>

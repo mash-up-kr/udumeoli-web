@@ -28,7 +28,11 @@ type AlertOptions = {
 }
 
 /** 안내 알림 모달(버튼 1개). 확인·바깥클릭·ESC 시 resolve. (시안 #25) */
-export function openAlert({ title, description, confirmText = "확인" }: AlertOptions): Promise<void> {
+export function openAlert({
+  title,
+  description,
+  confirmText = "확인",
+}: AlertOptions): Promise<void> {
   return overlay.openAsync<void>(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()}>
@@ -73,7 +77,11 @@ export function openConfirm({
 }: ConfirmOptions): Promise<boolean> {
   return overlay.openAsync<boolean>(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close(false)}>
-      <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()} className="gap-6">
+      <DialogContent
+        showCloseButton={false}
+        onCloseAutoFocus={() => unmount()}
+        className="gap-6"
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
@@ -84,7 +92,12 @@ export function openConfirm({
           ) : null}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="secondary" size="lg" className="px-7" onClick={() => close(false)}>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="px-7"
+            onClick={() => close(false)}
+          >
             {cancelText}
           </Button>
           <Button
@@ -103,14 +116,30 @@ export function openConfirm({
   ))
 }
 
+type ModalOptions = {
+  /** DialogContent 스타일 오버라이드 (폭·radius·padding 등). */
+  className?: string
+  /** 기본 닫기(X) 버튼 노출 여부. 커스텀 닫기 아이콘을 쓸 때 false. */
+  showCloseButton?: boolean
+}
+
 /**
  * 커스텀 내용 모달. render에 close를 넘겨 호출부가 자유롭게 구성. (시안 #28 권한 모달 등)
  * 도메인 콘텐츠(리스트 등)는 호출부에서 주입.
  */
-export function openModal(render: (controls: { close: () => void }) => ReactNode): void {
+export function openModal(
+  render: (controls: { close: () => void }) => ReactNode,
+  options?: ModalOptions
+): void {
   overlay.open(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent onCloseAutoFocus={() => unmount()}>{render({ close })}</DialogContent>
+      <DialogContent
+        className={options?.className}
+        showCloseButton={options?.showCloseButton}
+        onCloseAutoFocus={() => unmount()}
+      >
+        {render({ close })}
+      </DialogContent>
     </Dialog>
   ))
 }
