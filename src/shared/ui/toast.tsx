@@ -8,6 +8,8 @@ export interface ToastOptions {
   /** 알림 아이콘(빨간 !) 노출 여부. 기본 false. */
   showIcon?: boolean
   duration?: number
+  /** 위치 등 컨테이너 오버라이드 (예: 시트 CTA 위 `bottom-[106px]`). */
+  className?: string
 }
 
 const DEFAULT_DURATION_MS = 3000
@@ -34,17 +36,29 @@ interface ToastProps {
   message: string
   showIcon: boolean
   duration: number
+  className?: string
   onDismiss: () => void
 }
 
-function Toast({ message, showIcon, duration, onDismiss }: ToastProps) {
+function Toast({
+  message,
+  showIcon,
+  duration,
+  className,
+  onDismiss,
+}: ToastProps) {
   React.useEffect(() => {
     const timer = setTimeout(onDismiss, duration)
     return () => clearTimeout(timer)
   }, [duration, onDismiss])
 
   return (
-    <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 px-4">
+    <div
+      className={cn(
+        "fixed bottom-8 left-1/2 z-50 -translate-x-1/2 px-4",
+        className
+      )}
+    >
       <div
         role="status"
         aria-live="polite"
@@ -67,12 +81,14 @@ export function showToast({
   message,
   showIcon = false,
   duration = DEFAULT_DURATION_MS,
+  className,
 }: ToastOptions) {
   overlay.open(({ unmount }) => (
     <Toast
       message={message}
       showIcon={showIcon}
       duration={duration}
+      className={className}
       onDismiss={unmount}
     />
   ))

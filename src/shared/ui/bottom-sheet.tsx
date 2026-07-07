@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import { overlay } from "overlay-kit"
-import { XIcon } from "lucide-react"
+import { ArrowLeft, XIcon } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
 import type { VariantProps } from "class-variance-authority"
 
@@ -15,10 +15,12 @@ const sheetVariants = cva(
     variants: {
       // default: edge-to-edge, 상단만 둥금 (date picker·갤러리 시트)
       // floating: Figma Bottom Sheet v1.0.0 — 떠있는 카드, radius 32 · p-16
+      // full: Figma Modal — 상단 라운드 32 풀높이 화면형 시트 (여행팟 생성·참여)
       variant: {
         default: "gap-6 rounded-t-[40px] px-5 py-[22px]",
         floating:
           "bottom-4 w-[calc(100%-2rem)] max-w-[343px] gap-4 rounded-[32px] bg-bg-neutral-weak p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+        full: "h-[calc(100dvh-54px)] gap-4 rounded-t-[32px] pt-4",
       },
     },
     defaultVariants: { variant: "default" },
@@ -60,6 +62,41 @@ function BottomSheetContent({
         {children}
       </DialogPrimitive.Content>
     </DialogPortal>
+  )
+}
+
+/** full variant 상단 헤더 — 좌측 아이콘(뒤로 ←/닫기 ✕) + 타이틀 (Figma Modal Header). */
+function BottomSheetScreenHeader({
+  icon = "close",
+  title,
+  onIconClick,
+  className,
+}: {
+  icon?: "back" | "close"
+  title: ReactNode
+  onIconClick?: () => void
+  className?: string
+}) {
+  const Icon = icon === "close" ? XIcon : ArrowLeft
+  return (
+    <header
+      className={cn("flex w-full items-center gap-6 px-4 py-3", className)}
+    >
+      <button
+        type="button"
+        aria-label={icon === "close" ? "닫기" : "뒤로 가기"}
+        onClick={onIconClick}
+        className="flex size-6 shrink-0 items-center justify-center text-fg-neutral-bold"
+      >
+        <Icon className="size-6" />
+      </button>
+      <DialogPrimitive.Title
+        data-slot="bottom-sheet-screen-title"
+        className="min-w-0 flex-1 truncate text-h5-1 text-fg-neutral-bold"
+      >
+        {title}
+      </DialogPrimitive.Title>
+    </header>
   )
 }
 
@@ -162,6 +199,7 @@ export function openBottomSheet(
 
 export {
   BottomSheetContent,
+  BottomSheetScreenHeader,
   BottomSheetHeader,
   BottomSheetTitle,
   BottomSheetDescription,
