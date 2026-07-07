@@ -73,9 +73,9 @@ function GallerySheet({ region }: { region: string }) {
   }
 
   return (
-    <div className="flex max-h-[80vh] flex-col items-center gap-8 overflow-y-auto pt-1 pb-4">
-      {/* Header — 수정 · 지역명 · 추가 */}
-      <div className="flex w-full items-center justify-between gap-4 px-1">
+    <div className="flex max-h-[80vh] flex-col gap-8 pt-1">
+      {/* Header — 수정 · 지역명 · 추가 (스크롤과 무관하게 고정) */}
+      <div className="flex w-full shrink-0 items-center justify-between gap-4 px-1">
         <ButtonIcon variant="label" aria-label="수정">
           <PencilLine />
           수정
@@ -94,20 +94,22 @@ function GallerySheet({ region }: { region: string }) {
         </ButtonIcon>
       </div>
 
-      {dates.length === 0 ? (
-        <p className="py-8 text-center text-b6 text-fg-neutral-subtle">
-          아직 사진이 없어요. + 추가로 등록해 보세요.
-        </p>
-      ) : (
-        dates.map((date) => (
-          <DateSection
-            key={date}
-            dateISO={date}
-            slots={toSlots(date)}
-            onAddPhoto={() => uploadForDate(date)}
-          />
-        ))
-      )}
+      <div className="flex flex-col items-center gap-8 overflow-y-auto pb-4">
+        {dates.length === 0 ? (
+          <p className="py-8 text-center text-b6 text-fg-neutral-subtle">
+            아직 사진이 없어요. + 추가로 등록해 보세요.
+          </p>
+        ) : (
+          dates.map((date) => (
+            <DateSection
+              key={date}
+              dateISO={date}
+              slots={toSlots(date)}
+              onAddPhoto={() => uploadForDate(date)}
+            />
+          ))
+        )}
+      </div>
     </div>
   )
 }
