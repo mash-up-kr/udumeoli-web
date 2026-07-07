@@ -26,9 +26,20 @@ function CreatedStep({
     confetti({ particleCount: 120, spread: 70, origin: { y: 0.3 } })
   }, [])
 
+  // 시스템 공유 시트(카톡 등) 노출, 미지원 브라우저는 클립보드 복사로 폴백
   const share = async () => {
+    const text = `${name} 여행팟 초대코드: ${code}`
+    // 데스크톱 등 Web Share API 미지원 환경 감지 (타입상으론 항상 존재)
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ text })
+      } catch {
+        // 사용자가 공유 시트를 닫은 경우
+      }
+      return
+    }
     try {
-      await navigator.clipboard.writeText(code)
+      await navigator.clipboard.writeText(text)
     } catch {
       // clipboard 미지원 환경에서도 토스트는 노출
     }
