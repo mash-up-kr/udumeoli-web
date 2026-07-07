@@ -66,7 +66,7 @@ function ColorPickerSheet({
   const selectedImage = pending?.type === "image" ? pending : null
 
   return (
-    <div className="flex flex-col gap-[27px] px-1 pt-1 pb-2">
+    <div className="flex flex-col gap-6.75 px-1 pt-1 pb-2">
       <DialogTitle className="sr-only">{region} 색칠하기</DialogTitle>
 
       {/* 스와치 행 — 가로 스크롤 */}
@@ -134,6 +134,10 @@ function ColorPickerSheet({
 export function openColorPickerSheet(region: string) {
   openBottomSheet(
     ({ close }) => <ColorPickerSheet region={region} close={close} />,
-    { showCloseButton: false }
+    {
+      showCloseButton: false,
+      showOverlay: false,
+      className: "bg-transparent shadow-none",
+    }
   )
 }
