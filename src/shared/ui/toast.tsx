@@ -68,7 +68,8 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
   return (
     <div
       className={cn(
-        "fixed bottom-8 left-1/2 z-50 -translate-x-1/2 px-4",
+        // z-[60]: 모달/시트(z-50, body 끝 portal)가 열려 있어도 토스트가 항상 위에 보이도록
+        "fixed bottom-8 left-1/2 z-[60] -translate-x-1/2 px-4",
         className
       )}
     >
