@@ -10,7 +10,7 @@ export function LandingPage() {
   return (
     <RedirectIfAuthed>
       {/* Figma 스플래시: padding 24/16/32/16, CTA(343)는 홈 인디케이터 바로 위 */}
-      <MobileLayout className="relative flex h-dvh flex-col items-start gap-4 px-4 pt-6 pb-8">
+      <MobileLayout className="relative flex h-dvh flex-col items-start gap-4 px-4 pt-6 pb-[34px]">
         <img
           src={logoPhotatoSrc}
           alt="PHOTATO"

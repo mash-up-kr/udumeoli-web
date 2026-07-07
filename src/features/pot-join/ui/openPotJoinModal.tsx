@@ -112,7 +112,7 @@ function PotJoinSheet({ close }: { close: () => void }) {
           onChange={setCode}
         />
       </div>
-      <div className="w-full px-4 pb-8">
+      <div className="w-full px-4 pb-[34px]">
         <ButtonCta disabled={code.length < CODE_LENGTH} onClick={handleDone}>
           완료
         </ButtonCta>
