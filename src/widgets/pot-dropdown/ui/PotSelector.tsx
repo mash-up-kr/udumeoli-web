@@ -30,7 +30,9 @@ export function PotSelector() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
       >
-        <span className="text-b5 text-fg-neutral-bold">{current.name}</span>
+        <span className="max-w-40 truncate text-b5 text-fg-neutral-bold">
+          {current.name}
+        </span>
         <img src={iconChevronDownSrc} alt="" className="size-6" />
       </button>
 
