@@ -33,8 +33,8 @@ const DEFAULT_AVATARS = [
 const NICKNAME_MAX = 6
 const NICKNAME_INPUT_MAX = NICKNAME_MAX + 1
 
-// 스플래시(랜딩) CTA(카카오로 시작하기) 위 12px에 완료 토스트 노출
-const SPLASH_TOAST_POSITION = "bottom-[188px]"
+// 스플래시(랜딩) CTA(카카오로 시작하기, pb-32 + 높이 56) 위 12px에 완료 토스트 노출
+const SPLASH_TOAST_POSITION = "bottom-[100px]"
 
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
