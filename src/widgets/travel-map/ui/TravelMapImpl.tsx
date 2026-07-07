@@ -245,6 +245,7 @@ export function TravelMapImpl() {
   const flyingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   )
+  const initedRef = React.useRef(false)
   const rafRef = React.useRef<number | null>(null)
   const moveRafRef = React.useRef<number | null>(null)
   const latestViewStateRef = React.useRef<{
@@ -512,7 +513,8 @@ export function TravelMapImpl() {
 
   const handleMapLoad = React.useCallback(() => {
     const map = mapRef.current?.getMap()
-    if (!map) return
+    if (!map || initedRef.current) return
+    initedRef.current = true
     mapInstanceRef.current = map
 
     Promise.all([
@@ -632,6 +634,18 @@ export function TravelMapImpl() {
     flyToRegion,
     photos,
   ])
+
+  // onLoad 이벤트가 유실되는 경우(HMR 리마운트 등) 대비 — 로드 완료를 폴링해 초기화 보장
+  React.useEffect(() => {
+    if (initedRef.current) return
+    const id = window.setInterval(() => {
+      const map = mapRef.current?.getMap()
+      if (!map?.loaded()) return
+      window.clearInterval(id)
+      handleMapLoad()
+    }, 300)
+    return () => window.clearInterval(id)
+  }, [handleMapLoad])
 
   return (
     <div className="relative size-full">
