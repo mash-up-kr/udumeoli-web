@@ -1,9 +1,14 @@
 import type { PotMember, TravelPot } from "../model/types"
 
+// 영문 소문자+숫자 조합 6자리 랜덤 초대코드
+const INVITE_CODE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+
 export function makeInviteCode(): string {
-  return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join(
-    ""
-  )
+  return Array.from(
+    { length: 6 },
+    () =>
+      INVITE_CODE_CHARS[Math.floor(Math.random() * INVITE_CODE_CHARS.length)]
+  ).join("")
 }
 
 function members(names: Array<string>): Array<PotMember> {
@@ -28,7 +33,13 @@ export const MOCK_POTS: Array<TravelPot> = [
   },
   {
     id: "pot-2",
-    name: "강릉 여행팟",
+    name: "민지 ❤️ 성준  영원히 함께하자 안녕하세요 민지 성준입니다",
+    inviteCode: "26ab19",
+    members: members(["민지", "성준"]),
+  },
+  {
+    id: "pot-3",
+    name: "매쉬업",
     inviteCode: "260618",
     members: members(["정민", "유지", "성아"]),
   },

@@ -109,7 +109,12 @@ function PotJoinSheet({ close }: { close: () => void }) {
         <p className="text-h5-1 text-fg-neutral-bold">
           우리 방의 초대 코드를 입력해주세요
         </p>
-        <NumberCode length={CODE_LENGTH} value={code} onChange={setCode} />
+        <NumberCode
+          length={CODE_LENGTH}
+          mode="alphanumeric"
+          value={code}
+          onChange={setCode}
+        />
       </div>
       <div className="w-full px-4 pb-8">
         <ButtonCta disabled={code.length < CODE_LENGTH} onClick={handleDone}>
