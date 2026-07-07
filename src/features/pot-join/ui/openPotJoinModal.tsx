@@ -26,11 +26,11 @@ const SHEET_TOAST_POSITION = "bottom-[106px]"
 
 function JoinConfirm({
   pot,
-  onHome,
+  onRetry,
   onYes,
 }: {
   pot: TravelPot
-  onHome: () => void
+  onRetry: () => void
   onYes: () => void
 }) {
   return (
@@ -38,19 +38,18 @@ function JoinConfirm({
       <DialogTitle className="py-2 text-center text-h5-1 text-fg-neutral-bold">
         여행팟 정보를 확인해 주세요
       </DialogTitle>
-      <div className="flex h-[140px] flex-col items-center justify-center gap-1 rounded-[24px] bg-bg-neutral-subtle">
-        <p className="text-h6-1 text-fg-neutral-bold">{pot.name}</p>
-        <p className="text-b6 text-fg-neutral-subtle">
-          {pot.members.length}명 참여 중
+      <div className="h-[140px] rounded-[24px] bg-bg-neutral-subtle p-4">
+        <p className="line-clamp-2 text-h6-1 text-fg-neutral-bold">
+          {pot.name}
         </p>
       </div>
       <div className="flex w-full gap-3">
         <ButtonCta
           variant="secondary"
           className="w-25 shrink-0"
-          onClick={onHome}
+          onClick={onRetry}
         >
-          홈으로
+          다시 입력
         </ButtonCta>
         <ButtonCta onClick={onYes}>맞아요</ButtonCta>
       </div>
@@ -68,7 +67,7 @@ function PotJoinSheet({ close }: { close: () => void }) {
     if (result.status !== "ok") {
       showToast({
         message: JOIN_ERROR_MESSAGES[result.status],
-        showIcon: true,
+        icon: "alert",
         className: SHEET_TOAST_POSITION,
       })
       return
@@ -79,15 +78,12 @@ function PotJoinSheet({ close }: { close: () => void }) {
       ({ close: closeConfirm }) => (
         <JoinConfirm
           pot={pot}
-          onHome={() => {
-            closeConfirm()
-            close()
-          }}
+          onRetry={closeConfirm}
           onYes={() => {
             confirmJoin(pot)
             closeConfirm()
             close()
-            showToast({ message: `${pot.name}에 참여했어요` })
+            showToast({ message: `${pot.name}에 참여했어요`, icon: "check" })
           }}
         />
       ),
