@@ -4,7 +4,7 @@ import type { RegionFill } from "@/entities/region"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ColorSwatch } from "@/shared/ui/color-swatch"
 import { DialogTitle } from "@/shared/ui/dialog"
-import { cn } from "@/shared/lib/utils"
+import { ImageContainer } from "@/shared/ui/image-container"
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { useRegionColorStore } from "@/entities/region"
 
@@ -87,15 +87,11 @@ function ColorPickerSheet({
             type="button"
             aria-label="이미지 다시 선택"
             onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "relative size-12 shrink-0 overflow-hidden rounded-[12px]",
-              "border-4 border-stroke-neutral-bold"
-            )}
+            className="shrink-0"
           >
-            <img
+            <ImageContainer
               src={selectedImage.dataUrl}
-              alt=""
-              className="size-full object-cover"
+              className="size-12 rounded-[12px] border-4 border-stroke-neutral-bold"
             />
           </button>
         ) : (
