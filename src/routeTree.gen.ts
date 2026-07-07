@@ -13,8 +13,6 @@ import { Route as SignupRouteImport } from './app/routes/signup'
 import { Route as MyRouteImport } from './app/routes/my'
 import { Route as MapRouteImport } from './app/routes/map'
 import { Route as IndexRouteImport } from './app/routes/index'
-import { Route as PotsNewRouteImport } from './app/routes/pots.new'
-import { Route as PotsJoinRouteImport } from './app/routes/pots.join'
 import { Route as MyProfileRouteImport } from './app/routes/my.profile'
 
 const SignupRoute = SignupRouteImport.update({
@@ -37,16 +35,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PotsNewRoute = PotsNewRouteImport.update({
-  id: '/pots/new',
-  path: '/pots/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PotsJoinRoute = PotsJoinRouteImport.update({
-  id: '/pots/join',
-  path: '/pots/join',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const MyProfileRoute = MyProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -59,8 +47,6 @@ export interface FileRoutesByFullPath {
   '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
-  '/pots/join': typeof PotsJoinRoute
-  '/pots/new': typeof PotsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +54,6 @@ export interface FileRoutesByTo {
   '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
-  '/pots/join': typeof PotsJoinRoute
-  '/pots/new': typeof PotsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,37 +62,13 @@ export interface FileRoutesById {
   '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
   '/my/profile': typeof MyProfileRoute
-  '/pots/join': typeof PotsJoinRoute
-  '/pots/new': typeof PotsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/map'
-    | '/my'
-    | '/signup'
-    | '/my/profile'
-    | '/pots/join'
-    | '/pots/new'
+  fullPaths: '/' | '/map' | '/my' | '/signup' | '/my/profile'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/map'
-    | '/my'
-    | '/signup'
-    | '/my/profile'
-    | '/pots/join'
-    | '/pots/new'
-  id:
-    | '__root__'
-    | '/'
-    | '/map'
-    | '/my'
-    | '/signup'
-    | '/my/profile'
-    | '/pots/join'
-    | '/pots/new'
+  to: '/' | '/map' | '/my' | '/signup' | '/my/profile'
+  id: '__root__' | '/' | '/map' | '/my' | '/signup' | '/my/profile'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -116,8 +76,6 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   MyRoute: typeof MyRouteWithChildren
   SignupRoute: typeof SignupRoute
-  PotsJoinRoute: typeof PotsJoinRoute
-  PotsNewRoute: typeof PotsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -150,20 +108,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pots/new': {
-      id: '/pots/new'
-      path: '/pots/new'
-      fullPath: '/pots/new'
-      preLoaderRoute: typeof PotsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pots/join': {
-      id: '/pots/join'
-      path: '/pots/join'
-      fullPath: '/pots/join'
-      preLoaderRoute: typeof PotsJoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/my/profile': {
       id: '/my/profile'
       path: '/profile'
@@ -189,8 +133,6 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   MyRoute: MyRouteWithChildren,
   SignupRoute: SignupRoute,
-  PotsJoinRoute: PotsJoinRoute,
-  PotsNewRoute: PotsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
