@@ -68,7 +68,7 @@ function CreatedStep({
         </div>
         <NumberCode value={code} readOnly />
       </div>
-      <div className="w-full px-4 pb-8">
+      <div className="w-full px-4 pb-[34px]">
         <ButtonCta onClick={share}>초대코드 공유하기</ButtonCta>
       </div>
     </>
@@ -104,7 +104,7 @@ function PotCreateSheet({ close }: { close: () => void }) {
           onChange={(e) => setName(e.target.value)}
         />
       </div>
-      <div className="w-full px-4 pb-8">
+      <div className="w-full px-4 pb-[34px]">
         <ButtonCta
           disabled={!name.trim()}
           onClick={() => {

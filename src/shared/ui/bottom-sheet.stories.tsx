@@ -269,7 +269,7 @@ export const FullScreen: Story = {
               <div className="flex w-full flex-1 flex-col px-4 text-b5">
                 콘텐츠 영역
               </div>
-              <div className="w-full px-4 pb-8">
+              <div className="w-full px-4 pb-[34px]">
                 <ButtonCta disabled>다음</ButtonCta>
               </div>
             </>
