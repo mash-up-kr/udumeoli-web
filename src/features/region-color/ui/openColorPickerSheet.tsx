@@ -1,23 +1,24 @@
 import * as React from "react"
-import { ImagePlus, MapPin } from "lucide-react"
 
 import type { RegionFill } from "@/entities/region"
+import { ButtonCta } from "@/shared/ui/button-cta"
+import { ColorSwatch } from "@/shared/ui/color-swatch"
 import { DialogTitle } from "@/shared/ui/dialog"
+import { cn } from "@/shared/lib/utils"
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import { useRegionColorStore } from "@/entities/region"
 
+// 피그마 Color Swatch 팔레트 — primitive 100 계열 토큰 값.
+// MapLibre feature-state가 CSS 변수를 해석하지 못해 hex로 직접 저장한다.
 const PALETTE = [
-  "#ff8a80", // red
-  "#ffb347", // orange
-  "#ffe066", // yellow
-  "#7dde72", // green
-  "#74b9ff", // blue
-  "#8c8fff", // indigo
-  "#c77dff", // violet
+  "#ffc5bf", // --color-red-100
+  "#ffdab5", // --color-orange-100
+  "#fff0b1", // --color-yellow-100
+  "#c8f0c0", // --color-green-100
+  "#d1eafd", // --color-blue-100
+  "#c4c8ff", // --color-indigo-100
+  "#e4bfff", // --color-violet-100
 ]
-
-const SWATCH_BASE =
-  "shrink-0 size-12 rounded-xl border border-[#8e96a9] overflow-hidden transition-all"
 
 function ColorPickerSheet({
   region,
@@ -36,6 +37,7 @@ function ColorPickerSheet({
   const [pending, setPending] = React.useState<RegionFill | null>(
     current ?? null
   )
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -60,95 +62,78 @@ function ColorPickerSheet({
     close()
   }
 
-  const isNoneSelected = pending === null
   const selectedColor = pending?.type === "color" ? pending.value : null
   const selectedImage = pending?.type === "image" ? pending : null
 
   return (
-    <div className="flex flex-col gap-6 px-4 pt-1 pb-2">
-      <DialogTitle className="flex items-center gap-1.5 text-h5">
-        <MapPin className="size-4 text-[#F45B69]" />
-        {region}
-      </DialogTitle>
+    <div className="flex flex-col gap-[27px] px-1 pt-1 pb-2">
+      <DialogTitle className="sr-only">{region} 색칠하기</DialogTitle>
 
-      {/* 색상/이미지 선택 행 */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-1">
-        {/* 없애기 (X 사선) */}
-        <button
-          type="button"
+      {/* 스와치 행 — 가로 스크롤 */}
+      <div className="flex items-center gap-4 overflow-x-auto pb-1">
+        <ColorSwatch
+          variant="empty"
+          selected={pending === null}
           aria-label="색상 없애기"
           onClick={() => setPending(null)}
-          className={`${SWATCH_BASE} relative flex items-center justify-center bg-white ${isNoneSelected ? "border-2 border-[#232936]" : ""}`}
-        >
-          {/* 사선 X */}
-          <svg
-            viewBox="0 0 48 48"
-            className="absolute inset-0 size-full"
-            aria-hidden
-          >
-            <line
-              x1="8"
-              y1="40"
-              x2="40"
-              y2="8"
-              stroke="#F45B69"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+        />
 
         {/* 구분선 */}
-        <div className="h-8 w-px shrink-0 bg-[#8e96a9]/40" />
+        <div className="h-8 w-px shrink-0 bg-fg-neutral-subtle" />
 
         {/* 이미지 업로드 */}
-        <label
-          className={`${SWATCH_BASE} relative flex cursor-pointer flex-col items-center justify-center gap-0.5 bg-white ${selectedImage ? "border-2 border-[#232936]" : ""}`}
-        >
-          {selectedImage ? (
+        {selectedImage ? (
+          <button
+            type="button"
+            aria-label="이미지 다시 선택"
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "relative size-12 shrink-0 overflow-hidden rounded-[12px]",
+              "border-4 border-stroke-neutral-bold"
+            )}
+          >
             <img
               src={selectedImage.dataUrl}
               alt=""
               className="size-full object-cover"
             />
-          ) : (
-            <ImagePlus className="size-5 text-[#8e96a9]" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={handleImageUpload}
+          </button>
+        ) : (
+          <ColorSwatch
+            variant="add"
+            aria-label="이미지 추가"
+            onClick={() => fileInputRef.current?.click()}
           />
-        </label>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={handleImageUpload}
+        />
 
         {/* 색상 스와치 */}
         {PALETTE.map((color) => (
-          <button
+          <ColorSwatch
             key={color}
-            type="button"
-            aria-label={color}
+            variant="color"
+            color={color}
+            selected={selectedColor === color}
+            aria-label={`색상 ${color}`}
             onClick={() => setPending({ type: "color", value: color })}
-            className={`${SWATCH_BASE} ${selectedColor === color ? "border-2 border-[#232936]" : ""}`}
-            style={{ backgroundColor: color }}
           />
         ))}
       </div>
 
-      {/* 확인 버튼 */}
-      <button
-        type="button"
-        onClick={handleConfirm}
-        className="w-full rounded-full bg-[#232936] py-4 text-center text-[16px] leading-6 font-bold tracking-tight text-white transition-opacity active:opacity-80"
-      >
-        확인
-      </button>
+      <ButtonCta onClick={handleConfirm}>확인</ButtonCta>
     </div>
   )
 }
 
 export function openColorPickerSheet(region: string) {
-  openBottomSheet(({ close }) => (
-    <ColorPickerSheet region={region} close={close} />
-  ))
+  openBottomSheet(
+    ({ close }) => <ColorPickerSheet region={region} close={close} />,
+    { showCloseButton: false }
+  )
 }
