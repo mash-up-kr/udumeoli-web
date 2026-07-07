@@ -45,13 +45,11 @@ export function useRegionHighlight() {
     (
       map: MapLibreMap,
       fillId: string,
-      srcId: string,
       onRegionClick?: (name: string, feature: GeoJSON.Feature) => void
     ) => {
       map.on("click", fillId, (e) => {
         const feature = e.features?.[0]
         if (!feature) return
-        activate(map, srcId, feature.id)
         if (onRegionClick && feature.properties.name) {
           onRegionClick(String(feature.properties.name), feature)
         }
@@ -63,7 +61,7 @@ export function useRegionHighlight() {
         map.getCanvas().style.cursor = ""
       })
     },
-    [activate]
+    []
   )
 
   const activateByName = React.useCallback(
@@ -73,9 +71,29 @@ export function useRegionHighlight() {
     [activate]
   )
 
+  // 토글 없이 지정 지역만 활성화(null이면 해제) — selectedRegion과 1:1로 동기화할 때 사용
+  const setActiveByName = React.useCallback(
+    (map: MapLibreMap, srcId: string, name: string | null) => {
+      if (activeRef.current !== null) {
+        map.setFeatureState(
+          { source: activeRef.current.src, id: activeRef.current.id },
+          { active: false }
+        )
+        activeRef.current = null
+      }
+      if (name === null) return
+      const id = nameToId.current.get(name)
+      if (id === undefined) return
+      activeRef.current = { src: srcId, id }
+      map.setFeatureState({ source: srcId, id }, { active: true })
+    },
+    []
+  )
+
   return {
     setupClickHandler,
     activateByName,
+    setActiveByName,
     buildNameIndex,
     nameToIdRef: nameToId,
   }

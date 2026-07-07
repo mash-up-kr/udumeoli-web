@@ -58,6 +58,26 @@ type PartySlot = {
   totalSlots: number
 }
 
+// 폴리곤 면적 가중 centroid (shoelace) — bbox 중심과 달리 오목한 해안선에서도 도형 내부에 안착
+function ringCentroid(
+  ring: Array<Array<number>>
+): { center: [number, number]; area: number } | null {
+  let area = 0
+  let cx = 0
+  let cy = 0
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x0, y0] = ring[i]
+    const [x1, y1] = ring[i + 1]
+    const cross = x0 * y1 - x1 * y0
+    area += cross
+    cx += (x0 + x1) * cross
+    cy += (y0 + y1) * cross
+  }
+  area /= 2
+  if (area === 0) return null
+  return { center: [cx / (6 * area), cy / (6 * area)], area: Math.abs(area) }
+}
+
 function computeCentroid(feature: GeoJSON.Feature): [number, number] | null {
   const g = feature.geometry
   let rings: Array<Array<Array<number>>> = []
@@ -67,25 +87,12 @@ function computeCentroid(feature: GeoJSON.Feature): [number, number] | null {
 
   if (rings.length === 0) return null
 
+  const computed = rings.map(ringCentroid).filter((r) => r !== null)
+  if (computed.length === 0) return null
+
   // 가장 큰 폴리곤(본토) 기준
-  const bbox = (ring: Array<Array<number>>) => {
-    const lngs = ring.map((c) => c[0])
-    const lats = ring.map((c) => c[1])
-    return {
-      lngs,
-      lats,
-      area:
-        (Math.max(...lngs) - Math.min(...lngs)) *
-        (Math.max(...lats) - Math.min(...lats)),
-    }
-  }
-  const { lngs, lats } = rings
-    .map(bbox)
-    .reduce((a, b) => (a.area >= b.area ? a : b))
-  return [
-    (Math.min(...lngs) + Math.max(...lngs)) / 2,
-    (Math.min(...lats) + Math.max(...lats)) / 2,
-  ]
+  const largest = computed.reduce((a, b) => (a.area >= b.area ? a : b))
+  return largest.center
 }
 
 function addLayers(
@@ -169,6 +176,43 @@ function getSlotOffset(total: number, index: number): [number, number] {
   return [Math.cos(angle) * radius, Math.sin(angle) * radius]
 }
 
+// 0: 초기 / 1: 경계선+"+" / 2: 색상+72px 핀 / 3: 파티 슬롯(최대 줌)
+function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
+  if (zoom >= PARTY_ZOOM) return 3
+  if (zoom >= ZOOM_COLOR) return 2
+  if (zoom >= BOUNDARY_ZOOM) return 1
+  return 0
+}
+
+type PhotoTileProps = {
+  label: string
+  imageUrl: string
+  size: number
+  onClick: (e: React.MouseEvent) => void
+}
+
+// 사진 핀 / 파티 슬롯 공용 타일 — 닉네임/지역명 칩 + 정사각 이미지
+function PhotoTile({ label, imageUrl, size, onClick }: PhotoTileProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="group flex flex-col items-center gap-1"
+    >
+      <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
+        {label}
+      </span>
+      <span
+        className="block overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] transition-all group-hover:scale-105"
+        style={{ width: size, height: size }}
+      >
+        <img src={imageUrl} alt="" className="size-full object-cover" />
+      </span>
+    </button>
+  )
+}
+
 export function TravelMapImpl() {
   const photos = useAllPhotos()
   const fills = useRegionColorStore((s) => s.fills)
@@ -184,7 +228,9 @@ export function TravelMapImpl() {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const imgCacheRef = React.useRef(new Map<string, HTMLImageElement>())
   const fillsRef = React.useRef(fills)
-  const [zoom, setZoom] = React.useState(KOREA_VIEW.zoom)
+  const [zoomStage, setZoomStage] = React.useState(() =>
+    getZoomStage(KOREA_VIEW.zoom)
+  )
   const [centroids, setCentroids] = React.useState<Array<Centroid>>([])
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
@@ -193,9 +239,23 @@ export function TravelMapImpl() {
     null
   )
   const flyingRef = React.useRef(false)
+  const flyingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
   const rafRef = React.useRef<number | null>(null)
-  const { setupClickHandler, activateByName, buildNameIndex, nameToIdRef } =
-    useRegionHighlight()
+  const moveRafRef = React.useRef<number | null>(null)
+  const {
+    setupClickHandler,
+    activateByName,
+    setActiveByName,
+    buildNameIndex,
+    nameToIdRef,
+  } = useRegionHighlight()
+
+  const centroidMap = React.useMemo(
+    () => new Map(centroids.map((c) => [c.name, c])),
+    [centroids]
+  )
 
   const updateViewportCentroids = React.useCallback(
     (allCentroids: Array<Centroid>) => {
@@ -209,9 +269,29 @@ export function TravelMapImpl() {
     []
   )
 
+  // 지역 선택 시 flyTo로 이동 + moveend 대기, 카메라가 이미 목표 위치면 moveend가
+  // 발생하지 않을 수 있어 타임아웃으로 flyingRef를 강제 해제
+  const flyToRegion = React.useCallback((map: MapLibreMap, c: Centroid) => {
+    flyingRef.current = true
+    if (flyingTimeoutRef.current !== null)
+      clearTimeout(flyingTimeoutRef.current)
+    flyingTimeoutRef.current = setTimeout(() => {
+      flyingRef.current = false
+    }, 600)
+    map.flyTo({ center: [c.lng, c.lat], zoom: PARTY_ZOOM, duration: 350 })
+    map.once("moveend", () => {
+      if (flyingTimeoutRef.current !== null)
+        clearTimeout(flyingTimeoutRef.current)
+      flyingRef.current = false
+    })
+  }, [])
+
   React.useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      if (moveRafRef.current !== null) cancelAnimationFrame(moveRafRef.current)
+      if (flyingTimeoutRef.current !== null)
+        clearTimeout(flyingTimeoutRef.current)
     }
   }, [])
 
@@ -220,11 +300,18 @@ export function TravelMapImpl() {
     fillsRef.current = fills
   }, [fills])
 
+  // selectedRegion 변경 시 active feature-state 동기화 (단일 소스)
+  React.useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map || !map.getSource(MUNI_SRC)) return
+    setActiveByName(map, MUNI_SRC, selectedRegion)
+  }, [selectedRegion, setActiveByName])
+
   // 줌 단계별 핀 크기 (px) — 파티 슬롯은 SLOT_SIZE_2X 고정
-  const pinSize = zoom >= ZOOM_COLOR ? 72 : 60
+  const pinSize = zoomStage >= 2 ? 72 : 60
 
   // 단계별 지역당 최대 핀 수
-  const maxPerRegion = zoom >= ZOOM_COLOR ? 2 : 1
+  const maxPerRegion = zoomStage >= 2 ? 2 : 1
 
   // 2단계: centroid 기준 좌우 배치, 1단계: 사진 실제 위치
   const visiblePins = React.useMemo(() => {
@@ -236,18 +323,7 @@ export function TravelMapImpl() {
       const sorted = [...group]
         .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, maxPerRegion)
-      if (maxPerRegion === 1) {
-        const c = centroids.find((x) => x.name === region)
-        const lat = c?.lat ?? sorted[0].lat
-        const lng = c?.lng ?? sorted[0].lng
-        return sorted.map((p) => ({
-          ...p,
-          pinLat: lat,
-          pinLng: lng,
-          offset: [0, 0] as [number, number],
-        }))
-      }
-      const c = centroids.find((x) => x.name === region)
+      const c = centroidMap.get(region)
       const lat = c?.lat ?? sorted[0].lat
       const lng = c?.lng ?? sorted[0].lng
       return sorted.map((p, i) => ({
@@ -255,22 +331,24 @@ export function TravelMapImpl() {
         pinLat: lat,
         pinLng: lng,
         offset:
-          sorted.length === 1
+          sorted.length < 2
             ? ([0, 0] as [number, number])
             : i === 0
               ? ([-44, 0] as [number, number])
               : ([44, 0] as [number, number]),
       }))
     })
-  }, [photos, maxPerRegion, centroids])
+  }, [photos, maxPerRegion, centroidMap])
 
   const partySlots = React.useMemo<Array<PartySlot>>(() => {
     if (!selectedRegion || partyMembers.length === 0) return []
-    const c = centroids.find((v) => v.name === selectedRegion)
+    const c = centroidMap.get(selectedRegion)
     if (!c) return []
     const photoByUser = new Map<string, (typeof photos)[number]>()
     for (const p of photos) {
-      if (p.region === selectedRegion) photoByUser.set(p.uploaderId, p)
+      if (p.region !== selectedRegion) continue
+      const existing = photoByUser.get(p.uploaderId)
+      if (!existing || p.date > existing.date) photoByUser.set(p.uploaderId, p)
     }
     const total = partyMembers.length
     return partyMembers.map((member, i) => {
@@ -287,7 +365,7 @@ export function TravelMapImpl() {
         totalSlots: total,
       }
     })
-  }, [selectedRegion, partyMembers, photos, centroids, currentUserId])
+  }, [selectedRegion, partyMembers, photos, centroidMap, currentUserId])
 
   // draw image fills onto canvas overlay — RAF throttled (max 1 per frame)
   const drawImageFills = React.useCallback(() => {
@@ -300,12 +378,14 @@ export function TravelMapImpl() {
       if (!canvas || !map || !geojson) return
 
       const container = map.getContainer()
-      canvas.width = container.offsetWidth
-      canvas.height = container.offsetHeight
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = container.offsetWidth * dpr
+      canvas.height = container.offsetHeight * dpr
 
       const ctx = canvas.getContext("2d")
       if (!ctx) return
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.clearRect(0, 0, container.offsetWidth, container.offsetHeight)
 
       for (const [region, fill] of Object.entries(fillsRef.current)) {
         if (fill.type !== "image") continue
@@ -463,14 +543,15 @@ export function TravelMapImpl() {
           })
         }
 
-        // 군 + 단일 시 (구 없는 시)
+        // 군 + 단일 시 (구 없는 시) — merge로 이미 만든 시는 원본에서 제외해 중복 방지
         const muniRaw = toFeature(
           muniTopo,
           muniTopo.objects[muniKey]
         ) as unknown as GeoJSON.FeatureCollection
         const gunFeatures = muniRaw.features.filter((f) => {
           const name = f.properties?.name as string | undefined
-          return name?.endsWith("군") || name?.endsWith("시")
+          if (!name || cityGroups.has(name)) return false
+          return name.endsWith("군") || name.endsWith("시")
         })
 
         const provKey = Object.keys(provTopo.objects)[0]
@@ -513,19 +594,10 @@ export function TravelMapImpl() {
               setSelectedRegion(null)
           })
 
-          setupClickHandler(map, MUNI_FILL, MUNI_SRC, (name) => {
+          setupClickHandler(map, MUNI_FILL, (name) => {
             setSelectedRegion(name)
-            flyingRef.current = true
-            map.once("moveend", () => {
-              flyingRef.current = false
-            })
             const c = computed.find((x) => x.name === name)
-            if (c)
-              map.flyTo({
-                center: [c.lng, c.lat],
-                zoom: PARTY_ZOOM,
-                duration: 350,
-              })
+            if (c) flyToRegion(map, c)
           })
 
           const photoRegions = new Set(photos.map((p) => p.region))
@@ -545,7 +617,13 @@ export function TravelMapImpl() {
         }
       })
       .catch(console.error)
-  }, [buildNameIndex, setupClickHandler])
+  }, [
+    buildNameIndex,
+    setupClickHandler,
+    updateViewportCentroids,
+    flyToRegion,
+    photos,
+  ])
 
   return (
     <div className="relative size-full">
@@ -558,36 +636,44 @@ export function TravelMapImpl() {
         onLoad={handleMapLoad}
         onMove={(e) => {
           const newZoom = e.viewState.zoom
-          setZoom(newZoom)
+          setZoomStage(getZoomStage(newZoom))
           drawImageFills()
-          updateViewportCentroids(centroids)
 
-          if (
-            newZoom >= PARTY_ZOOM &&
-            centroids.length > 0 &&
-            !flyingRef.current
-          ) {
-            const { longitude, latitude } = e.viewState
-            let nearest = centroids[0]
-            let minDist = Infinity
-            for (const c of centroids) {
-              const d = (c.lng - longitude) ** 2 + (c.lat - latitude) ** 2
-              if (d < minDist) {
-                minDist = d
-                nearest = c
+          // 뷰포트 centroid 갱신 + 최근접 지역 탐색은 매 프레임 setState 비용이 크므로 RAF로 스로틀
+          if (moveRafRef.current === null) {
+            moveRafRef.current = requestAnimationFrame(() => {
+              moveRafRef.current = null
+              updateViewportCentroids(centroids)
+
+              if (
+                newZoom >= PARTY_ZOOM &&
+                centroids.length > 0 &&
+                !flyingRef.current
+              ) {
+                const { longitude, latitude } = e.viewState
+                let nearest = centroids[0]
+                let minDist = Infinity
+                for (const c of centroids) {
+                  const d = (c.lng - longitude) ** 2 + (c.lat - latitude) ** 2
+                  if (d < minDist) {
+                    minDist = d
+                    nearest = c
+                  }
+                }
+                if (nearest.name !== selectedRegion)
+                  setSelectedRegion(nearest.name)
+              } else if (
+                newZoom < PARTY_ZOOM &&
+                selectedRegion !== null &&
+                !flyingRef.current
+              ) {
+                setSelectedRegion(null)
               }
-            }
-            if (nearest.name !== selectedRegion) setSelectedRegion(nearest.name)
-          } else if (
-            newZoom < PARTY_ZOOM &&
-            selectedRegion !== null &&
-            !flyingRef.current
-          ) {
-            setSelectedRegion(null)
+            })
           }
         }}
       >
-        {zoom >= BOUNDARY_ZOOM &&
+        {zoomStage >= 1 &&
           !selectedRegion &&
           viewportCentroids.map(({ name, lng, lat }) => (
             <Marker
@@ -624,46 +710,19 @@ export function TravelMapImpl() {
               anchor="bottom"
               offset={p.offset}
             >
-              <button
-                type="button"
-                aria-label={`${p.region} 사진`}
+              <PhotoTile
+                label={p.region}
+                imageUrl={p.thumbnailUrl}
+                size={pinSize}
                 onClick={(e) => {
                   e.stopPropagation()
                   const map = mapInstanceRef.current
-                  if (map) activateByName(map, MUNI_SRC, p.region)
                   setSelectedRegion(p.region)
-                  flyingRef.current = true
-                  const c = centroids.find((x) => x.name === p.region)
-                  if (map && c) {
-                    map.flyTo({
-                      center: [c.lng, c.lat],
-                      zoom: PARTY_ZOOM,
-                      duration: 350,
-                    })
-                    map.once("moveend", () => {
-                      flyingRef.current = false
-                    })
-                  } else {
-                    flyingRef.current = false
-                  }
+                  const c = centroidMap.get(p.region)
+                  if (map && c) flyToRegion(map, c)
                   openGallerySheet(p.region)
                 }}
-                className="group flex flex-col items-center gap-1"
-              >
-                <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
-                  {p.region}
-                </span>
-                <span
-                  className="block overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] transition-all group-hover:scale-105"
-                  style={{ width: pinSize, height: pinSize }}
-                >
-                  <img
-                    src={p.thumbnailUrl}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                </span>
-              </button>
+              />
             </Marker>
           ))}
 
@@ -678,31 +737,15 @@ export function TravelMapImpl() {
               offset={offset}
             >
               {slot.photo ? (
-                <button
-                  type="button"
-                  aria-label={`${slot.region} 사진`}
+                <PhotoTile
+                  label={slot.nickname}
+                  imageUrl={slot.photo.thumbnailUrl}
+                  size={SLOT_SIZE_2X}
                   onClick={(e) => {
                     e.stopPropagation()
-                    const map = mapInstanceRef.current
-                    if (map) activateByName(map, MUNI_SRC, slot.region)
                     openGallerySheet(slot.region)
                   }}
-                  className="group flex flex-col items-center gap-1"
-                >
-                  <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
-                    {slot.nickname}
-                  </span>
-                  <span
-                    className="block overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] transition-all group-hover:scale-105"
-                    style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                  >
-                    <img
-                      src={slot.photo.thumbnailUrl}
-                      alt=""
-                      className="size-full object-cover"
-                    />
-                  </span>
-                </button>
+                />
               ) : slot.isMe ? (
                 <button
                   type="button"
