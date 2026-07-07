@@ -43,3 +43,8 @@ export const FourDigits: Story = {
 export const Filled: Story = {
   render: () => <NumberCode length={6} value="123456" onChange={() => {}} />,
 }
+
+/** 발급된 코드 표시용 읽기 전용 (여행팟 생성 완료 모달). */
+export const ReadOnly: Story = {
+  render: () => <NumberCode length={6} value="121ha1" readOnly />,
+}

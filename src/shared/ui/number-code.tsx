@@ -5,7 +5,9 @@ import { cn } from "@/shared/lib/utils"
 export interface NumberCodeProps {
   length?: number
   value: string
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
+  /** 발급된 코드 표시 등 읽기 전용 노출. 입력·포커스 이동 비활성. */
+  readOnly?: boolean
   className?: string
 }
 
@@ -19,6 +21,7 @@ export function NumberCode({
   length = 6,
   value,
   onChange,
+  readOnly = false,
   className,
 }: NumberCodeProps) {
   const refs = React.useRef<Array<HTMLInputElement | null>>([])
@@ -27,7 +30,7 @@ export function NumberCode({
     const digit = raw.replace(/\D/g, "").slice(-1)
     if (!digit) return
     const next = value.slice(0, index) + digit + value.slice(index + 1)
-    onChange(next)
+    onChange?.(next)
     if (index < length - 1) refs.current[index + 1]?.focus()
   }
 
@@ -38,9 +41,9 @@ export function NumberCode({
     if (e.key === "Backspace") {
       e.preventDefault()
       if (value[index]) {
-        onChange(value.slice(0, index) + value.slice(index + 1))
+        onChange?.(value.slice(0, index) + value.slice(index + 1))
       } else if (index > 0) {
-        onChange(value.slice(0, index - 1) + value.slice(index))
+        onChange?.(value.slice(0, index - 1) + value.slice(index))
         refs.current[index - 1]?.focus()
       }
     } else if (e.key === "ArrowLeft" && index > 0) {
@@ -56,7 +59,7 @@ export function NumberCode({
       .getData("text")
       .replace(/\D/g, "")
       .slice(0, length)
-    onChange(pasted)
+    onChange?.(pasted)
     refs.current[Math.min(pasted.length, length - 1)]?.focus()
   }
 
@@ -71,11 +74,15 @@ export function NumberCode({
           type="text"
           inputMode="numeric"
           maxLength={1}
+          readOnly={readOnly}
+          tabIndex={readOnly ? -1 : undefined}
           aria-label={`${i + 1}번째 숫자`}
           value={value[i] ?? ""}
-          onChange={(e) => handleChange(i, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(i, e)}
-          onPaste={handlePaste}
+          onChange={
+            readOnly ? undefined : (e) => handleChange(i, e.target.value)
+          }
+          onKeyDown={readOnly ? undefined : (e) => handleKeyDown(i, e)}
+          onPaste={readOnly ? undefined : handlePaste}
           className={cn(
             "h-[60px] w-11 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
             "text-center text-b2 text-fg-neutral-bold caret-transparent",
