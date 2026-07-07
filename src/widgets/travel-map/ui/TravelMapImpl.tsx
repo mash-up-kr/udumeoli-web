@@ -43,6 +43,9 @@ const MUNI_LINE = "municipality-line"
 const BOUNDARY_ZOOM = 7.5 // 경계선 + "+" 버튼 등장
 const ZOOM_COLOR = 8.5 // 2개 핀 + 72px 사이즈
 const PARTY_ZOOM = 9.5 // 파티 슬롯 자동 노출 임계점 = 맵 최대 줌
+// 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치
+const PARTY_ZOOM_EPSILON = 0.01
+const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
 
 type Centroid = { name: string; lng: number; lat: number }
 
@@ -178,7 +181,7 @@ function getSlotOffset(total: number, index: number): [number, number] {
 
 // 0: 초기 / 1: 경계선+"+" / 2: 색상+72px 핀 / 3: 파티 슬롯(최대 줌)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
-  if (zoom >= PARTY_ZOOM) return 3
+  if (zoom >= PARTY_ENTER) return 3
   if (zoom >= ZOOM_COLOR) return 2
   if (zoom >= BOUNDARY_ZOOM) return 1
   return 0
@@ -244,6 +247,11 @@ export function TravelMapImpl() {
   )
   const rafRef = React.useRef<number | null>(null)
   const moveRafRef = React.useRef<number | null>(null)
+  const latestViewStateRef = React.useRef<{
+    zoom: number
+    longitude: number
+    latitude: number
+  } | null>(null)
   const {
     setupClickHandler,
     activateByName,
@@ -590,7 +598,7 @@ export function TravelMapImpl() {
             const hits = map.queryRenderedFeatures(e.point, {
               layers: [MUNI_FILL],
             })
-            if (!hits.length && map.getZoom() < PARTY_ZOOM)
+            if (!hits.length && map.getZoom() < PARTY_ENTER)
               setSelectedRegion(null)
           })
 
@@ -639,22 +647,30 @@ export function TravelMapImpl() {
           setZoomStage(getZoomStage(newZoom))
           drawImageFills()
 
-          // 뷰포트 centroid 갱신 + 최근접 지역 탐색은 매 프레임 setState 비용이 크므로 RAF로 스로틀
+          // RAF 스로틀 중 도착하는 이벤트도 버리지 않도록 최신 viewState를 ref에 보관,
+          // RAF 콜백은 스케줄 시점 클로저가 아닌 ref의 최종 값으로 판정한다
+          latestViewStateRef.current = {
+            zoom: newZoom,
+            longitude: e.viewState.longitude,
+            latitude: e.viewState.latitude,
+          }
           if (moveRafRef.current === null) {
             moveRafRef.current = requestAnimationFrame(() => {
               moveRafRef.current = null
+              const vs = latestViewStateRef.current
+              if (!vs) return
               updateViewportCentroids(centroids)
 
               if (
-                newZoom >= PARTY_ZOOM &&
+                vs.zoom >= PARTY_ENTER &&
                 centroids.length > 0 &&
                 !flyingRef.current
               ) {
-                const { longitude, latitude } = e.viewState
                 let nearest = centroids[0]
                 let minDist = Infinity
                 for (const c of centroids) {
-                  const d = (c.lng - longitude) ** 2 + (c.lat - latitude) ** 2
+                  const d =
+                    (c.lng - vs.longitude) ** 2 + (c.lat - vs.latitude) ** 2
                   if (d < minDist) {
                     minDist = d
                     nearest = c
@@ -663,7 +679,7 @@ export function TravelMapImpl() {
                 if (nearest.name !== selectedRegion)
                   setSelectedRegion(nearest.name)
               } else if (
-                newZoom < PARTY_ZOOM &&
+                vs.zoom < PARTY_ENTER &&
                 selectedRegion !== null &&
                 !flyingRef.current
               ) {
