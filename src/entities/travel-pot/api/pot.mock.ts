@@ -41,3 +41,9 @@ export const JOIN_PREVIEW: TravelPot = {
   inviteCode: "000000",
   members: members(["정민", "유지", "성아", "가연", "수빈"]),
 }
+
+// 러프 목 에러 트리거 코드: 존재하지 않음 / 정원 초과. 참여중 코드는 pots에서 검사.
+export const JOIN_ERROR_CODES = {
+  notFound: "000000",
+  full: "999999",
+} as const
