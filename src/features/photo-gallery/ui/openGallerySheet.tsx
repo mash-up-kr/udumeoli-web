@@ -32,10 +32,8 @@ function GallerySheet({ region }: { region: string }) {
   const toSlots = (date: string): Array<GallerySlot> => {
     const group = byDate.get(date) ?? []
     return partyMembers.map((member) => {
-      const photo = group
-        .filter((p) => p.uploaderId === member.id)
-        .sort((a, b) => b.id.localeCompare(a.id))
-        .at(0)
+      // 같은 유저·같은 날짜에 여러 장이면 마지막 등록분 노출
+      const photo = group.filter((p) => p.uploaderId === member.id).at(-1)
       return {
         memberId: member.id,
         nickname: member.nickname,
@@ -76,6 +74,7 @@ function GallerySheet({ region }: { region: string }) {
     <div className="flex max-h-[80vh] flex-col gap-8 pt-1">
       {/* Header — 수정 · 지역명 · 추가 (스크롤과 무관하게 고정) */}
       <div className="flex w-full shrink-0 items-center justify-between gap-4 px-1">
+        {/* TODO: 수정 동작 정책 확정 후 연결 (현재 UI만) */}
         <ButtonIcon variant="label" aria-label="수정">
           <PencilLine />
           수정
@@ -95,7 +94,7 @@ function GallerySheet({ region }: { region: string }) {
       </div>
 
       <div className="flex flex-col items-center gap-8 overflow-y-auto pb-4">
-        {dates.length === 0 ? (
+        {dates.length === 0 || partyMembers.length === 0 ? (
           <p className="py-8 text-center text-b6 text-fg-neutral-subtle">
             아직 사진이 없어요. + 추가로 등록해 보세요.
           </p>
