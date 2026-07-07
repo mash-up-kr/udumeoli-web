@@ -8,139 +8,95 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './app/routes/__root'
-import { Route as SignupRouteImport } from './app/routes/signup'
-import { Route as MyRouteImport } from './app/routes/my'
-import { Route as MapRouteImport } from './app/routes/map'
-import { Route as IndexRouteImport } from './app/routes/index'
-import { Route as MyProfileRouteImport } from './app/routes/my.profile'
+import { Route as rootRouteImport } from "./app/routes/__root"
+import { Route as SignupRouteImport } from "./app/routes/signup"
+import { Route as MapRouteImport } from "./app/routes/map"
+import { Route as IndexRouteImport } from "./app/routes/index"
 
 const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MyRoute = MyRouteImport.update({
-  id: '/my',
-  path: '/my',
+  id: "/signup",
+  path: "/signup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
-  id: '/map',
-  path: '/map',
+  id: "/map",
+  path: "/map",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
-const MyProfileRoute = MyProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => MyRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
-  '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
+  "/": typeof IndexRoute
+  "/map": typeof MapRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
-  '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
+  "/": typeof IndexRoute
+  "/map": typeof MapRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
-  '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
+  "/": typeof IndexRoute
+  "/map": typeof MapRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/my' | '/signup' | '/my/profile'
+  fullPaths: "/" | "/map" | "/signup"
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/my' | '/signup' | '/my/profile'
-  id: '__root__' | '/' | '/map' | '/my' | '/signup' | '/my/profile'
+  to: "/" | "/map" | "/signup"
+  id: "__root__" | "/" | "/map" | "/signup"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapRoute: typeof MapRoute
-  MyRoute: typeof MyRouteWithChildren
   SignupRoute: typeof SignupRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
+    "/signup": {
+      id: "/signup"
+      path: "/signup"
+      fullPath: "/signup"
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/my': {
-      id: '/my'
-      path: '/my'
-      fullPath: '/my'
-      preLoaderRoute: typeof MyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/map': {
-      id: '/map'
-      path: '/map'
-      fullPath: '/map'
+    "/map": {
+      id: "/map"
+      path: "/map"
+      fullPath: "/map"
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/my/profile': {
-      id: '/my/profile'
-      path: '/profile'
-      fullPath: '/my/profile'
-      preLoaderRoute: typeof MyProfileRouteImport
-      parentRoute: typeof MyRoute
     }
   }
 }
 
-interface MyRouteChildren {
-  MyProfileRoute: typeof MyProfileRoute
-}
-
-const MyRouteChildren: MyRouteChildren = {
-  MyProfileRoute: MyProfileRoute,
-}
-
-const MyRouteWithChildren = MyRoute._addFileChildren(MyRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapRoute: MapRoute,
-  MyRoute: MyRouteWithChildren,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx"
+import type { createStart } from "@tanstack/react-start"
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
