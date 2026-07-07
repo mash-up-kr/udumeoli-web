@@ -1,7 +1,9 @@
-import { MapPin, Plus } from "lucide-react"
+import { MapPin, PencilLine, Plus } from "lucide-react"
 
+import { DateSection } from "./DateSection"
+import type { GallerySlot } from "./DateSection"
 import type { Photo } from "@/entities/photo"
-import { ImageContainer } from "@/shared/ui/image-container"
+import { ButtonIcon } from "@/shared/ui/button-icon"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 import {
@@ -9,16 +11,17 @@ import {
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
+import { usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
-
-function formatKoreanDate(iso: string): string {
-  const [y, m, d] = iso.split("-")
-  return `${y}년 ${Number(m)}월 ${Number(d)}일`
-}
 
 function GallerySheet({ region }: { region: string }) {
   const photos = useAllPhotos().filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
+  const partyMembers = usePotStore(
+    (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
+  )
+  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
 
   const byDate = new Map<string, Array<Photo>>()
   for (const p of photos) {
@@ -26,63 +29,83 @@ function GallerySheet({ region }: { region: string }) {
   }
   const dates = [...byDate.keys()].sort((a, b) => (a < b ? 1 : -1))
 
-  const addForDate = (date: string) => {
+  const toSlots = (date: string): Array<GallerySlot> => {
+    const group = byDate.get(date) ?? []
+    return partyMembers.map((member) => {
+      const photo = group
+        .filter((p) => p.uploaderId === member.id)
+        .sort((a, b) => b.id.localeCompare(a.id))
+        .at(0)
+      return {
+        memberId: member.id,
+        nickname: member.nickname,
+        profileImageUrl: member.profileImageUrl,
+        photoUrl: photo ? photo.thumbnailUrl : null,
+        isMe: member.id === currentUserId,
+      }
+    })
+  }
+
+  const registerPhoto = (date: string, url: string) => {
+    if (!currentUserId) return
+    const center = REGION_CENTERS[region] ?? { lat: 36.2, lng: 127.8 }
+    addPhoto({
+      id: `up-${region}-${date}-${Date.now()}`,
+      region,
+      date,
+      lat: center.lat,
+      lng: center.lng,
+      thumbnailUrl: url,
+      uploaderId: currentUserId,
+    })
+  }
+
+  // 날짜 행의 add 슬롯: 날짜 고정, 이미지 선택만
+  const uploadForDate = (date: string) => {
+    pickImageFile((url) => registerPhoto(date, url))
+  }
+
+  // 헤더 추가: 이미지 선택 → 날짜 선택
+  const uploadWithDatePicker = () => {
     pickImageFile((url) => {
-      const center = REGION_CENTERS[region] ?? { lat: 36.2, lng: 127.8 }
-      addPhoto({
-        id: `up-${region}-${date}-${url}`,
-        region,
-        date,
-        lat: center.lat + (Math.random() - 0.5) * 0.1,
-        lng: center.lng + (Math.random() - 0.5) * 0.1,
-        thumbnailUrl: url,
-        uploaderId: "me",
-      })
+      openDatePickerSheet((date) => registerPhoto(date, url))
     })
   }
 
   return (
-    <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <DialogTitle className="flex items-center gap-1 text-h5">
-          <MapPin className="size-5 text-[#F45B69]" /> {region}
+    <div className="flex max-h-[80vh] flex-col items-center gap-8 overflow-y-auto pt-1 pb-4">
+      {/* Header — 수정 · 지역명 · 추가 */}
+      <div className="flex w-full items-center justify-between gap-4 px-1">
+        <ButtonIcon variant="label" aria-label="수정">
+          <PencilLine />
+          수정
+        </ButtonIcon>
+        <DialogTitle className="inline-flex items-center gap-2 rounded-full bg-bg-neutral-inverse px-5 py-2">
+          <MapPin className="size-6 text-fg-neutral-inverse" />
+          <span className="text-h3 text-fg-neutral-inverse">{region}</span>
         </DialogTitle>
-        <button
-          type="button"
-          className="text-b5 text-primary"
-          onClick={() => openDatePickerSheet(addForDate)}
+        <ButtonIcon
+          variant="label"
+          aria-label="사진 추가"
+          onClick={uploadWithDatePicker}
         >
-          + 추가
-        </button>
+          <Plus />
+          추가
+        </ButtonIcon>
       </div>
 
       {dates.length === 0 ? (
-        <p className="py-8 text-center text-b6 text-muted-foreground">
+        <p className="py-8 text-center text-b6 text-fg-neutral-subtle">
           아직 사진이 없어요. + 추가로 등록해 보세요.
         </p>
       ) : (
         dates.map((date) => (
-          <div key={date} className="flex flex-col gap-2">
-            <p className="text-b6 text-muted-foreground">
-              {formatKoreanDate(date)}
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              {(byDate.get(date) ?? []).map((p) => (
-                <ImageContainer
-                  key={p.id}
-                  src={p.thumbnailUrl}
-                  aspectRatio="square"
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() => addForDate(date)}
-                className="flex aspect-square items-center justify-center rounded-[8px] border border-dashed text-muted-foreground"
-              >
-                <Plus className="size-5" />
-              </button>
-            </div>
-          </div>
+          <DateSection
+            key={date}
+            dateISO={date}
+            slots={toSlots(date)}
+            onAddPhoto={() => uploadForDate(date)}
+          />
         ))
       )}
     </div>
@@ -90,5 +113,7 @@ function GallerySheet({ region }: { region: string }) {
 }
 
 export function openGallerySheet(region: string) {
-  openBottomSheet(() => <GallerySheet region={region} />)
+  openBottomSheet(() => <GallerySheet region={region} />, {
+    showCloseButton: false,
+  })
 }
