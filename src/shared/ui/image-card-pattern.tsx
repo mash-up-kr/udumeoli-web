@@ -156,21 +156,24 @@ function ImageCardPattern({
         onScroll={handleScroll}
         className="absolute inset-0 flex snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain px-[calc(50%-82px)] [&::-webkit-scrollbar]:hidden"
       >
-        {items.map((item, index) =>
-          onItemClick ? (
-            <button
-              key={item.id}
-              type="button"
-              aria-label={
-                item.subtitle ? `${item.title} ${item.subtitle}` : item.title
-              }
-              className="h-full w-41 shrink-0 snap-center"
-              onClick={() => handleItemClick(item, index)}
-            />
-          ) : (
-            <div key={item.id} className="h-full w-41 shrink-0 snap-center" />
-          )
-        )}
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className="flex h-full w-41 shrink-0 snap-center items-center justify-center"
+          >
+            {/* 탭 영역은 슬롯 전체가 아닌 카드 실크기(160×192)로 한정 */}
+            {onItemClick ? (
+              <button
+                type="button"
+                aria-label={
+                  item.subtitle ? `${item.title} ${item.subtitle}` : item.title
+                }
+                className="h-48 w-40"
+                onClick={() => handleItemClick(item, index)}
+              />
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   )
