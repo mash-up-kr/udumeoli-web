@@ -102,7 +102,12 @@ export function RegionDecorateFlow({
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) setPhotoUrl(URL.createObjectURL(file))
+    if (!file) return
+    // 재선택 시 이전 blob URL 회수 (최종 커밋된 URL은 addPhoto가 계속 사용하므로 그대로 둠)
+    setPhotoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
   }
 
   const handleConfirm = () => {
