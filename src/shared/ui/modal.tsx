@@ -35,7 +35,12 @@ export function openAlert({
 }: AlertOptions): Promise<void> {
   return overlay.openAsync<void>(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()}>
+      <DialogContent
+        showCloseButton={false}
+        onCloseAutoFocus={() => unmount()}
+        // description 없을 땐 명시적 undefined로 Radix a11y 경고 억제
+        {...(description ? {} : { "aria-describedby": undefined })}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
@@ -81,6 +86,7 @@ export function openConfirm({
         showCloseButton={false}
         onCloseAutoFocus={() => unmount()}
         className="gap-6"
+        {...(description ? {} : { "aria-describedby": undefined })}
       >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -137,6 +143,8 @@ export function openModal(
         className={options?.className}
         showCloseButton={options?.showCloseButton}
         onCloseAutoFocus={() => unmount()}
+        // 커스텀 콘텐츠 모달 — DialogDescription 미사용이므로 경고 억제
+        aria-describedby={undefined}
       >
         {render({ close })}
       </DialogContent>

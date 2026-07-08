@@ -198,6 +198,8 @@ export function openBottomSheet(
         showOverlay={options?.showOverlay}
         className={options?.className}
         onCloseAutoFocus={() => unmount()}
+        // 커스텀 콘텐츠 시트 — BottomSheetDescription 미사용이므로 경고 억제
+        aria-describedby={undefined}
       >
         {render({ close })}
       </BottomSheetContent>
