@@ -24,6 +24,9 @@ const JOIN_ERROR_MESSAGES = {
 // 시트 CTA(완료) 바로 위에 에러 토스트 노출 (시안 y기준 106px)
 const SHEET_TOAST_POSITION = "bottom-[106px]"
 
+// 참여 완료 토스트는 지도 하단 캐러셀 위 16px (시안 #1048-5977: 34 + 카드 192 + 16)
+const MAP_TOAST_POSITION = "bottom-[242px]"
+
 function JoinConfirm({
   pot,
   onHome,
@@ -87,7 +90,10 @@ function PotJoinSheet({ close }: { close: () => void }) {
             confirmJoin(pot)
             closeConfirm()
             close()
-            showToast({ message: `${pot.name}에 참여했어요` })
+            showToast({
+              message: `${pot.name}에 참여했어요`,
+              className: MAP_TOAST_POSITION,
+            })
           }}
         />
       ),
