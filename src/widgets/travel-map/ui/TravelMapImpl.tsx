@@ -329,6 +329,12 @@ export function TravelMapImpl() {
     [centroids]
   )
 
+  // 사진이 하나라도 있는 지역 — 첫 여행 등록("+")이 이미 끝난 곳
+  const photoRegionSet = React.useMemo(
+    () => new Set(photos.map((p) => p.region)),
+    [photos]
+  )
+
   const updateViewportCentroids = React.useCallback(
     (allCentroids: Array<Centroid>) => {
       const map = mapInstanceRef.current
@@ -831,7 +837,11 @@ export function TravelMapImpl() {
           !selectedRegion &&
           !decorating &&
           viewportCentroids
-            .filter(({ name }) => !Object.hasOwn(fills, name))
+            // 색칠은 첫 여행 등록 시에만 — 이미 색칠했거나 사진이 있는 지역은 "+" 미노출
+            .filter(
+              ({ name }) =>
+                !Object.hasOwn(fills, name) && !photoRegionSet.has(name)
+            )
             .map(({ name, lng, lat }) => (
               <Marker
                 key={`centroid-${name}`}
