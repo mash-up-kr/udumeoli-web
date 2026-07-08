@@ -1,15 +1,12 @@
-import { useRouter } from "@tanstack/react-router"
-
 import { AppHeader } from "@/widgets/app-header"
-import { AppBottomNav, useBottomNavController } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMap } from "@/widgets/travel-map"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { showToast } from "@/shared/ui/toast"
 import { RequireAuth } from "@/features/auth"
+import { openMyPageModal } from "@/features/my-page"
 
 export function MapPage() {
-  const router = useRouter()
   return (
     <RequireAuth>
       <MobileLayout className="flex h-dvh flex-col">
@@ -24,12 +21,10 @@ export function MapPage() {
               onRecapClick={() =>
                 showToast({ message: "준비 중인 기능이에요" })
               }
-              onProfileClick={() => router.navigate({ to: "/my" })}
+              onProfileClick={() => openMyPageModal()}
             />
           </div>
         </main>
-
-        <AppBottomNav {...useBottomNavController("map")} />
       </MobileLayout>
     </RequireAuth>
   )

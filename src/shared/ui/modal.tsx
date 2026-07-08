@@ -2,6 +2,7 @@ import { overlay } from "overlay-kit"
 import type { ReactNode } from "react"
 
 import { Button } from "@/shared/ui/button"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,6 @@ import {
   DialogSeparator,
   DialogTitle,
 } from "@/shared/ui/dialog"
-import { cn } from "@/shared/lib/utils"
 
 /**
  * overlay-kit 기반 명령형 모달 헬퍼.
@@ -35,7 +35,12 @@ export function openAlert({
 }: AlertOptions): Promise<void> {
   return overlay.openAsync<void>(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent showCloseButton={false} onCloseAutoFocus={() => unmount()}>
+      <DialogContent
+        showCloseButton={false}
+        onCloseAutoFocus={() => unmount()}
+        // description 없을 땐 명시적 undefined로 Radix a11y 경고 억제
+        {...(description ? {} : { "aria-describedby": undefined })}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
@@ -65,8 +70,9 @@ type ConfirmOptions = {
 }
 
 /**
- * 확인/취소 모달(버튼 2개). 확인=true, 취소·바깥클릭·ESC=false로 resolve. (시안 #30)
- * description이 있으면 제목 아래 구분선 노출. destructive면 확인 버튼 빨강.
+ * 확인/취소 모달(버튼 2개). 확인=true, 취소·바깥클릭·ESC=false로 resolve.
+ * Figma 팝업 시안 — 343 카드 · radius 32 · p-16, ButtonCta 취소/확인.
+ * destructive면 확인 버튼 danger(빨강).
  */
 export function openConfirm({
   title,
@@ -80,36 +86,34 @@ export function openConfirm({
       <DialogContent
         showCloseButton={false}
         onCloseAutoFocus={() => unmount()}
-        className="gap-6"
+        className="w-[343px] max-w-[calc(100%-2rem)] gap-2 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+        {...(description ? {} : { "aria-describedby": undefined })}
       >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+        <DialogHeader className="items-center gap-1 py-3 text-center">
+          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+            {title}
+          </DialogTitle>
           {description ? (
-            <>
-              <DialogSeparator className="my-1" />
-              <DialogDescription>{description}</DialogDescription>
-            </>
+            <DialogDescription className="text-b6 text-fg-neutral-subtle">
+              {description}
+            </DialogDescription>
           ) : null}
         </DialogHeader>
-        <DialogFooter>
-          <Button
+        <DialogFooter className="gap-2">
+          <ButtonCta
             variant="secondary"
-            size="lg"
-            className="px-7"
+            className="w-25 shrink-0"
             onClick={() => close(false)}
           >
             {cancelText}
-          </Button>
-          <Button
-            size="lg"
-            className={cn(
-              "flex-1",
-              destructive && "bg-destructive text-white hover:bg-destructive/90"
-            )}
+          </ButtonCta>
+          <ButtonCta
+            variant={destructive ? "danger" : "primary"}
+            className="flex-1"
             onClick={() => close(true)}
           >
             {confirmText}
-          </Button>
+          </ButtonCta>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -137,6 +141,8 @@ export function openModal(
         className={options?.className}
         showCloseButton={options?.showCloseButton}
         onCloseAutoFocus={() => unmount()}
+        // 커스텀 콘텐츠 모달 — DialogDescription 미사용이므로 경고 억제
+        aria-describedby={undefined}
       >
         {render({ close })}
       </DialogContent>

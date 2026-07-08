@@ -3,10 +3,12 @@ import { overlay } from "overlay-kit"
 
 import { cn } from "@/shared/lib/utils"
 
+export type ToastIcon = "alert" | "alert-neutral" | "check"
+
 export interface ToastOptions {
   message: string
-  /** 알림 아이콘(빨간 !) 노출 여부. 기본 false. */
-  showIcon?: boolean
+  /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료). 기본 없음. */
+  icon?: ToastIcon
   duration?: number
   /** 위치 등 컨테이너 오버라이드 (예: 시트 CTA 위 `bottom-[106px]`). */
   className?: string
@@ -14,11 +16,11 @@ export interface ToastOptions {
 
 const DEFAULT_DURATION_MS = 3000
 
-/** icon-alert (24×24) — Figma 원본 path. 색은 fg-danger-solid. */
-function AlertIcon() {
+/** icon-alert (24×24) — Figma 원본 path. 색은 호출부에서 지정 (danger/neutral). */
+function AlertIcon({ className }: { className: string }) {
   return (
     <svg
-      className="size-6 shrink-0 text-fg-danger-solid"
+      className={cn("size-6 shrink-0", className)}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
@@ -32,21 +34,32 @@ function AlertIcon() {
   )
 }
 
+/** icon-check-circle (24×24) — Figma 원본 path. 색은 fg-brand-solid. */
+function CheckIcon() {
+  return (
+    <svg
+      className="size-6 shrink-0 text-fg-brand-solid"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M10.5821 13.5909L8.58763 11.5964C8.38046 11.389 8.11921 11.2854 7.80387 11.2854C7.48871 11.2854 7.22746 11.389 7.02012 11.5964C6.81296 11.8035 6.71038 12.0648 6.71238 12.3801C6.71438 12.6953 6.81896 12.9565 7.02613 13.1636L9.78063 15.9181C10.01 16.146 10.2775 16.2599 10.5834 16.2599C10.889 16.2599 11.1559 16.146 11.3839 15.9181L16.9441 10.3576C17.1515 10.1505 17.2551 9.89029 17.2551 9.57713C17.2551 9.26379 17.1515 9.00354 16.9441 8.79637C16.737 8.58904 16.4757 8.48537 16.1604 8.48537C15.8452 8.48537 15.584 8.58904 15.3769 8.79637L10.5821 13.5909ZM12.0001 22.2034C10.585 22.2034 9.25713 21.9357 8.01663 21.4004C6.77596 20.865 5.69679 20.1386 4.77912 19.2211C3.86162 18.3035 3.13521 17.2243 2.59987 15.9836C2.06454 14.7431 1.79688 13.4153 1.79688 12.0001C1.79688 10.585 2.06454 9.25712 2.59987 8.01662C3.13521 6.77596 3.86162 5.69679 4.77912 4.77912C5.69679 3.86162 6.77596 3.13521 8.01663 2.59987C9.25713 2.06454 10.585 1.79688 12.0001 1.79688C13.4153 1.79688 14.7431 2.06454 15.9836 2.59987C17.2243 3.13521 18.3035 3.86162 19.2211 4.77912C20.1386 5.69679 20.865 6.77596 21.4004 8.01662C21.9357 9.25712 22.2034 10.585 22.2034 12.0001C22.2034 13.4153 21.9357 14.7431 21.4004 15.9836C20.865 17.2243 20.1386 18.3035 19.2211 19.2211C18.3035 20.1386 17.2243 20.865 15.9836 21.4004C14.7431 21.9357 13.4153 22.2034 12.0001 22.2034Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 interface ToastProps {
   message: string
-  showIcon: boolean
+  icon?: ToastIcon
   duration: number
   className?: string
   onDismiss: () => void
 }
 
-function Toast({
-  message,
-  showIcon,
-  duration,
-  className,
-  onDismiss,
-}: ToastProps) {
+function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
   React.useEffect(() => {
     const timer = setTimeout(onDismiss, duration)
     return () => clearTimeout(timer)
@@ -55,7 +68,8 @@ function Toast({
   return (
     <div
       className={cn(
-        "fixed bottom-8 left-1/2 z-50 -translate-x-1/2 px-4",
+        // z-[60]: 모달/시트(z-50, body 끝 portal)가 열려 있어도 토스트가 항상 위에 보이도록
+        "fixed bottom-8 left-1/2 z-[60] -translate-x-1/2 px-4",
         className
       )}
     >
@@ -68,7 +82,13 @@ function Toast({
           "shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         )}
       >
-        {showIcon ? <AlertIcon /> : null}
+        {icon === "alert" ? (
+          <AlertIcon className="text-fg-danger-solid" />
+        ) : null}
+        {icon === "alert-neutral" ? (
+          <AlertIcon className="text-fg-neutral-bold" />
+        ) : null}
+        {icon === "check" ? <CheckIcon /> : null}
         <span className="min-w-0 flex-1 truncate text-b5 text-fg-neutral-bold">
           {message}
         </span>
@@ -79,14 +99,14 @@ function Toast({
 
 export function showToast({
   message,
-  showIcon = false,
+  icon,
   duration = DEFAULT_DURATION_MS,
   className,
 }: ToastOptions) {
   overlay.open(({ unmount }) => (
     <Toast
       message={message}
-      showIcon={showIcon}
+      icon={icon}
       duration={duration}
       className={className}
       onDismiss={unmount}

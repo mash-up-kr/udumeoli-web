@@ -322,7 +322,31 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-muted text-foreground;
+    @apply text-foreground;
+    /* 데스크탑 양옆 배경 — 브랜드 틴트(블루·인디고·오렌지)를 옅게 깐 aurora 그라디언트 */
+    background-color: var(--color-neutral-50);
+    background-image:
+      radial-gradient(
+        48rem 34rem at 12% 8%,
+        color-mix(in srgb, var(--color-blue-100) 70%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        42rem 30rem at 88% 14%,
+        color-mix(in srgb, var(--color-indigo-100) 45%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        44rem 32rem at 86% 88%,
+        color-mix(in srgb, var(--color-orange-100) 45%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        38rem 30rem at 8% 92%,
+        color-mix(in srgb, var(--color-blue-50) 85%, transparent),
+        transparent 70%
+      );
+    background-attachment: fixed;
     }
   html {
     @apply font-sans;

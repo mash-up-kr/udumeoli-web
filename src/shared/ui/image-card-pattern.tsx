@@ -18,21 +18,16 @@ export interface ImageCardPatternItem {
 
 /** 슬롯 중심 간 간격(px). 슬롯 `w-41`(164px)·컨테이너 `px-[calc(50%-82px)]`와 맞춰야 함 */
 const SLOT_WIDTH = 164
-/** 중앙에서 한 슬롯 벗어났을 때 기울기(deg) */
-const SIDE_ANGLE = 6
+/** 인접 카드 사이 바퀴 각도(deg) — 시안의 사이드 카드 기울기 */
+const STEP_ANGLE = 6
+/** 바퀴 반지름(px) — 한 칸(6°) 회전 시 카드가 정확히 한 슬롯만큼 이동하는 크기 */
+const RADIUS = Math.round(SLOT_WIDTH / Math.sin((STEP_ANGLE * Math.PI) / 180))
+/** 컨테이너(h-58, 232px) 안 카드 중심 y */
+const CARD_CENTER_Y = 116
 /** 양옆 카드 축소 비율 (160 → 120) */
 const SIDE_SCALE = 0.75
-/** 한 슬롯 벗어났을 때 원 궤적 낙하량(px) */
-const ARC_DROP = 18
 
 const TINT_CYCLE: Array<ImageCardTint> = ["blue", "indigo", "orange"]
-
-/** 중앙 기준 거리(슬롯 단위)에 따라 원 궤적을 따라 도는 변환 */
-function arcTransform(offset: number) {
-  const distance = Math.max(-1.5, Math.min(1.5, offset))
-  const scale = 1 - (1 - SIDE_SCALE) * Math.min(Math.abs(distance), 1)
-  return `translateY(${ARC_DROP * distance * distance}px) rotate(${SIDE_ANGLE * distance}deg) scale(${scale})`
-}
 
 export interface ImageCardPatternProps extends Omit<
   ComponentProps<"div">,
@@ -45,8 +40,11 @@ export interface ImageCardPatternProps extends Omit<
 /**
  * ImageCardPattern (Figma Image Card v1.0.0).
  *
- * ImageCard를 원 궤적 위에 배치한 가로 스크롤 캐러셀.
- * 중앙에 스냅된 카드는 커지고, 옆으로 밀린 카드는 작아지며 기울어진다.
+ * 화면 아래에 중심을 둔 큰 바퀴 위에 카드를 6° 간격으로 고정해 두고,
+ * 가로 스크롤 진행도로 바퀴 하나만 회전시키는 커브드 캐러셀.
+ * 프레임당 스타일 변경이 바퀴 rotate + 근접 카드 scale뿐(transform 전용)이라
+ * 레이아웃·페인트 없이 GPU 합성만으로 움직인다.
+ * 드래그·관성·스냅은 위에 겹친 투명 슬롯 스크롤러(네이티브 scroll-snap)가 담당한다.
  */
 function ImageCardPattern({
   items,
@@ -55,27 +53,48 @@ function ImageCardPattern({
   ...props
 }: ImageCardPatternProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const wheelRef = useRef<HTMLDivElement>(null)
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([])
   const rafRef = useRef(0)
 
   const update = useCallback(() => {
     const scroller = scrollerRef.current
-    if (!scroller) return
-    const center = scroller.scrollLeft + scroller.clientWidth / 2
-    for (const slot of scroller.children) {
-      const card = slot.firstElementChild
-      if (!(slot instanceof HTMLElement) || !(card instanceof HTMLElement)) {
-        continue
-      }
-      const offset =
-        (slot.offsetLeft + slot.offsetWidth / 2 - center) / SLOT_WIDTH
-      card.style.transform = arcTransform(offset)
-    }
+    const wheel = wheelRef.current
+    if (!scroller || !wheel) return
+    const progress = scroller.scrollLeft / SLOT_WIDTH
+    wheel.style.transform = `rotate(${-progress * STEP_ANGLE}deg)`
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return
+      const distance = Math.min(Math.abs(index - progress), 1)
+      const scale = 1 - (1 - SIDE_SCALE) * distance
+      card.style.transform = `translate(-50%, -50%) scale(${scale})`
+    })
   }, [])
 
   const handleScroll = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
     rafRef.current = requestAnimationFrame(update)
   }, [update])
+
+  // 중앙 카드 탭 → 액션, 사이드 카드 탭 → 해당 카드를 중앙으로 스냅
+  const handleItemClick = useCallback(
+    (item: ImageCardPatternItem, index: number) => {
+      const scroller = scrollerRef.current
+      if (!scroller) return
+      const target = index * SLOT_WIDTH
+      if (Math.abs(scroller.scrollLeft - target) < SLOT_WIDTH / 2) {
+        onItemClick?.(item)
+        return
+      }
+      scroller.scrollTo({
+        left: target,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      })
+    },
+    [onItemClick]
+  )
 
   // 마운트·아이템 변경 등 매 렌더 후 현재 스크롤 위치 기준으로 변환 반영
   useEffect(() => {
@@ -91,44 +110,71 @@ function ImageCardPattern({
   }, [update])
 
   return (
-    <div
-      ref={scrollerRef}
-      onScroll={handleScroll}
-      className={cn(
-        "flex snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto px-[calc(50%-82px)] [&::-webkit-scrollbar]:hidden",
-        className
-      )}
-      {...props}
-    >
-      {items.map((item, index) => {
-        const card = (
-          <ImageCard
-            src={item.src}
-            title={item.title}
-            subtitle={item.subtitle}
-            tint={item.tint ?? TINT_CYCLE[index % TINT_CYCLE.length]}
-          />
-        )
-        return (
+    <div className={cn("relative h-58 overflow-hidden", className)} {...props}>
+      {/* 바퀴 — 컨테이너 아래로 이어진 원의 중심. 크기 0, rotate만 갱신 */}
+      <div aria-hidden className="absolute inset-0">
+        <div
+          ref={wheelRef}
+          className="absolute left-1/2 size-0 will-change-transform"
+          style={{ top: CARD_CENTER_Y + RADIUS }}
+        >
+          {items.map((item, index) => (
+            <div
+              key={item.id}
+              // size-0이어야 transform-origin이 바퀴 중심점과 일치해 회전 궤적이 원을 유지한다
+              className="absolute top-0 left-0 size-0"
+              style={{
+                transform: `rotate(${index * STEP_ANGLE}deg) translateY(-${RADIUS}px)`,
+              }}
+            >
+              <div
+                ref={(el) => {
+                  cardRefs.current[index] = el
+                }}
+                // size-0 부모 안에서는 폭이 0이 되어 translate(-50%)가 무효 —
+                // 카드(lg, 160×192) 크기를 명시해 % 변환 기준 박스를 복원한다
+                className="h-48 w-40 will-change-transform"
+                style={{
+                  transform: `translate(-50%, -50%) scale(${index === 0 ? 1 : SIDE_SCALE})`,
+                }}
+              >
+                <ImageCard
+                  src={item.src}
+                  title={item.title}
+                  subtitle={item.subtitle}
+                  tint={item.tint ?? TINT_CYCLE[index % TINT_CYCLE.length]}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 투명 슬롯 스크롤러 — 드래그·관성·스냅 담당, 슬롯이 탭 대상 */}
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="absolute inset-0 flex snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain px-[calc(50%-82px)] [&::-webkit-scrollbar]:hidden"
+      >
+        {items.map((item, index) => (
           <div
             key={item.id}
-            className="flex h-58 w-41 shrink-0 snap-center items-center justify-center"
+            className="flex h-full w-41 shrink-0 snap-center items-center justify-center"
           >
-            <div
-              className="will-change-transform"
-              style={{ transform: arcTransform(index) }}
-            >
-              {onItemClick ? (
-                <button type="button" onClick={() => onItemClick(item)}>
-                  {card}
-                </button>
-              ) : (
-                card
-              )}
-            </div>
+            {/* 탭 영역은 슬롯 전체가 아닌 카드 실크기(160×192)로 한정 */}
+            {onItemClick ? (
+              <button
+                type="button"
+                aria-label={
+                  item.subtitle ? `${item.title} ${item.subtitle}` : item.title
+                }
+                className="h-48 w-40"
+                onClick={() => handleItemClick(item, index)}
+              />
+            ) : null}
           </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }

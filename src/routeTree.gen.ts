@@ -10,19 +10,12 @@
 
 import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as SignupRouteImport } from './app/routes/signup'
-import { Route as MyRouteImport } from './app/routes/my'
 import { Route as MapRouteImport } from './app/routes/map'
 import { Route as IndexRouteImport } from './app/routes/index'
-import { Route as MyProfileRouteImport } from './app/routes/my.profile'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MyRoute = MyRouteImport.update({
-  id: '/my',
-  path: '/my',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -35,46 +28,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MyProfileRoute = MyProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => MyRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/map': typeof MapRoute
-  '/my': typeof MyRouteWithChildren
   '/signup': typeof SignupRoute
-  '/my/profile': typeof MyProfileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/my' | '/signup' | '/my/profile'
+  fullPaths: '/' | '/map' | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/my' | '/signup' | '/my/profile'
-  id: '__root__' | '/' | '/map' | '/my' | '/signup' | '/my/profile'
+  to: '/' | '/map' | '/signup'
+  id: '__root__' | '/' | '/map' | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapRoute: typeof MapRoute
-  MyRoute: typeof MyRouteWithChildren
   SignupRoute: typeof SignupRoute
 }
 
@@ -85,13 +66,6 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/my': {
-      id: '/my'
-      path: '/my'
-      fullPath: '/my'
-      preLoaderRoute: typeof MyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -108,37 +82,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/my/profile': {
-      id: '/my/profile'
-      path: '/profile'
-      fullPath: '/my/profile'
-      preLoaderRoute: typeof MyProfileRouteImport
-      parentRoute: typeof MyRoute
-    }
   }
 }
-
-interface MyRouteChildren {
-  MyProfileRoute: typeof MyProfileRoute
-}
-
-const MyRouteChildren: MyRouteChildren = {
-  MyProfileRoute: MyProfileRoute,
-}
-
-const MyRouteWithChildren = MyRoute._addFileChildren(MyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapRoute: MapRoute,
-  MyRoute: MyRouteWithChildren,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
+import type { getRouter } from './app/router.tsx'
 import type { createStart } from '@tanstack/react-start'
 declare module '@tanstack/react-start' {
   interface Register {

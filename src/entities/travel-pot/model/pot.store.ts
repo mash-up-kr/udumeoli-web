@@ -13,6 +13,7 @@ interface PotState {
   currentPotId: string
   selectPot: (id: string) => void
   createPot: (name: string) => TravelPot
+  leaveAllPots: (memberId: string) => void
   previewJoin: (code: string) => JoinPreviewResult
   confirmJoin: (pot: TravelPot) => void
 }
@@ -32,6 +33,14 @@ export const usePotStore = create<PotState>((set, get) => ({
     set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
     return pot
   },
+  // 계정 삭제 정책: 속한 모든 여행팟에서 탈퇴(자리는 공석), 여행팟 자체는 유지.
+  leaveAllPots: (memberId) =>
+    set((s) => ({
+      pots: s.pots.map((p) => ({
+        ...p,
+        members: p.members.filter((m) => m.id !== memberId),
+      })),
+    })),
   previewJoin: (code) => {
     if (get().pots.some((p) => p.inviteCode === code)) {
       return { status: "already_joined" }
