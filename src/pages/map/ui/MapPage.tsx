@@ -1,7 +1,6 @@
 import { useRouter } from "@tanstack/react-router"
 
 import { AppHeader } from "@/widgets/app-header"
-import { AppBottomNav, useBottomNavController } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMap } from "@/widgets/travel-map"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
@@ -28,8 +27,6 @@ export function MapPage() {
             />
           </div>
         </main>
-
-        <AppBottomNav {...useBottomNavController("map")} />
       </MobileLayout>
     </RequireAuth>
   )

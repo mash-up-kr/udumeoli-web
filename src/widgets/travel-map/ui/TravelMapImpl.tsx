@@ -3,13 +3,18 @@ import * as React from "react"
 import { Map as MapGL, Marker } from "react-map-gl/maplibre"
 import { feature as toFeature, merge as toMerge } from "topojson-client"
 import { Plus } from "lucide-react"
+import { RegionCardCarousel } from "./RegionCardCarousel"
 import { useRegionHighlight } from "./useRegionHighlight"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { Map as MapLibreMap } from "maplibre-gl"
 import type { Topology } from "topojson-specification"
 
 import type { RegionFill } from "@/entities/region"
-import { useAllPhotos, usePhotoUploadStore } from "@/entities/photo"
+import {
+  REGION_CENTERS,
+  useAllPhotos,
+  usePhotoUploadStore,
+} from "@/entities/photo"
 import { useRegionColorStore } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -294,6 +299,24 @@ export function TravelMapImpl() {
       flyingRef.current = false
     })
   }, [])
+
+  // 캐러셀 카드 탭 → 해당 지역으로 지도 이동 (줌인되며 캐러셀은 줌 정책에 따라 사라짐)
+  const handleCarouselSelect = React.useCallback(
+    (region: string) => {
+      const map = mapInstanceRef.current
+      if (!map) return
+      // Record 인덱싱은 undefined를 숨기므로 존재 확인 후 접근
+      const center =
+        centroidMap.get(region) ??
+        (Object.hasOwn(REGION_CENTERS, region)
+          ? REGION_CENTERS[region]
+          : undefined)
+      if (!center) return
+      setSelectedRegion(region)
+      flyToRegion(map, { name: region, lng: center.lng, lat: center.lat })
+    },
+    [centroidMap, flyToRegion]
+  )
 
   React.useEffect(() => {
     return () => {
@@ -823,6 +846,13 @@ export function TravelMapImpl() {
       <canvas
         ref={canvasRef}
         className="pointer-events-none absolute inset-0 size-full"
+      />
+
+      {/* 초기 줌에서만 노출되는 지역 사진 캐러셀 — 경계선 줌(1단계)부터 숨김 */}
+      <RegionCardCarousel
+        photos={photos}
+        visible={zoomStage === 0}
+        onSelectRegion={handleCarouselSelect}
       />
     </div>
   )
