@@ -239,6 +239,8 @@ export function TravelMapImpl() {
   const [zoomStage, setZoomStage] = React.useState(() =>
     getZoomStage(KOREA_VIEW.zoom)
   )
+  // 레이어 준비 완료 신호 — 영속 복원된 fills를 지도 로드 후 반영하기 위한 effect 트리거
+  const [mapReady, setMapReady] = React.useState(false)
   const [centroids, setCentroids] = React.useState<Array<Centroid>>([])
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
@@ -510,7 +512,7 @@ export function TravelMapImpl() {
 
     Promise.all(promises).then(drawImageFills)
     if (promises.length === 0) drawImageFills()
-  }, [fills, nameToIdRef, drawImageFills])
+  }, [fills, mapReady, nameToIdRef, drawImageFills])
 
   // sync hasPhoto feature-states
   React.useEffect(() => {
@@ -647,6 +649,7 @@ export function TravelMapImpl() {
             }
           }
           photoRegionsRef.current = photoRegions
+          setMapReady(true)
         }
       })
       .catch(console.error)
