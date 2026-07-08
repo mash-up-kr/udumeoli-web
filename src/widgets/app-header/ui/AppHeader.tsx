@@ -1,8 +1,10 @@
-import { ChevronDown, Upload, User } from "lucide-react"
+import { Upload, User } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
 
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
+import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
+import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
 
 /**
  * 브랜드/홈 헤더 (시안 #21). 배경 투명, 2줄 구조: [로고 · 우측 액션] / [여행팟 선택].
@@ -29,9 +31,11 @@ function AppHeader({
       {...props}
     >
       <div className="flex w-full items-center justify-between">
-        <span className="font-anton text-[28px] leading-[1.5] tracking-[-0.56px]">
-          PHOTATO
-        </span>
+        <img
+          src={logoPhotatoSrc}
+          alt="PHOTATO"
+          className="h-[60px] w-[120px]"
+        />
         <div className="flex items-center gap-3">
           <Button
             variant="surface"
@@ -59,16 +63,13 @@ function AppHeader({
       </div>
 
       {potSelector ?? (
-        <Button
-          variant="surface"
-          size="sm"
-          radius="full"
-          shadow="sm"
-          className="gap-1"
+        <button
+          type="button"
+          className="flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         >
-          정민이와나
-          <ChevronDown className="size-4" />
-        </Button>
+          <span className="text-b5 text-fg-neutral-bold">정민이와나</span>
+          <img src={iconChevronDownSrc} alt="" className="size-6" />
+        </button>
       )}
     </header>
   )

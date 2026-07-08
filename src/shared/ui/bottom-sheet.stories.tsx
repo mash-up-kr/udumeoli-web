@@ -5,6 +5,7 @@ import {
   BottomSheetDescription,
   BottomSheetGraphicSlot,
   BottomSheetHeader,
+  BottomSheetScreenHeader,
   BottomSheetTitle,
   openBottomSheet,
 } from "./bottom-sheet"
@@ -248,6 +249,36 @@ export const CustomContent: Story = {
       }
     >
       커스텀 콘텐츠
+    </Button>
+  ),
+}
+
+/** Figma Modal — full variant: 상단 라운드 32 풀높이 화면형 시트 (여행팟 생성·참여). */
+export const FullScreen: Story = {
+  render: () => (
+    <Button
+      onClick={() =>
+        openBottomSheet(
+          ({ close }) => (
+            <>
+              <BottomSheetScreenHeader
+                icon="back"
+                title="여행팟 생성"
+                onIconClick={close}
+              />
+              <div className="flex w-full flex-1 flex-col px-4 text-b5">
+                콘텐츠 영역
+              </div>
+              <div className="w-full px-4 pb-8">
+                <ButtonCta disabled>다음</ButtonCta>
+              </div>
+            </>
+          ),
+          { variant: "full", showCloseButton: false }
+        )
+      }
+    >
+      풀높이 화면형 시트
     </Button>
   ),
 }
