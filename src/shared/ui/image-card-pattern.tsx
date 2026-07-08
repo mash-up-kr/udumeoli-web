@@ -121,7 +121,8 @@ function ImageCardPattern({
           {items.map((item, index) => (
             <div
               key={item.id}
-              className="absolute top-0 left-0"
+              // size-0이어야 transform-origin이 바퀴 중심점과 일치해 회전 궤적이 원을 유지한다
+              className="absolute top-0 left-0 size-0"
               style={{
                 transform: `rotate(${index * STEP_ANGLE}deg) translateY(-${RADIUS}px)`,
               }}
