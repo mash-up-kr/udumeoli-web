@@ -131,7 +131,9 @@ function ImageCardPattern({
                 ref={(el) => {
                   cardRefs.current[index] = el
                 }}
-                className="will-change-transform"
+                // size-0 부모 안에서는 폭이 0이 되어 translate(-50%)가 무효 —
+                // 카드(lg, 160×192) 크기를 명시해 % 변환 기준 박스를 복원한다
+                className="h-48 w-40 will-change-transform"
                 style={{
                   transform: `translate(-50%, -50%) scale(${index === 0 ? 1 : SIDE_SCALE})`,
                 }}
