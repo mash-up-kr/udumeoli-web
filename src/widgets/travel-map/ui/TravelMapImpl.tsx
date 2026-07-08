@@ -20,7 +20,10 @@ import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { openGallerySheet } from "@/features/photo-gallery"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
-import { openColorPickerSheet } from "@/features/region-color"
+import {
+  RegionDecorateFlow,
+  useDecorateStore,
+} from "@/features/region-decorate"
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY as string
 const MAP_STYLE = `https://api.maptiler.com/maps/019f1dec-144a-7e9c-9ab5-4398b89987f9/style.json?key=${MAPTILER_KEY}`
@@ -45,6 +48,10 @@ const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const MUNI_SRC = "municipalities"
 const MUNI_FILL = "municipality-fill"
 const MUNI_LINE = "municipality-line"
+const MUNI_DASH = "municipality-dash" // 첫 여행 등록 플로우의 점선 강조
+// 등록 플로우 점선 색 — Step1 다크 / Step2·3 주황 (시안 raw 값, 토큰 없음)
+const DASH_DARK = "#232936"
+const DASH_ORANGE = "#ff9331"
 const BOUNDARY_ZOOM = 7.5 // 경계선 + "+" 버튼 등장
 const ZOOM_COLOR = 8.5 // 2개 핀 + 72px 사이즈
 const PARTY_ZOOM = 9.5 // 파티 슬롯 자동 노출 임계점 = 맵 최대 줌
@@ -170,8 +177,57 @@ function addLayers(
     },
     firstSymbolId
   )
+  // 첫 여행 등록 플로우 점선 강조 — 평소엔 아무 지역도 매칭하지 않음
+  map.addLayer({
+    id: MUNI_DASH,
+    type: "line",
+    source: srcId,
+    filter: ["==", ["get", "name"], "__none__"],
+    paint: {
+      "line-color": DASH_DARK,
+      "line-width": 2.5,
+      "line-dasharray": [2, 2],
+    },
+  })
   return true
 }
+
+// 지역 폴리곤 전체 bbox — 등록 플로우 진입 시 fitBounds용
+function computeFeatureBBox(
+  feature: GeoJSON.Feature
+): [[number, number], [number, number]] | null {
+  const g = feature.geometry
+  let rings: Array<Array<Array<number>>> = []
+  if (g.type === "Polygon") rings = g.coordinates
+  else if (g.type === "MultiPolygon") rings = g.coordinates.flat()
+  else return null
+  let minLng = Infinity
+  let minLat = Infinity
+  let maxLng = -Infinity
+  let maxLat = -Infinity
+  for (const ring of rings) {
+    for (const [lng, lat] of ring) {
+      if (lng < minLng) minLng = lng
+      if (lng > maxLng) maxLng = lng
+      if (lat < minLat) minLat = lat
+      if (lat > maxLat) maxLat = lat
+    }
+  }
+  if (minLng === Infinity) return null
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ]
+}
+
+const MAP_INTERACTIONS = [
+  "dragPan",
+  "scrollZoom",
+  "doubleClickZoom",
+  "touchZoomRotate",
+  "keyboard",
+  "dragRotate",
+] as const
 
 const SLOT_SIZE_2X = 80
 
@@ -248,6 +304,11 @@ export function TravelMapImpl() {
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(
     null
   )
+  // 첫 여행 등록 플로우 — 진행 중인 지역명 (null이면 일반 모드)
+  const decorating = useDecorateStore((s) => s.region)
+  const decorateStep = useDecorateStore((s) => s.step)
+  const startDecorate = useDecorateStore((s) => s.start)
+  const decoratingRef = React.useRef<string | null>(null)
   const flyingRef = React.useRef(false)
   const flyingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -260,13 +321,8 @@ export function TravelMapImpl() {
     longitude: number
     latitude: number
   } | null>(null)
-  const {
-    setupClickHandler,
-    activateByName,
-    setActiveByName,
-    buildNameIndex,
-    nameToIdRef,
-  } = useRegionHighlight()
+  const { setupClickHandler, setActiveByName, buildNameIndex, nameToIdRef } =
+    useRegionHighlight()
 
   const centroidMap = React.useMemo(
     () => new Map(centroids.map((c) => [c.name, c])),
@@ -340,6 +396,45 @@ export function TravelMapImpl() {
     if (!map || !map.getSource(MUNI_SRC)) return
     setActiveByName(map, MUNI_SRC, selectedRegion)
   }, [selectedRegion, setActiveByName])
+
+  // 등록 플로우 진입/이탈 — 지도 잠금 + 점선 강조 + 지역 화면 중앙 fit
+  React.useEffect(() => {
+    decoratingRef.current = decorating
+    const map = mapInstanceRef.current
+    if (!map || !map.getLayer(MUNI_DASH)) return
+
+    if (decorating) {
+      for (const name of MAP_INTERACTIONS) map[name].disable()
+      map.setFilter(MUNI_DASH, ["==", ["get", "name"], decorating])
+
+      const feature = geojsonRef.current?.features.find(
+        (f) => f.properties?.name === decorating
+      )
+      const bbox = feature ? computeFeatureBBox(feature) : null
+      if (bbox) {
+        // 상단 타이틀·하단 패널을 피해 지역이 화면 중앙에 오도록 패딩
+        map.fitBounds(bbox, {
+          padding: { top: 170, bottom: 330, left: 48, right: 48 },
+          maxZoom: PARTY_ZOOM,
+          duration: 500,
+        })
+      }
+    } else {
+      for (const name of MAP_INTERACTIONS) map[name].enable()
+      map.setFilter(MUNI_DASH, ["==", ["get", "name"], "__none__"])
+    }
+  }, [decorating])
+
+  // 스텝별 점선 색 — Step1 다크 / Step2·3 주황
+  React.useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map || !map.getLayer(MUNI_DASH)) return
+    map.setPaintProperty(
+      MUNI_DASH,
+      "line-color",
+      decorateStep === "color" ? DASH_DARK : DASH_ORANGE
+    )
+  }, [decorateStep])
 
   // 줌 단계별 핀 크기 (px) — 파티 슬롯은 SLOT_SIZE_2X 고정
   const pinSize = zoomStage >= 2 ? 72 : 60
@@ -622,6 +717,7 @@ export function TravelMapImpl() {
 
           // 빈 배경 클릭 시 선택 해제 (레이어 클릭과 충돌 없음)
           map.on("click", (e) => {
+            if (decoratingRef.current) return
             const hits = map.queryRenderedFeatures(e.point, {
               layers: [MUNI_FILL],
             })
@@ -630,6 +726,7 @@ export function TravelMapImpl() {
           })
 
           setupClickHandler(map, MUNI_FILL, (name) => {
+            if (decoratingRef.current) return
             setSelectedRegion(name)
             const c = computed.find((x) => x.name === name)
             if (c) flyToRegion(map, c)
@@ -700,6 +797,7 @@ export function TravelMapImpl() {
               const vs = latestViewStateRef.current
               if (!vs) return
               updateViewportCentroids(centroids)
+              if (decoratingRef.current) return
 
               if (
                 vs.zoom >= PARTY_ENTER &&
@@ -731,33 +829,47 @@ export function TravelMapImpl() {
       >
         {zoomStage >= 1 &&
           !selectedRegion &&
-          viewportCentroids.map(({ name, lng, lat }) => (
-            <Marker
-              key={`centroid-${name}`}
-              longitude={lng}
-              latitude={lat}
-              anchor="center"
-            >
-              <button
-                type="button"
-                aria-label={`${name} 꾸미기`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const map = mapInstanceRef.current
-                  if (map) activateByName(map, MUNI_SRC, name)
-                  openColorPickerSheet(name)
-                }}
-                className="flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
+          !decorating &&
+          viewportCentroids
+            .filter(({ name }) => !Object.hasOwn(fills, name))
+            .map(({ name, lng, lat }) => (
+              <Marker
+                key={`centroid-${name}`}
+                longitude={lng}
+                latitude={lat}
+                anchor="center"
               >
-                <Plus className="size-3.5 text-foreground/40 drop-shadow-sm" />
-                <span className="text-[9px] leading-none font-medium text-foreground/60 drop-shadow-sm">
-                  {name}
-                </span>
-              </button>
-            </Marker>
-          ))}
+                <button
+                  type="button"
+                  aria-label={`${name} 꾸미기`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    startDecorate(name)
+                  }}
+                  className="flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
+                >
+                  <Plus className="size-3.5 text-foreground/40 drop-shadow-sm" />
+                  <span className="text-[9px] leading-none font-medium text-foreground/60 drop-shadow-sm">
+                    {name}
+                  </span>
+                </button>
+              </Marker>
+            ))}
+
+        {decorating && centroidMap.get(decorating) ? (
+          <Marker
+            longitude={centroidMap.get(decorating)!.lng}
+            latitude={centroidMap.get(decorating)!.lat}
+            anchor="center"
+          >
+            <span className="text-h1 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+              {decorating}
+            </span>
+          </Marker>
+        ) : null}
 
         {!selectedRegion &&
+          !decorating &&
           visiblePins.map((p) => (
             <Marker
               key={`photo-${p.id}`}
@@ -782,67 +894,68 @@ export function TravelMapImpl() {
             </Marker>
           ))}
 
-        {partySlots.map((slot) => {
-          const offset = getSlotOffset(slot.totalSlots, slot.slotIndex)
-          return (
-            <Marker
-              key={`slot-${slot.region}-${slot.memberId}`}
-              longitude={slot.lng}
-              latitude={slot.lat}
-              anchor="center"
-              offset={offset}
-            >
-              {slot.photo ? (
-                <PhotoTile
-                  label={slot.nickname}
-                  imageUrl={slot.photo.thumbnailUrl}
-                  size={SLOT_SIZE_2X}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openGallerySheet(slot.region)
-                  }}
-                />
-              ) : slot.isMe ? (
-                <button
-                  type="button"
-                  aria-label="내 사진 등록"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    pickImageFile((url) => {
-                      openDatePickerSheet((date) => {
-                        if (!currentUserId) return
-                        addPhoto({
-                          id: `uploaded-${Date.now()}`,
-                          lat: slot.lat,
-                          lng: slot.lng,
-                          thumbnailUrl: url,
-                          date,
-                          uploaderId: currentUserId,
-                          region: slot.region,
+        {!decorating &&
+          partySlots.map((slot) => {
+            const offset = getSlotOffset(slot.totalSlots, slot.slotIndex)
+            return (
+              <Marker
+                key={`slot-${slot.region}-${slot.memberId}`}
+                longitude={slot.lng}
+                latitude={slot.lat}
+                anchor="center"
+                offset={offset}
+              >
+                {slot.photo ? (
+                  <PhotoTile
+                    label={slot.nickname}
+                    imageUrl={slot.photo.thumbnailUrl}
+                    size={SLOT_SIZE_2X}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openGallerySheet(slot.region)
+                    }}
+                  />
+                ) : slot.isMe ? (
+                  <button
+                    type="button"
+                    aria-label="내 사진 등록"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      pickImageFile((url) => {
+                        openDatePickerSheet((date) => {
+                          if (!currentUserId) return
+                          addPhoto({
+                            id: `uploaded-${Date.now()}`,
+                            lat: slot.lat,
+                            lng: slot.lng,
+                            thumbnailUrl: url,
+                            date,
+                            uploaderId: currentUserId,
+                            region: slot.region,
+                          })
                         })
                       })
-                    })
-                  }}
-                  className="flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-white transition-colors hover:border-primary hover:bg-primary/5"
-                  style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                >
-                  <Plus className="size-6 text-primary/60" />
-                </button>
-              ) : (
-                <div
-                  className="flex items-center justify-center rounded-2xl border-2 border-dashed border-foreground/20 bg-white"
-                  style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                >
-                  <img
-                    src="/icon-zzz.svg"
-                    alt="사진 없음"
-                    className="size-9 opacity-70"
-                  />
-                </div>
-              )}
-            </Marker>
-          )
-        })}
+                    }}
+                    className="flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-white transition-colors hover:border-primary hover:bg-primary/5"
+                    style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
+                  >
+                    <Plus className="size-6 text-primary/60" />
+                  </button>
+                ) : (
+                  <div
+                    className="flex items-center justify-center rounded-2xl border-2 border-dashed border-foreground/20 bg-white"
+                    style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
+                  >
+                    <img
+                      src="/icon-zzz.svg"
+                      alt="사진 없음"
+                      className="size-9 opacity-70"
+                    />
+                  </div>
+                )}
+              </Marker>
+            )
+          })}
       </MapGL>
 
       {/* image fill overlay — rendered above map, below UI */}
@@ -854,9 +967,20 @@ export function TravelMapImpl() {
       {/* 초기 줌에서만 노출되는 지역 사진 캐러셀 — 경계선 줌(1단계)부터 숨김 */}
       <RegionCardCarousel
         photos={photos}
-        visible={zoomStage === 0}
+        visible={zoomStage === 0 && !decorating}
         onSelectRegion={handleCarouselSelect}
       />
+
+      {/* 첫 여행 등록 플로우 오버레이 (색상 → 날짜 → 사진) */}
+      {decorating && centroidMap.get(decorating) ? (
+        <RegionDecorateFlow
+          region={decorating}
+          center={{
+            lat: centroidMap.get(decorating)!.lat,
+            lng: centroidMap.get(decorating)!.lng,
+          }}
+        />
+      ) : null}
     </div>
   )
 }

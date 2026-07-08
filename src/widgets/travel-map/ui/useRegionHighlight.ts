@@ -7,29 +7,6 @@ export function useRegionHighlight() {
   )
   const nameToId = React.useRef(new Map<string, number>())
 
-  const activate = React.useCallback(
-    (map: MapLibreMap, srcId: string, id: string | number | undefined) => {
-      if (id === undefined) return
-      if (activeRef.current !== null) {
-        map.setFeatureState(
-          { source: activeRef.current.src, id: activeRef.current.id },
-          { active: false }
-        )
-      }
-      if (
-        activeRef.current !== null &&
-        activeRef.current.src === srcId &&
-        activeRef.current.id === id
-      ) {
-        activeRef.current = null
-      } else {
-        activeRef.current = { src: srcId, id }
-        map.setFeatureState({ source: srcId, id }, { active: true })
-      }
-    },
-    []
-  )
-
   const buildNameIndex = React.useCallback(
     (features: Array<GeoJSON.Feature>) => {
       for (const f of features) {
@@ -64,13 +41,6 @@ export function useRegionHighlight() {
     []
   )
 
-  const activateByName = React.useCallback(
-    (map: MapLibreMap, srcId: string, name: string) => {
-      activate(map, srcId, nameToId.current.get(name))
-    },
-    [activate]
-  )
-
   // 토글 없이 지정 지역만 활성화(null이면 해제) — selectedRegion과 1:1로 동기화할 때 사용
   const setActiveByName = React.useCallback(
     (map: MapLibreMap, srcId: string, name: string | null) => {
@@ -92,7 +62,6 @@ export function useRegionHighlight() {
 
   return {
     setupClickHandler,
-    activateByName,
     setActiveByName,
     buildNameIndex,
     nameToIdRef: nameToId,
