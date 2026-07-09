@@ -2,13 +2,14 @@ import type { Photo } from "../model/types"
 
 // 러프 단계 목 데이터 — 지역명은 municipalities TopoJSON 군(郡) 명칭과 일치해야 함
 export const MOCK_PHOTOS: Array<Photo> = [
-  // 양양군 — 4장 (zoom 2x 정책 테스트용)
+  // 양양군 — 갤러리 예시: 2026-05-21 전원(4명) 업로드 완료(파란 tint),
+  // 2026-05-20 나(user-1)만 미업로드 → 업로드 시 파란 tint 전환 확인용
   {
     id: "p1",
     region: "양양군",
     lat: 38.074,
     lng: 128.622,
-    date: "2026-05-20",
+    date: "2026-05-21",
     uploaderId: "user-1",
     thumbnailUrl: "https://picsum.photos/seed/photato-1/200/200",
   },
@@ -26,7 +27,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     region: "양양군",
     lat: 38.063,
     lng: 128.609,
-    date: "2026-05-22",
+    date: "2026-05-21",
     uploaderId: "user-3",
     thumbnailUrl: "https://picsum.photos/seed/photato-3/200/200",
   },
@@ -35,9 +36,36 @@ export const MOCK_PHOTOS: Array<Photo> = [
     region: "양양군",
     lat: 38.09,
     lng: 128.655,
-    date: "2026-05-23",
+    date: "2026-05-21",
     uploaderId: "user-4",
     thumbnailUrl: "https://picsum.photos/seed/photato-4/200/200",
+  },
+  {
+    id: "p10",
+    region: "양양군",
+    lat: 38.071,
+    lng: 128.631,
+    date: "2026-05-20",
+    uploaderId: "user-2",
+    thumbnailUrl: "https://picsum.photos/seed/photato-10/200/200",
+  },
+  {
+    id: "p11",
+    region: "양양군",
+    lat: 38.086,
+    lng: 128.618,
+    date: "2026-05-20",
+    uploaderId: "user-3",
+    thumbnailUrl: "https://picsum.photos/seed/photato-11/200/200",
+  },
+  {
+    id: "p12",
+    region: "양양군",
+    lat: 38.078,
+    lng: 128.648,
+    date: "2026-05-20",
+    uploaderId: "user-4",
+    thumbnailUrl: "https://picsum.photos/seed/photato-12/200/200",
   },
 
   // 고성군 — 2장
