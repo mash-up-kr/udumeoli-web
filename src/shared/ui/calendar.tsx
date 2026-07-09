@@ -32,22 +32,33 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
       }}
       className={className}
       classNames={{
-        root: "relative w-fit rounded-3xl bg-bg-neutral-weak px-4 py-5",
-        months: "relative",
-        month: "relative flex flex-col gap-1",
-        month_caption: "flex h-10 items-center",
-        caption_label: "px-2 text-h5-1 text-fg-neutral-bold",
-        nav: "absolute right-0 top-0 flex h-10 items-center gap-2",
-        button_previous: navButton,
-        button_next: navButton,
-        month_grid: "w-full border-collapse",
-        weekdays: "flex gap-2",
-        weekday:
+        root: cn(
+          "relative w-fit rounded-3xl bg-bg-neutral-weak px-4 py-5",
+          classNames?.root
+        ),
+        months: cn("relative", classNames?.months),
+        month: cn("relative flex flex-col gap-1", classNames?.month),
+        month_caption: cn("flex h-10 items-center", classNames?.month_caption),
+        caption_label: cn(
+          "px-2 text-h5-1 text-fg-neutral-bold",
+          classNames?.caption_label
+        ),
+        nav: cn(
+          "absolute top-0 right-0 flex h-10 items-center gap-2",
+          classNames?.nav
+        ),
+        button_previous: cn(navButton, classNames?.button_previous),
+        button_next: cn(navButton, classNames?.button_next),
+        month_grid: cn("w-full border-collapse", classNames?.month_grid),
+        // 컨테이너가 w-full로 넓어져도 셀이 왼쪽에 쏠리지 않도록 균등 분배
+        weekdays: cn("flex justify-between", classNames?.weekdays),
+        weekday: cn(
           "flex size-9 items-center justify-center text-b4 text-fg-neutral-subtle",
-        weeks: "mt-2 flex flex-col gap-2",
-        week: "flex gap-2",
-        day: "size-9 p-0",
-        ...classNames,
+          classNames?.weekday
+        ),
+        weeks: cn("mt-2 flex flex-col gap-2", classNames?.weeks),
+        week: cn("flex justify-between", classNames?.week),
+        day: cn("size-9 p-0", classNames?.day),
       }}
       components={{
         Chevron: ({ orientation, className: cls }) => {

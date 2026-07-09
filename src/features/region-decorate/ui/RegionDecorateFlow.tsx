@@ -273,7 +273,7 @@ export function RegionDecorateFlow({
             mode="single"
             selected={date}
             onSelect={setDate}
-            className="w-full [&>*]:mx-auto"
+            classNames={{ root: "w-full" }}
           />
         ) : null}
 
