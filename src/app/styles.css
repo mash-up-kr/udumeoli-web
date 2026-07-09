@@ -315,6 +315,25 @@
     --text-e4--line-height: 16px;
     --text-e4--font-weight: 400;
     --text-e4--letter-spacing: 0px;
+
+    /* ===== Animation ===== */
+    /* 갤러리 사진 업로드 직후 슬롯 팝 — transform만 사용(GPU 가속) */
+    --animate-photo-pop: photo-pop 0.45s ease-out both;
+
+    @keyframes photo-pop {
+        0% {
+            transform: scale(0.92);
+        }
+        45% {
+            transform: scale(1.05) rotate(1.2deg);
+        }
+        75% {
+            transform: scale(0.98) rotate(-0.6deg);
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+    }
 }
 
 @layer base {

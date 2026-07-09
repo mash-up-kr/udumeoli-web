@@ -15,6 +15,8 @@ type DateSectionProps = {
   dateISO: string
   slots: Array<GallerySlot>
   onAddPhoto: () => void
+  /** 방금 업로드한 멤버 — 해당 슬롯에 등록 팝 애니메이션 적용 */
+  poppedMemberId?: string | null
 }
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
@@ -30,11 +32,20 @@ function formatDateLabel(iso: string): string {
  * 갤러리 날짜 섹션 — 날짜 라벨 + 파티 멤버 슬롯 행.
  * 파티 전원 사진 업로드 완료 시 파란 tint, 한 명이라도 미업로드면 회색 tint + add 슬롯 + 툴팁.
  */
-export function DateSection({ dateISO, slots, onAddPhoto }: DateSectionProps) {
+export function DateSection({
+  dateISO,
+  slots,
+  onAddPhoto,
+  poppedMemberId,
+}: DateSectionProps) {
   const allUploaded = slots.every((s) => s.photoUrl !== null)
   const slotSize = slots.length <= 4 ? 80 : 64
   // 회색은 피그마 raw 값(#c2c7cb 30%) — 대응 토큰 없음, 디자인 확정 시 재검토
   const tint = allUploaded ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
+  // 업로드된 사진 → 미업로드(zzz) → 내 add 슬롯 맨 오른쪽 (Figma 1260-10921)
+  const slotRank = (s: GallerySlot) =>
+    s.photoUrl !== null ? 0 : s.isMe ? 2 : 1
+  const ordered = [...slots].sort((a, b) => slotRank(a) - slotRank(b))
 
   return (
     <section className="flex w-full flex-col items-center gap-4">
@@ -44,17 +55,20 @@ export function DateSection({ dateISO, slots, onAddPhoto }: DateSectionProps) {
 
       <div
         className={cn(
-          "relative flex w-full items-center justify-center rounded-[24px] py-2",
+          "relative flex w-full items-center justify-center rounded-[24px] py-2 transition-colors duration-500",
           tint
         )}
       >
-        {slots.map((slot, i) => {
+        {ordered.map((slot, i) => {
           const rotate = i % 2 === 0 ? 4 : -4
           const isAdd = slot.isMe && slot.photoUrl === null
           return (
             <div
               key={slot.memberId}
-              className="relative -mr-3 flex items-center justify-center p-[3px] last:mr-0"
+              className={cn(
+                "relative -mr-3 flex items-center justify-center p-[3px] last:mr-0",
+                slot.memberId === poppedMemberId && "animate-photo-pop"
+              )}
             >
               {slot.photoUrl !== null ? (
                 <PhotoSlot
@@ -92,7 +106,7 @@ export function DateSection({ dateISO, slots, onAddPhoto }: DateSectionProps) {
         {/* 하단 반투명 블러 띠 */}
         <div
           className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42px] rounded-t-[12px] rounded-b-[24px] border border-neutral-50 backdrop-blur-[2px]",
+            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42px] rounded-t-[12px] rounded-b-[24px] border border-neutral-50 backdrop-blur-[2px] transition-colors duration-500",
             tint
           )}
         />

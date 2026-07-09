@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { MapPin, PencilLine, Plus } from "lucide-react"
 
 import { DateSection } from "./DateSection"
@@ -22,6 +23,8 @@ function GallerySheet({ region }: { region: string }) {
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  // 방금 업로드한 날짜 — 해당 행의 내 슬롯에 등록 팝 애니메이션
+  const [poppedDate, setPoppedDate] = useState<string | null>(null)
 
   const byDate = new Map<string, Array<Photo>>()
   for (const p of photos) {
@@ -56,6 +59,7 @@ function GallerySheet({ region }: { region: string }) {
       thumbnailUrl: url,
       uploaderId: currentUserId,
     })
+    setPoppedDate(date)
   }
 
   // 날짜 행의 add 슬롯: 날짜 고정, 이미지 선택만
@@ -105,6 +109,7 @@ function GallerySheet({ region }: { region: string }) {
               dateISO={date}
               slots={toSlots(date)}
               onAddPhoto={() => uploadForDate(date)}
+              poppedMemberId={poppedDate === date ? currentUserId : null}
             />
           ))
         )}
