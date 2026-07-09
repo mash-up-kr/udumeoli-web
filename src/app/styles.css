@@ -334,6 +334,28 @@
             transform: scale(1) rotate(0deg);
         }
     }
+
+    /* 전원 업로드 완료 순간 행 전체 좌우 물결 — --wiggle-dir(±1)로 슬롯별 방향 엇갈림 */
+    --animate-photo-wiggle: photo-wiggle 0.7s ease-in-out both;
+
+    @keyframes photo-wiggle {
+        0%,
+        100% {
+            transform: translateX(0) rotate(0deg);
+        }
+        25% {
+            transform: translateX(calc(var(--wiggle-dir, 1) * 4px))
+                rotate(calc(var(--wiggle-dir, 1) * 1.5deg));
+        }
+        55% {
+            transform: translateX(calc(var(--wiggle-dir, 1) * -3px))
+                rotate(calc(var(--wiggle-dir, 1) * -1deg));
+        }
+        80% {
+            transform: translateX(calc(var(--wiggle-dir, 1) * 1.5px))
+                rotate(calc(var(--wiggle-dir, 1) * 0.5deg));
+        }
+    }
 }
 
 @layer base {

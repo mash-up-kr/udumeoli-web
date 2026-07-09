@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react"
 import { PhotoSlot } from "./PhotoSlot"
+import type { CSSProperties } from "react"
 
 import { Tooltip } from "@/shared/ui/tooltip"
 import { cn } from "@/shared/lib/utils"
@@ -42,10 +44,18 @@ export function DateSection({
   const slotSize = slots.length <= 4 ? 80 : 64
   // 회색은 피그마 raw 값(#c2c7cb 30%) — 대응 토큰 없음, 디자인 확정 시 재검토
   const tint = allUploaded ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
-  // 업로드된 사진 → 미업로드(zzz) → 내 add 슬롯 맨 오른쪽 (Figma 1260-10921)
+  // 내 슬롯은 add 버튼 자리 그대로 항상 맨 오른쪽, 나머지는 사진 → 미업로드(zzz) 순 (Figma 1260-10921)
   const slotRank = (s: GallerySlot) =>
-    s.photoUrl !== null ? 0 : s.isMe ? 2 : 1
+    s.isMe ? 2 : s.photoUrl !== null ? 0 : 1
   const ordered = [...slots].sort((a, b) => slotRank(a) - slotRank(b))
+
+  // 전원 업로드가 '완료되는 순간'에만 행 전체 물결 흔들림 (완료 상태로 열리면 재생 안 함)
+  const [celebrate, setCelebrate] = useState(false)
+  const prevAllUploaded = useRef(allUploaded)
+  useEffect(() => {
+    if (!prevAllUploaded.current && allUploaded) setCelebrate(true)
+    prevAllUploaded.current = allUploaded
+  }, [allUploaded])
 
   return (
     <section className="flex w-full flex-col items-center gap-4">
@@ -62,13 +72,26 @@ export function DateSection({
         {ordered.map((slot, i) => {
           const rotate = i % 2 === 0 ? 4 : -4
           const isAdd = slot.isMe && slot.photoUrl === null
+          const isPopped = slot.memberId === poppedMemberId
+          // 팝이 재생 중인 내 슬롯은 물결에서 제외 — 두 애니메이션이 transform을 공유
+          const wiggle = celebrate && !isPopped
           return (
             <div
               key={slot.memberId}
               className={cn(
                 "relative -mr-3 flex items-center justify-center p-[3px] last:mr-0",
-                slot.memberId === poppedMemberId && "animate-photo-pop"
+                isPopped && "animate-photo-pop",
+                wiggle && "animate-photo-wiggle"
               )}
+              style={
+                wiggle
+                  ? ({
+                      // 이웃끼리 방향을 엇갈리고 delay로 물결 전파
+                      "--wiggle-dir": i % 2 === 0 ? 1 : -1,
+                      animationDelay: `${i * 70}ms`,
+                    } as CSSProperties)
+                  : undefined
+              }
             >
               {slot.photoUrl !== null ? (
                 <PhotoSlot
