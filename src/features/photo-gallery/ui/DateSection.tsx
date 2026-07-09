@@ -28,13 +28,13 @@ function formatDateLabel(iso: string): string {
 
 /**
  * 갤러리 날짜 섹션 — 날짜 라벨 + 파티 멤버 슬롯 행.
- * 내 사진 업로드 완료 시 파란 tint, 미업로드 시 회색 tint + add 슬롯 + 툴팁.
+ * 파티 전원 사진 업로드 완료 시 파란 tint, 한 명이라도 미업로드면 회색 tint + add 슬롯 + 툴팁.
  */
 export function DateSection({ dateISO, slots, onAddPhoto }: DateSectionProps) {
-  const myUploaded = slots.some((s) => s.isMe && s.photoUrl !== null)
+  const allUploaded = slots.every((s) => s.photoUrl !== null)
   const slotSize = slots.length <= 4 ? 80 : 64
   // 회색은 피그마 raw 값(#c2c7cb 30%) — 대응 토큰 없음, 디자인 확정 시 재검토
-  const tint = myUploaded ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
+  const tint = allUploaded ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
 
   return (
     <section className="flex w-full flex-col items-center gap-4">
