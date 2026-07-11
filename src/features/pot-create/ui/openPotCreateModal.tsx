@@ -4,6 +4,7 @@ import confetti from "canvas-confetti"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { NumberCode } from "@/shared/ui/number-code"
 import { TextField } from "@/shared/ui/text-field"
+import { Tooltip } from "@/shared/ui/tooltip"
 import {
   BottomSheetScreenHeader,
   openBottomSheet,
@@ -68,7 +69,11 @@ function CreatedStep({
         </div>
         <NumberCode value={code} readOnly />
       </div>
-      <div className="w-full px-4 pb-[34px]">
+      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-[34px]">
+        {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
+        <Tooltip direction="bottom">
+          최대 6명까지 함께할 수 있어요. (1/6)
+        </Tooltip>
         <ButtonCta onClick={share}>초대코드 공유하기</ButtonCta>
       </div>
     </>
