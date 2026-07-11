@@ -15,7 +15,7 @@ type PhotoSlotProps = {
   size: number
   /** 교차 회전 방향 (deg) */
   rotate: 4 | -4
-  /** variant="add" 업로드 트리거 */
+  /** add: 업로드 트리거 / photo: 사진 자세히 보기 트리거 */
   onClick?: () => void
 }
 
@@ -59,7 +59,10 @@ export function PhotoSlot({
 
   if (variant === "photo") {
     return (
-      <div
+      <button
+        type="button"
+        aria-label="사진 자세히 보기"
+        onClick={onClick}
         className={cn(
           base,
           "border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
@@ -76,7 +79,7 @@ export function PhotoSlot({
           src={profileSrc ?? undefined}
           className="absolute top-[7px] left-[7px]"
         />
-      </div>
+      </button>
     )
   }
 

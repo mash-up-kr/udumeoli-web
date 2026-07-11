@@ -17,6 +17,8 @@ type DateSectionProps = {
   dateISO: string
   slots: Array<GallerySlot>
   onAddPhoto: () => void
+  /** 사진 슬롯 클릭 — 사진 자세히 보기 */
+  onPhotoClick: (photoUrl: string) => void
   /** 방금 업로드한 멤버 — 해당 슬롯에 등록 팝 애니메이션 적용 */
   poppedMemberId?: string | null
 }
@@ -38,6 +40,7 @@ export function DateSection({
   dateISO,
   slots,
   onAddPhoto,
+  onPhotoClick,
   poppedMemberId,
 }: DateSectionProps) {
   const allUploaded = slots.every((s) => s.photoUrl !== null)
@@ -71,7 +74,8 @@ export function DateSection({
       >
         {ordered.map((slot, i) => {
           const rotate = i % 2 === 0 ? 4 : -4
-          const isAdd = slot.isMe && slot.photoUrl === null
+          const photoUrl = slot.photoUrl
+          const isAdd = slot.isMe && photoUrl === null
           const isPopped = slot.memberId === poppedMemberId
           // 팝이 재생 중인 내 슬롯은 물결에서 제외 — 두 애니메이션이 transform을 공유
           const wiggle = celebrate && !isPopped
@@ -93,13 +97,14 @@ export function DateSection({
                   : undefined
               }
             >
-              {slot.photoUrl !== null ? (
+              {photoUrl !== null ? (
                 <PhotoSlot
                   variant="photo"
-                  imageUrl={slot.photoUrl}
+                  imageUrl={photoUrl}
                   profileSrc={slot.profileImageUrl}
                   size={slotSize}
                   rotate={rotate}
+                  onClick={() => onPhotoClick(photoUrl)}
                 />
               ) : isAdd ? (
                 <PhotoSlot

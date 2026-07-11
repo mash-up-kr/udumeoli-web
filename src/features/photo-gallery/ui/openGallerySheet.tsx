@@ -2,6 +2,7 @@ import { useState } from "react"
 import { MapPin, PencilLine, Plus } from "lucide-react"
 
 import { DateSection } from "./DateSection"
+import { openPhotoViewer } from "./openPhotoViewer"
 import type { GallerySlot } from "./DateSection"
 import type { Photo } from "@/entities/photo"
 import { ButtonIcon } from "@/shared/ui/button-icon"
@@ -109,6 +110,7 @@ function GallerySheet({ region }: { region: string }) {
               dateISO={date}
               slots={toSlots(date)}
               onAddPhoto={() => uploadForDate(date)}
+              onPhotoClick={openPhotoViewer}
               poppedMemberId={poppedDate === date ? currentUserId : null}
             />
           ))
