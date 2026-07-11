@@ -61,7 +61,8 @@ function JoinConfirm({
             className="shrink-0"
           />
         </div>
-        <div className="flex w-full flex-wrap items-center justify-center">
+        {/* 참여자는 한 줄 최대 3명 — 초과분은 다음 줄 (최대 6명 = 2줄) */}
+        <div className="grid w-full grid-cols-3 justify-items-center">
           {pot.members.map((member) => (
             <Chip
               key={member.id}
