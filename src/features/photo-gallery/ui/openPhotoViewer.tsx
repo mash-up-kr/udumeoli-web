@@ -13,9 +13,10 @@ export function openPhotoViewer(imageUrl: string): void {
   overlay.open(({ isOpen, close, unmount }) => (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogPortal>
+        {/* 오버레이 없음 — 갤러리 시트의 dim 위에서 열려 이중 dim 방지 */}
         <DialogPrimitive.Content
           data-slot="photo-viewer-content"
-          className="fixed inset-0 z-50 bg-bg-neutral-inverse duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+          className="fixed inset-y-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-bg-neutral-inverse duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           onCloseAutoFocus={() => unmount()}
           aria-describedby={undefined}
         >
@@ -25,12 +26,12 @@ export function openPhotoViewer(imageUrl: string): void {
             <img
               src={imageUrl}
               alt=""
-              className="max-h-full w-full max-w-md object-contain"
+              className="max-h-full w-full object-contain"
             />
           </div>
 
           {/* Header — 좌상단 닫기 버튼 (Figma: 헤더 76 · py-8 · 좌우 16) */}
-          <div className="absolute inset-x-0 top-0 z-10 mx-auto flex h-[76px] w-full max-w-md items-center px-4 py-2">
+          <div className="absolute inset-x-0 top-0 z-10 flex h-[76px] items-center px-4 py-2">
             <DialogPrimitive.Close asChild>
               <ButtonIcon aria-label="닫기">
                 <img src={iconCloseBoldSrc} alt="" className="size-6" />
