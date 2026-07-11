@@ -2,13 +2,44 @@ import { useState } from "react"
 import { overlay } from "overlay-kit"
 
 import { Chip } from "@/shared/ui/chip"
+import { cn } from "@/shared/lib/utils"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
 import iconZoomInoutSrc from "@/shared/assets/icon-zoom-inout.svg"
-import sampleSrc from "@/shared/assets/sample.jpeg"
+import photo1Src from "@/shared/assets/onboarding-photo-1.jpg"
+import photo2Src from "@/shared/assets/onboarding-photo-2.jpg"
+import photo3Src from "@/shared/assets/onboarding-photo-3.jpg"
 
 const SEEN_KEY = "photato-onboarding-seen"
 
 const SAMPLE_REGIONS = ["서울", "강릉", "부산"]
+
+// 예시 사진 카드 — 56px · radius 16 · 3px 흰 테두리 (Figma 1300-10145 image Frame)
+function PhotoFrame({
+  src,
+  cropPosition,
+  className,
+}: {
+  src: string
+  /** 피사체가 정사각 크롭 안에 들어오도록 object-position 지정 */
+  cropPosition: string
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        "absolute block size-14 overflow-hidden rounded-[16px] border-3 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+        className
+      )}
+    >
+      <img
+        src={src}
+        alt=""
+        className="size-full object-cover"
+        style={{ objectPosition: cropPosition }}
+      />
+    </span>
+  )
+}
 
 // 아이콘 28px + 안내 문구 2줄 (작은 회색 안내 + 흰색 타이틀)
 function StepTitle({
@@ -63,17 +94,23 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
             hint="여행지를 클릭하고"
             title="사진을 업로드해주세요!"
           />
-          {/* 예시 사진 3장 — 좌우는 기울이고 가운데가 앞 */}
-          <span className="flex items-center pl-8">
-            <span className="z-0 -mr-3 -rotate-8 overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-              <img src={sampleSrc} alt="" className="size-14 object-cover" />
-            </span>
-            <span className="z-10 overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-              <img src={sampleSrc} alt="" className="size-14 object-cover" />
-            </span>
-            <span className="z-0 -ml-3 rotate-8 overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-              <img src={sampleSrc} alt="" className="size-14 object-cover" />
-            </span>
+          {/* 예시 사진 3장 — 왼쪽 무회전, 가운데 -4°(맨 앞), 오른쪽 +4° (Figma 1300-10145) */}
+          <span className="relative block h-[60px] w-[180px]">
+            <PhotoFrame
+              src={photo3Src}
+              cropPosition="52% 15%"
+              className="top-0 left-[120px] rotate-4"
+            />
+            <PhotoFrame
+              src={photo1Src}
+              cropPosition="55% 30%"
+              className="top-[2px] left-[30px]"
+            />
+            <PhotoFrame
+              src={photo2Src}
+              cropPosition="50% 35%"
+              className="top-0 left-1/2 -translate-x-1/2 -rotate-4"
+            />
           </span>
           <span className="mt-12 rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
             확인했어요
