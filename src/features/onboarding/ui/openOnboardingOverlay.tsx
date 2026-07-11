@@ -88,35 +88,39 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
           </span>
         </span>
       ) : (
-        <span className="absolute top-[calc(50%-38px)] left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4">
-          <StepTitle
-            iconSrc={iconCameraAddSrc}
-            hint="여행지를 클릭하고"
-            title="사진을 업로드해주세요!"
-          />
-          {/* 예시 사진 3장 — 세 장 모두 세로 중앙(y 30) 정렬, 왼쪽 무회전 x30 ·
-              가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
-          <span className="relative block h-[60px] w-[204px]">
-            <PhotoFrame
-              src={photo3Src}
-              cropPosition="52% 15%"
-              className="top-[2px] left-[122px] rotate-4"
+        <>
+          {/* 안내 문구 + 예시 사진 — 화면 상단에서 320px, 문구·사진 간 Spacing/x4 (Figma 5_첫진입_2) */}
+          <span className="absolute top-[320px] left-1/2 flex -translate-x-1/2 flex-col items-center gap-4">
+            <StepTitle
+              iconSrc={iconCameraAddSrc}
+              hint="여행지를 클릭하고"
+              title="사진을 업로드해주세요!"
             />
-            <PhotoFrame
-              src={photo1Src}
-              cropPosition="55% 30%"
-              className="top-[2px] left-[30px]"
-            />
-            <PhotoFrame
-              src={photo2Src}
-              cropPosition="50% 35%"
-              className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
-            />
+            {/* 예시 사진 3장 — 세 장 모두 세로 중앙(y 30) 정렬, 왼쪽 무회전 x30 ·
+                가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
+            <span className="relative block h-[60px] w-[204px]">
+              <PhotoFrame
+                src={photo3Src}
+                cropPosition="52% 15%"
+                className="top-[2px] left-[122px] rotate-4"
+              />
+              <PhotoFrame
+                src={photo1Src}
+                cropPosition="55% 30%"
+                className="top-[2px] left-[30px]"
+              />
+              <PhotoFrame
+                src={photo2Src}
+                cropPosition="50% 35%"
+                className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
+              />
+            </span>
           </span>
-          <span className="mt-12 rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+          {/* 확인했어요 — 화면 하단에서 246px, 가로 중앙 */}
+          <span className="absolute bottom-[246px] left-1/2 -translate-x-1/2 rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 whitespace-nowrap text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
             확인했어요
           </span>
-        </span>
+        </>
       )}
     </button>
   )
