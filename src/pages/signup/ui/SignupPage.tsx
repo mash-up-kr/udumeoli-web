@@ -9,6 +9,7 @@ import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { MOCK_USER, useSessionStore } from "@/entities/user"
+import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
@@ -109,12 +110,15 @@ function PermissionRequiredContent({ onClose }: { onClose: () => void }) {
 }
 
 // 가입 완료 팝업 — /map 이동 후 표시 (그래픽은 추후 교체 예정 placeholder)
+// 확인 버튼(onConfirm)만 온보딩으로 이어지고, X(onClose)는 그냥 닫는다
 function SignupCompleteContent({
   nickname,
   onClose,
+  onConfirm,
 }: {
   nickname: string
   onClose: () => void
+  onConfirm: () => void
 }) {
   return (
     <>
@@ -137,7 +141,7 @@ function SignupCompleteContent({
           친구와 함께 최고의 여행 순간을 담아 보세요.
         </p>
       </div>
-      <ButtonCta onClick={onClose}>확인</ButtonCta>
+      <ButtonCta onClick={onConfirm}>확인</ButtonCta>
     </>
   )
 }
@@ -189,7 +193,17 @@ export function SignupPage() {
     login({ ...MOCK_USER, nickname: name, profileImageUrl: profileImage })
     await router.navigate({ to: "/map" })
     openModal(
-      ({ close }) => <SignupCompleteContent nickname={name} onClose={close} />,
+      ({ close }) => (
+        <SignupCompleteContent
+          nickname={name}
+          onClose={close}
+          onConfirm={() => {
+            // 확인 → 첫 진입 간단 온보딩 시작 (1회만 노출)
+            close()
+            openOnboardingOverlay()
+          }}
+        />
+      ),
       { className: popupModalClassName, showCloseButton: false }
     )
   }
