@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import iconAlertSrc from "@/shared/assets/icon-alert.svg"
+import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
@@ -32,6 +33,7 @@ type Story = StoryObj
 
 const ICONS: Array<{ name: string; src: string }> = [
   { name: "icon-alert", src: iconAlertSrc },
+  { name: "icon-alert-danger", src: iconAlertDangerSrc },
   { name: "icon-arrow-left", src: iconArrowLeftSrc },
   { name: "icon-camera", src: iconCameraSrc },
   { name: "icon-camera-add", src: iconCameraAddSrc },

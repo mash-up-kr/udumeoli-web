@@ -9,6 +9,7 @@ import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { MOCK_USER, useSessionStore } from "@/entities/user"
+import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
 
@@ -28,7 +29,13 @@ const NICKNAME_INPUT_MAX = NICKNAME_MAX + 1
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
 
-function PermissionContent({ onClose }: { onClose: () => void }) {
+function PermissionContent({
+  onClose,
+  onCancel,
+}: {
+  onClose: () => void
+  onCancel: () => void
+}) {
   return (
     <>
       <button
@@ -59,7 +66,7 @@ function PermissionContent({ onClose }: { onClose: () => void }) {
         <ButtonCta
           variant="secondary"
           className="w-25 shrink-0"
-          onClick={onClose}
+          onClick={onCancel}
         >
           취소
         </ButtonCta>
@@ -67,6 +74,36 @@ function PermissionContent({ onClose }: { onClose: () => void }) {
           확인
         </ButtonCta>
       </div>
+    </>
+  )
+}
+
+// 권한 필요 안내 팝업 — 접근 권한 팝업에서 취소 시 노출, 확인만 제공 (Figma 1210-9229)
+function PermissionRequiredContent({ onClose }: { onClose: () => void }) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="닫기"
+        className="absolute top-4 right-4 flex size-7 items-center justify-center"
+        onClick={onClose}
+      >
+        <img src={iconCloseSrc} alt="" className="size-5" />
+      </button>
+      <div className="flex flex-col items-center gap-4 pt-4 text-center">
+        <img src={iconAlertDangerSrc} alt="" className="size-9" />
+        <div className="flex flex-col gap-2">
+          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+            원활한 서비스 이용을 위해
+            <br />
+            갤러리 접근 권한을 허용해 주세요
+          </DialogTitle>
+          <p className="text-b6 text-fg-neutral-subtle">
+            갤러리 접근 권한 허용 시, 이미지 업로드가 가능합니다.
+          </p>
+        </div>
+      </div>
+      <ButtonCta onClick={onClose}>확인</ButtonCta>
     </>
   )
 }
@@ -126,10 +163,24 @@ export function SignupPage() {
   React.useEffect(() => {
     if (permissionShown.current) return
     permissionShown.current = true
-    openModal(({ close }) => <PermissionContent onClose={close} />, {
-      className: popupModalClassName,
-      showCloseButton: false,
-    })
+    openModal(
+      ({ close }) => (
+        <PermissionContent
+          onClose={close}
+          onCancel={() => {
+            // 취소해도 권한이 필요함을 안내하는 팝업으로 이어짐
+            close()
+            openModal(
+              ({ close: closeRequired }) => (
+                <PermissionRequiredContent onClose={closeRequired} />
+              ),
+              { className: popupModalClassName, showCloseButton: false }
+            )
+          }}
+        />
+      ),
+      { className: popupModalClassName, showCloseButton: false }
+    )
   }, [])
 
   // 가입 완료 → /map으로 이동한 뒤 완료 팝업 표시 (OverlayProvider가 __root에 있어 라우트 이동 후에도 열 수 있음)
