@@ -94,12 +94,13 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
             hint="여행지를 클릭하고"
             title="사진을 업로드해주세요!"
           />
-          {/* 예시 사진 3장 — 왼쪽 무회전, 가운데 -4°(맨 앞), 오른쪽 +4° (Figma 1300-10145, 컨테이너 204px) */}
+          {/* 예시 사진 3장 — 세 장 모두 세로 중앙(y 30) 정렬, 왼쪽 무회전 x30 ·
+              가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
           <span className="relative block h-[60px] w-[204px]">
             <PhotoFrame
               src={photo3Src}
               cropPosition="52% 15%"
-              className="top-0 left-[120px] rotate-4"
+              className="top-[2px] left-[122px] rotate-4"
             />
             <PhotoFrame
               src={photo1Src}
@@ -109,7 +110,7 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
             <PhotoFrame
               src={photo2Src}
               cropPosition="50% 35%"
-              className="top-0 left-1/2 -translate-x-1/2 -rotate-4"
+              className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
             />
           </span>
           <span className="mt-12 rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
