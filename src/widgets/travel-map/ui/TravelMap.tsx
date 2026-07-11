@@ -1,10 +1,14 @@
 import * as React from "react"
+import type { TravelMapImplProps } from "./TravelMapImpl"
 
 import { cn } from "@/shared/lib/utils"
 
+type TravelMapProps = TravelMapImplProps & { className?: string }
+
 // maplibre-gl은 브라우저(WebGL) 전용 → 클라이언트에서만 동적 로드하여 SSR 오류 회피.
-export function TravelMap({ className }: { className?: string }) {
-  const [Impl, setImpl] = React.useState<React.ComponentType | null>(null)
+export function TravelMap({ className, ...implProps }: TravelMapProps) {
+  const [Impl, setImpl] =
+    React.useState<React.ComponentType<TravelMapImplProps> | null>(null)
 
   React.useEffect(() => {
     let active = true
@@ -18,7 +22,11 @@ export function TravelMap({ className }: { className?: string }) {
 
   return (
     <div className={cn("relative size-full overflow-hidden", className)}>
-      {Impl ? <Impl /> : <div className="size-full animate-pulse bg-muted" />}
+      {Impl ? (
+        <Impl {...implProps} />
+      ) : (
+        <div className="size-full animate-pulse bg-muted" />
+      )}
     </div>
   )
 }

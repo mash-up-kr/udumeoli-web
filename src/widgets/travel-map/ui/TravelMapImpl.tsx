@@ -18,12 +18,14 @@ import {
 import { useRegionColorStore } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
-import { openGallerySheet } from "@/features/photo-gallery"
+import { ButtonIcon } from "@/shared/ui/button-icon"
+import { GalleryPanel, openPhotoViewer } from "@/features/photo-gallery"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 import {
   RegionDecorateFlow,
   useDecorateStore,
 } from "@/features/region-decorate"
+import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY as string
 const MAP_STYLE = `https://api.maptiler.com/maps/019f1dec-144a-7e9c-9ab5-4398b89987f9/style.json?key=${MAPTILER_KEY}`
@@ -277,7 +279,12 @@ function PhotoTile({ label, imageUrl, size, onClick }: PhotoTileProps) {
   )
 }
 
-export function TravelMapImpl() {
+export type TravelMapImplProps = {
+  /** 지역 상세(최대 줌) 진입/이탈 알림 — 페이지 헤더 전환용 */
+  onRegionDetailChange?: (region: string | null) => void
+}
+
+export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
   const photos = useAllPhotos()
   const fills = useRegionColorStore((s) => s.fills)
   const partyMembers = usePotStore(
@@ -304,6 +311,8 @@ export function TravelMapImpl() {
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(
     null
   )
+  // 지역 상세 갤러리 패널 — true면 리스트 뷰(top 54)로 확장
+  const [galleryExpanded, setGalleryExpanded] = React.useState(false)
   // 첫 여행 등록 플로우 — 진행 중인 지역명 (null이면 일반 모드)
   const decorating = useDecorateStore((s) => s.region)
   const decorateStep = useDecorateStore((s) => s.step)
@@ -328,6 +337,29 @@ export function TravelMapImpl() {
     () => new Map(centroids.map((c) => [c.name, c])),
     [centroids]
   )
+
+  // 지역 상세 상태 — 최대 줌 + 지역 선택 (등록 플로우 제외)
+  const detailRegion =
+    !decorating && zoomStage === 3 && selectedRegion ? selectedRegion : null
+
+  React.useEffect(() => {
+    onRegionDetailChange?.(detailRegion)
+  }, [detailRegion, onRegionDetailChange])
+
+  // 지역 상세를 벗어나거나 다른 지역으로 이동하면 패널을 지도 뷰로 복귀
+  React.useEffect(() => {
+    setGalleryExpanded(false)
+  }, [detailRegion])
+
+  // 뒤로가기 — 선택 해제 후 메인 홈 지도(초기 뷰)로 줌아웃
+  const handleBackToHome = React.useCallback(() => {
+    setSelectedRegion(null)
+    mapInstanceRef.current?.flyTo({
+      center: [KOREA_VIEW.longitude, KOREA_VIEW.latitude],
+      zoom: KOREA_VIEW.zoom,
+      duration: 600,
+    })
+  }, [])
 
   // 사진이 하나라도 있는 지역 — 첫 여행 등록("+")이 이미 끝난 곳
   const photoRegionSet = React.useMemo(
@@ -898,7 +930,6 @@ export function TravelMapImpl() {
                   setSelectedRegion(p.region)
                   const c = centroidMap.get(p.region)
                   if (map && c) flyToRegion(map, c)
-                  openGallerySheet(p.region)
                 }}
               />
             </Marker>
@@ -907,6 +938,7 @@ export function TravelMapImpl() {
         {!decorating &&
           partySlots.map((slot) => {
             const offset = getSlotOffset(slot.totalSlots, slot.slotIndex)
+            const slotPhoto = slot.photo
             return (
               <Marker
                 key={`slot-${slot.region}-${slot.memberId}`}
@@ -915,14 +947,15 @@ export function TravelMapImpl() {
                 anchor="center"
                 offset={offset}
               >
-                {slot.photo ? (
+                {slotPhoto ? (
                   <PhotoTile
                     label={slot.nickname}
-                    imageUrl={slot.photo.thumbnailUrl}
+                    imageUrl={slotPhoto.thumbnailUrl}
                     size={SLOT_SIZE_2X}
                     onClick={(e) => {
                       e.stopPropagation()
-                      openGallerySheet(slot.region)
+                      // 카드 클릭 → 사진 상세보기 (Figma 1319-14756 #3)
+                      openPhotoViewer(slotPhoto.thumbnailUrl)
                     }}
                   />
                 ) : slot.isMe ? (
@@ -973,6 +1006,28 @@ export function TravelMapImpl() {
         ref={canvasRef}
         className="pointer-events-none absolute inset-0 size-full"
       />
+
+      {/* 지역 상세 — 뒤로가기 + 지역명 헤더 (Figma 1319-10362, 확장 시트가 덮을 땐 숨김) */}
+      {detailRegion && !galleryExpanded ? (
+        <div className="absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
+          <div className="flex h-[76px] items-center justify-between px-4 py-2">
+            <ButtonIcon aria-label="뒤로 가기" onClick={handleBackToHome}>
+              <img src={iconArrowLeftSrc} alt="" className="size-6" />
+            </ButtonIcon>
+            <span className="text-h3 text-fg-neutral-bold">{detailRegion}</span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 지역 상세 갤러리 패널 — dim 없이 지도 위 상시 노출, 핸들 드래그로 확장 */}
+      {detailRegion ? (
+        <GalleryPanel
+          key={detailRegion}
+          region={detailRegion}
+          expanded={galleryExpanded}
+          onExpandedChange={setGalleryExpanded}
+        />
+      ) : null}
 
       {/* 초기 줌에서만 노출되는 지역 사진 캐러셀 — 경계선 줌(1단계)부터 숨김 */}
       <RegionCardCarousel

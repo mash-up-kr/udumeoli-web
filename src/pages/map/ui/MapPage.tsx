@@ -1,3 +1,5 @@
+import * as React from "react"
+
 import { AppHeader } from "@/widgets/app-header"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMap } from "@/widgets/travel-map"
@@ -10,15 +12,20 @@ import { useDecorateStore } from "@/features/region-decorate"
 export function MapPage() {
   // 첫 여행 등록 플로우 중엔 플로우 자체 헤더(뒤로가기+타이틀)만 노출
   const decorating = useDecorateStore((s) => s.region !== null)
+  // 지역 상세(줌인) 중엔 지도 쪽 헤더(뒤로가기+지역명)로 대체
+  const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
 
   return (
     <RequireAuth>
       <MobileLayout className="flex h-dvh flex-col">
         <main className="relative flex-1">
-          <TravelMap className="absolute inset-0" />
+          <TravelMap
+            className="absolute inset-0"
+            onRegionDetailChange={setDetailRegion}
+          />
 
           {/* 지도 위에 떠 있는 브랜드 헤더 + 여행팟 선택 */}
-          {!decorating ? (
+          {!decorating && detailRegion === null ? (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
               <AppHeader
                 className="pointer-events-auto"
