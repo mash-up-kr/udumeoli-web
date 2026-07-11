@@ -53,12 +53,48 @@ const RED: Array<Swatch> = [
   { cls: "bg-red-600", step: "600", hex: "#C42E24" },
 ]
 
-const SINGLES: Array<Swatch> = [
-  { cls: "bg-orange-100", step: "Orange 100", hex: "#FFDAB5" },
-  { cls: "bg-yellow-100", step: "Yellow 100", hex: "#FFF0B1" },
-  { cls: "bg-green-100", step: "Green 100", hex: "#C8F0C0" },
-  { cls: "bg-indigo-100", step: "Indigo 100", hex: "#C4C8FF" },
-  { cls: "bg-violet-100", step: "Violet 100", hex: "#E4BFFF" },
+// 100-alpha는 100의 60% 투명 버전 (Figma 1319-14769)
+const ACCENTS: Array<{ title: string; items: Array<Swatch> }> = [
+  {
+    title: "Orange",
+    items: [
+      { cls: "bg-orange-100-alpha", step: "100-alpha", hex: "#FFDAB5 (60%)" },
+      { cls: "bg-orange-100", step: "100", hex: "#FFDAB5" },
+      { cls: "bg-orange-500", step: "500", hex: "#E3800F" },
+    ],
+  },
+  {
+    title: "Yellow",
+    items: [
+      { cls: "bg-yellow-100-alpha", step: "100-alpha", hex: "#FFF0B1 (60%)" },
+      { cls: "bg-yellow-100", step: "100", hex: "#FFF0B1" },
+      { cls: "bg-yellow-500", step: "500", hex: "#DBB71F" },
+    ],
+  },
+  {
+    title: "Green",
+    items: [
+      { cls: "bg-green-100-alpha", step: "100-alpha", hex: "#C8F0C0 (60%)" },
+      { cls: "bg-green-100", step: "100", hex: "#C8F0C0" },
+      { cls: "bg-green-500", step: "500", hex: "#7CB571" },
+    ],
+  },
+  {
+    title: "Indigo",
+    items: [
+      { cls: "bg-indigo-100-alpha", step: "100-alpha", hex: "#C4C8FF (60%)" },
+      { cls: "bg-indigo-100", step: "100", hex: "#C4C8FF" },
+      { cls: "bg-indigo-500", step: "500", hex: "#7B7FBF" },
+    ],
+  },
+  {
+    title: "Violet",
+    items: [
+      { cls: "bg-violet-100-alpha", step: "100-alpha", hex: "#E4BFFF (60%)" },
+      { cls: "bg-violet-100", step: "100", hex: "#E4BFFF" },
+      { cls: "bg-violet-500", step: "500", hex: "#B689D7" },
+    ],
+  },
 ]
 
 function Row({ title, items }: { title: string; items: Array<Swatch> }) {
@@ -84,7 +120,9 @@ export const Palette: Story = {
       <Row title="Neutral" items={NEUTRAL} />
       <Row title="Blue" items={BLUE} />
       <Row title="Red" items={RED} />
-      <Row title="Accent" items={SINGLES} />
+      {ACCENTS.map((group) => (
+        <Row key={group.title} title={group.title} items={group.items} />
+      ))}
     </div>
   ),
 }

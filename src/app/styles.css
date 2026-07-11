@@ -154,11 +154,26 @@
     --color-red-500: #e8453a;
     --color-red-600: #c42e24;
 
+    /* 100-alpha: 100의 60% 투명 버전 (Figma 1319-14769) */
+    --color-orange-100-alpha: color-mix(in srgb, var(--color-orange-100) 60%, transparent);
     --color-orange-100: #ffdab5;
+    --color-orange-500: #e3800f;
+
+    --color-yellow-100-alpha: color-mix(in srgb, var(--color-yellow-100) 60%, transparent);
     --color-yellow-100: #fff0b1;
+    --color-yellow-500: #dbb71f;
+
+    --color-green-100-alpha: color-mix(in srgb, var(--color-green-100) 60%, transparent);
     --color-green-100: #c8f0c0;
+    --color-green-500: #7cb571;
+
+    --color-indigo-100-alpha: color-mix(in srgb, var(--color-indigo-100) 60%, transparent);
     --color-indigo-100: #c4c8ff;
+    --color-indigo-500: #7b7fbf;
+
+    --color-violet-100-alpha: color-mix(in srgb, var(--color-violet-100) 60%, transparent);
     --color-violet-100: #e4bfff;
+    --color-violet-500: #b689d7;
 
     /* ===== Semantic Color (Design System v1.0.0) ===== */
     /* 이름 규칙: color-<property: bg|fg|stroke>-<role>-<variant>[-state] → primitive 참조 */
