@@ -4,16 +4,21 @@ import type { TravelPot } from "@/entities/travel-pot"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { NumberCode } from "@/shared/ui/number-code"
+import { Profile } from "@/shared/ui/profile"
 import {
   BottomSheetScreenHeader,
   openBottomSheet,
 } from "@/shared/ui/bottom-sheet"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
+import { useAllPhotos } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
 import partySrc from "@/shared/assets/party.svg"
 
 const CODE_LENGTH = 6
+
+// 여행팟 최대 인원 — 6명 고정 (Figma 여행팟 정보 확인 팝업)
+const POT_CAPACITY = 6
 
 const JOIN_ERROR_MESSAGES = {
   not_found: "존재하지 않는 코드예요",
@@ -26,6 +31,9 @@ const SHEET_TOAST_POSITION = "bottom-[106px]"
 
 // 참여 완료 토스트는 지도 하단 캐러셀 위 16px (시안 #1048-5977: 34 + 카드 192 + 16)
 const MAP_TOAST_POSITION = "bottom-[242px]"
+
+// 캐러셀(image-card-pattern)이 없는 첫 참여 상태에서는 하단 62px (시안 9_토스트_여행팟참여완료)
+const MAP_TOAST_POSITION_EMPTY = "bottom-[62px]"
 
 function JoinConfirm({
   pot,
@@ -41,10 +49,30 @@ function JoinConfirm({
       <DialogTitle className="py-2 text-center text-h5-1 text-fg-neutral-bold">
         여행팟 정보를 확인해 주세요
       </DialogTitle>
-      <div className="h-[140px] rounded-[24px] bg-bg-neutral-subtle p-4">
-        <p className="line-clamp-2 text-h6-1 text-fg-neutral-bold">
-          {pot.name}
-        </p>
+      <div className="flex flex-col gap-4 rounded-[24px] bg-bg-neutral-subtle p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="line-clamp-1 min-w-0 text-h6-1 text-fg-neutral-bold">
+            {pot.name}
+          </p>
+          <span className="shrink-0 rounded-full bg-bg-neutral-weak px-3 py-1.5 text-b7 text-fg-neutral-bold">
+            {pot.members.length}/{POT_CAPACITY}명
+          </span>
+        </div>
+        {/* 참여자 닉네임 리스트 — 3열, 프로필 16px (Figma 311×108 · pb 12) */}
+        <ul className="grid w-full grid-cols-3 gap-2 pb-3">
+          {pot.members.map((member) => (
+            <li key={member.id} className="flex min-w-0 items-center gap-1">
+              <Profile
+                size="xs"
+                src={member.profileImageUrl ?? undefined}
+                alt=""
+              />
+              <span className="truncate text-b7 text-fg-neutral-bold">
+                {member.nickname}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
       <div className="flex w-full gap-3">
         <ButtonCta
@@ -63,6 +91,8 @@ function JoinConfirm({
 function PotJoinSheet({ close }: { close: () => void }) {
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
+  // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
+  const hasRegionCards = useAllPhotos().length > 0
   const [code, setCode] = React.useState("")
   // 코드 검증 실패 시 에러 테두리 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)
@@ -84,15 +114,23 @@ function PotJoinSheet({ close }: { close: () => void }) {
       ({ close: closeConfirm }) => (
         <JoinConfirm
           pot={pot}
-          onRetry={closeConfirm}
+          onRetry={() => {
+            // 다시 입력 — 이전 화면 복귀 + 코드 초기화 (X 닫기는 코드 유지)
+            setCode("")
+            setCodeError(false)
+            closeConfirm()
+          }}
           onYes={() => {
             confirmJoin(pot)
             closeConfirm()
             close()
             showToast({
-              message: `${pot.name}에 참여했어요`,
+              // 인원 수는 나를 포함한 값
+              message: `${pot.name}에 참여했어요 (${pot.members.length + 1}/${POT_CAPACITY})`,
               icon: "check",
-              className: MAP_TOAST_POSITION,
+              className: hasRegionCards
+                ? MAP_TOAST_POSITION
+                : MAP_TOAST_POSITION_EMPTY,
             })
           }}
         />
