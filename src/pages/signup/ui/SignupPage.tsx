@@ -80,7 +80,14 @@ function PermissionContent({
 }
 
 // 권한 필요 안내 팝업 — 접근 권한 팝업에서 취소 시 노출, 확인만 제공 (Figma 1210-9229)
-function PermissionRequiredContent({ onClose }: { onClose: () => void }) {
+// 확인(onConfirm)은 접근 권한 팝업 재노출로, X(onClose)는 그냥 닫기
+function PermissionRequiredContent({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void
+  onConfirm: () => void
+}) {
   return (
     <>
       <button
@@ -104,8 +111,35 @@ function PermissionRequiredContent({ onClose }: { onClose: () => void }) {
           </p>
         </div>
       </div>
-      <ButtonCta onClick={onClose}>확인</ButtonCta>
+      <ButtonCta onClick={onConfirm}>확인</ButtonCta>
     </>
+  )
+}
+
+// 접근 권한 확인 플로우 — 취소 → 권한 필요 안내, 안내의 확인 → 접근 권한 팝업 재노출 순환
+function openPermissionFlow() {
+  openModal(
+    ({ close }) => (
+      <PermissionContent
+        onClose={close}
+        onCancel={() => {
+          close()
+          openModal(
+            ({ close: closeRequired }) => (
+              <PermissionRequiredContent
+                onClose={closeRequired}
+                onConfirm={() => {
+                  closeRequired()
+                  openPermissionFlow()
+                }}
+              />
+            ),
+            { className: popupModalClassName, showCloseButton: false }
+          )
+        }}
+      />
+    ),
+    { className: popupModalClassName, showCloseButton: false }
   )
 }
 
@@ -167,24 +201,7 @@ export function SignupPage() {
   React.useEffect(() => {
     if (permissionShown.current) return
     permissionShown.current = true
-    openModal(
-      ({ close }) => (
-        <PermissionContent
-          onClose={close}
-          onCancel={() => {
-            // 취소해도 권한이 필요함을 안내하는 팝업으로 이어짐
-            close()
-            openModal(
-              ({ close: closeRequired }) => (
-                <PermissionRequiredContent onClose={closeRequired} />
-              ),
-              { className: popupModalClassName, showCloseButton: false }
-            )
-          }}
-        />
-      ),
-      { className: popupModalClassName, showCloseButton: false }
-    )
+    openPermissionFlow()
   }, [])
 
   // 가입 완료 → /map으로 이동한 뒤 완료 팝업 표시 (OverlayProvider가 __root에 있어 라우트 이동 후에도 열 수 있음)
