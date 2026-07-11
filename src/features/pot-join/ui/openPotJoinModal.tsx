@@ -3,8 +3,9 @@ import * as React from "react"
 import type { TravelPot } from "@/entities/travel-pot"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
+import { Chip } from "@/shared/ui/chip"
 import { NumberCode } from "@/shared/ui/number-code"
-import { Profile } from "@/shared/ui/profile"
+import { DEFAULT_PROFILE_SRC } from "@/shared/ui/profile"
 import {
   BottomSheetScreenHeader,
   openBottomSheet,
@@ -49,30 +50,27 @@ function JoinConfirm({
       <DialogTitle className="py-2 text-center text-h5-1 text-fg-neutral-bold">
         여행팟 정보를 확인해 주세요
       </DialogTitle>
-      <div className="flex flex-col gap-4 rounded-[24px] bg-bg-neutral-subtle p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="line-clamp-1 min-w-0 text-h6-1 text-fg-neutral-bold">
+      {/* 여행팟 정보 카드 — 팟 이름 + n/6명 칩 + 참여자 칩 리스트 (Figma 1176-8912) */}
+      <div className="w-full rounded-[12px] bg-bg-neutral-subtle pb-3">
+        <div className="flex w-full items-center justify-between gap-2 p-3">
+          <p className="min-w-0 truncate text-h5 text-fg-neutral-bold">
             {pot.name}
           </p>
-          <span className="shrink-0 rounded-full bg-bg-neutral-weak px-3 py-1.5 text-b7 text-fg-neutral-bold">
-            {pot.members.length}/{POT_CAPACITY}명
-          </span>
+          <Chip
+            label={`${pot.members.length}/${POT_CAPACITY}명`}
+            className="shrink-0"
+          />
         </div>
-        {/* 참여자 닉네임 리스트 — 3열, 프로필 16px (Figma 311×108 · pb 12) */}
-        <ul className="grid w-full grid-cols-3 gap-2 pb-3">
+        <div className="flex w-full flex-wrap items-center justify-center">
           {pot.members.map((member) => (
-            <li key={member.id} className="flex min-w-0 items-center gap-1">
-              <Profile
-                size="xs"
-                src={member.profileImageUrl ?? undefined}
-                alt=""
-              />
-              <span className="truncate text-b7 text-fg-neutral-bold">
-                {member.nickname}
-              </span>
-            </li>
+            <Chip
+              key={member.id}
+              label={member.nickname}
+              profileSrc={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
+              className="bg-transparent shadow-none"
+            />
           ))}
-        </ul>
+        </div>
       </div>
       <div className="flex w-full gap-3">
         <ButtonCta
