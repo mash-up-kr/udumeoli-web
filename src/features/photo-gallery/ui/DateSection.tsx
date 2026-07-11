@@ -25,6 +25,10 @@ type DateSectionProps = {
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
+// 등록 팝(--animate-photo-pop 0.45s)이 끝나고 잠깐 숨 고른 뒤 완료 연출 시작
+const POP_DURATION_MS = 450
+const CELEBRATE_DELAY_MS = POP_DURATION_MS + 150
+
 // 2026-05-12 → 2026/05/12 (TUE)
 function formatDateLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number)
@@ -45,20 +49,31 @@ export function DateSection({
 }: DateSectionProps) {
   const allUploaded = slots.every((s) => s.photoUrl !== null)
   const slotSize = slots.length <= 4 ? 80 : 64
-  // 회색은 피그마 raw 값(#c2c7cb 30%) — 대응 토큰 없음, 디자인 확정 시 재검토
-  const tint = allUploaded ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
   // 내 슬롯은 add 버튼 자리 그대로 항상 맨 오른쪽, 나머지는 사진 → 미업로드(zzz) 순 (Figma 1260-10921)
   const slotRank = (s: GallerySlot) =>
     s.isMe ? 2 : s.photoUrl !== null ? 0 : 1
   const ordered = [...slots].sort((a, b) => slotRank(a) - slotRank(b))
 
-  // 전원 업로드가 '완료되는 순간'에만 행 전체 물결 흔들림 (완료 상태로 열리면 재생 안 함)
+  // 전원 업로드가 '완료되는 순간'에만 완료 연출(물결 + 파란 tint) 재생 (완료 상태로 열리면 재생 안 함).
+  // 내 등록 팝이 트리거면 팝이 끝난 뒤 시작해 두 애니메이션이 순차 재생되게 한다.
   const [celebrate, setCelebrate] = useState(false)
+  // 파란 tint는 완료 연출과 함께 켜짐 — 완료 상태로 열리면 처음부터 파랑
+  const [completeTint, setCompleteTint] = useState(allUploaded)
   const prevAllUploaded = useRef(allUploaded)
   useEffect(() => {
-    if (!prevAllUploaded.current && allUploaded) setCelebrate(true)
+    const justCompleted = !prevAllUploaded.current && allUploaded
     prevAllUploaded.current = allUploaded
-  }, [allUploaded])
+    if (!justCompleted) return
+    const delay = poppedMemberId != null ? CELEBRATE_DELAY_MS : 0
+    const timer = setTimeout(() => {
+      setCelebrate(true)
+      setCompleteTint(true)
+    }, delay)
+    return () => clearTimeout(timer)
+  }, [allUploaded, poppedMemberId])
+
+  // 회색은 피그마 raw 값(#c2c7cb 30%) — 대응 토큰 없음, 디자인 확정 시 재검토
+  const tint = completeTint ? "bg-blue-500/30" : "bg-[rgba(194,199,203,0.3)]"
 
   return (
     <section className="flex w-full flex-col items-center gap-4">
@@ -68,7 +83,7 @@ export function DateSection({
 
       <div
         className={cn(
-          "relative flex w-full items-center justify-center rounded-[24px] py-2 transition-colors duration-500",
+          "relative flex w-full items-center justify-center rounded-[24px] py-2 transition-colors duration-1000 ease-out",
           tint
         )}
       >
@@ -76,9 +91,9 @@ export function DateSection({
           const rotate = i % 2 === 0 ? 4 : -4
           const photoUrl = slot.photoUrl
           const isAdd = slot.isMe && photoUrl === null
-          const isPopped = slot.memberId === poppedMemberId
-          // 팝이 재생 중인 내 슬롯은 물결에서 제외 — 두 애니메이션이 transform을 공유
-          const wiggle = celebrate && !isPopped
+          // 물결이 시작되면 팝 클래스를 내려 내 슬롯도 물결에 합류 — 두 애니메이션이 transform을 공유
+          const isPopped = slot.memberId === poppedMemberId && !celebrate
+          const wiggle = celebrate
           return (
             <div
               key={slot.memberId}
@@ -134,7 +149,7 @@ export function DateSection({
         {/* 하단 반투명 블러 띠 */}
         <div
           className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42px] rounded-t-[12px] rounded-b-[24px] border border-neutral-50 backdrop-blur-[2px] transition-colors duration-500",
+            "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[42px] rounded-t-[12px] rounded-b-[24px] border border-neutral-50 backdrop-blur-[2px] transition-colors duration-1000 ease-out",
             tint
           )}
         />
