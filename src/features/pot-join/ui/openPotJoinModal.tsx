@@ -64,10 +64,13 @@ function PotJoinSheet({ close }: { close: () => void }) {
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
   const [code, setCode] = React.useState("")
+  // 코드 검증 실패 시 에러 테두리 — 다시 입력하면 해제
+  const [codeError, setCodeError] = React.useState(false)
 
   const handleDone = () => {
     const result = previewJoin(code)
     if (result.status !== "ok") {
+      setCodeError(true)
       showToast({
         message: JOIN_ERROR_MESSAGES[result.status],
         icon: "alert",
@@ -116,7 +119,11 @@ function PotJoinSheet({ close }: { close: () => void }) {
           length={CODE_LENGTH}
           mode="alphanumeric"
           value={code}
-          onChange={setCode}
+          error={codeError}
+          onChange={(next) => {
+            setCode(next)
+            setCodeError(false)
+          }}
         />
       </div>
       <div className="w-full px-4 pb-[34px]">

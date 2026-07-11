@@ -10,6 +10,8 @@ export interface NumberCodeProps {
   mode?: "numeric" | "alphanumeric"
   /** 발급된 코드 표시 등 읽기 전용 노출. 입력·포커스 이동 비활성. */
   readOnly?: boolean
+  /** 에러 상태 — stroke-danger-solid 테두리 (포커스 시에도 유지). */
+  error?: boolean
   className?: string
 }
 
@@ -17,7 +19,8 @@ export interface NumberCodeProps {
  * NumberCode (Figma NumberCode v1.0.0).
  *
  * 초대코드 등을 한 자리씩 입력하는 코드 인풋. 붙여넣기 지원.
- * 셀 44×60 · radius 12 · `bg-neutral-subtle`, 포커스 시 `stroke-neutral-bold` 테두리.
+ * 셀 44×60 · radius 12 · `bg-neutral-subtle`, 포커스 시 `stroke-neutral-bold` 테두리,
+ * 에러 시 `stroke-danger-solid` 테두리.
  */
 export function NumberCode({
   length = 6,
@@ -25,6 +28,7 @@ export function NumberCode({
   onChange,
   mode = "numeric",
   readOnly = false,
+  error = false,
   className,
 }: NumberCodeProps) {
   const refs = React.useRef<Array<HTMLInputElement | null>>([])
@@ -91,7 +95,9 @@ export function NumberCode({
           className={cn(
             "h-[60px] w-11 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
             "text-center text-b2 text-fg-neutral-bold caret-transparent",
-            "outline-none focus:border-stroke-neutral-bold"
+            "outline-none focus:border-stroke-neutral-bold",
+            error &&
+              "border-stroke-danger-solid focus:border-stroke-danger-solid"
           )}
         />
       ))}

@@ -9,7 +9,7 @@ const meta: Meta<typeof NumberCode> = {
     docs: {
       description: {
         component:
-          "NumberCode (Figma NumberCode v1.0.0). 초대코드 입력용 숫자 코드 인풋 — 한 자리씩 박스에 입력, 붙여넣기 지원. 셀 44×60 · radius 12, 포커스 시 stroke-neutral-bold 테두리.",
+          "NumberCode (Figma NumberCode v1.0.0). 초대코드 입력용 숫자 코드 인풋 — 한 자리씩 박스에 입력, 붙여넣기 지원. 셀 44×60 · radius 12, 포커스 시 stroke-neutral-bold 테두리, 에러 시 stroke-danger-solid 테두리.",
       },
     },
   },
@@ -19,6 +19,7 @@ const meta: Meta<typeof NumberCode> = {
       description: "박스 수 (기본 6)",
     },
     value: { control: "text" },
+    error: { control: "boolean", description: "에러 테두리 노출" },
   },
 }
 export default meta
@@ -55,4 +56,15 @@ export const Alphanumeric: Story = {
 /** 발급된 코드 표시용 읽기 전용 (여행팟 생성 완료 모달). */
 export const ReadOnly: Story = {
   render: () => <NumberCode length={6} value="121ha1" readOnly />,
+}
+
+/** 에러 상태 (Empty / Filled) — 포커스 중에도 danger 테두리 유지. */
+export const ErrorState: Story = {
+  name: "Error",
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <NumberCode length={6} value="" error onChange={() => {}} />
+      <NumberCode length={6} value="123456" error onChange={() => {}} />
+    </div>
+  ),
 }
