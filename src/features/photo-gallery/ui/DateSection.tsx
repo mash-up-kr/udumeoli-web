@@ -49,8 +49,9 @@ export function DateSection({
 }: DateSectionProps) {
   const allUploaded = slots.every((s) => s.photoUrl !== null)
   const slotSize = slots.length <= 4 ? 80 : 64
-  // 6명부터는 겹침을 키워 행 총폭이 패널 밖으로 삐져나가지 않게 (6×70 − 5×18 = 330px)
-  const overlapCls = slots.length >= 6 ? "-mr-[18px]" : "-mr-3"
+  // 6명부터는 겹침을 키워 행 총폭이 패널 밖으로 삐져나가지 않게
+  // (6×70 − 5×24 = 300px — 360px 뷰포트의 패널 콘텐츠 폭 320px에도 수납)
+  const overlapCls = slots.length >= 6 ? "-mr-6" : "-mr-3"
   // 내 슬롯은 add 버튼 자리 그대로 항상 맨 오른쪽, 나머지는 사진 → 미업로드(zzz) 순 (Figma 1260-10921)
   const slotRank = (s: GallerySlot) =>
     s.isMe ? 2 : s.photoUrl !== null ? 0 : 1
