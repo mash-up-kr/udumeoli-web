@@ -1,13 +1,10 @@
 import "maplibre-gl/dist/maplibre-gl.css"
 import * as React from "react"
 import { Map as MapGL, Marker } from "react-map-gl/maplibre"
-import { feature as toFeature, merge as toMerge } from "topojson-client"
 import { Plus } from "lucide-react"
-import { RegionCardCarousel } from "./RegionCardCarousel"
 import { useRegionHighlight } from "./useRegionHighlight"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { Map as MapLibreMap } from "maplibre-gl"
-import type { Topology } from "topojson-specification"
 
 import type { RegionFill } from "@/entities/region"
 import {
@@ -26,24 +23,18 @@ import {
   useDecorateStore,
 } from "@/features/region-decorate"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
+import {
+  computeCentroid,
+  computeFeatureBBox,
+  getSlotOffset,
+} from "@/shared/lib/geo"
+import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
+import { PhotoTile } from "@/shared/ui/photo-tile"
+import { RegionCardCarousel } from "@/shared/ui/region-card-carousel"
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY as string
 const MAP_STYLE = `https://api.maptiler.com/maps/019f1dec-144a-7e9c-9ab5-4398b89987f9/style.json?key=${MAPTILER_KEY}`
 const KOREA_VIEW = { longitude: 127.8, latitude: 36.2, zoom: 6.5 }
-const MUNICIPALITIES_URL =
-  "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-topo-simple.json"
-const PROVINCES_URL =
-  "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-topo-simple.json"
-const METRO_CITIES = new Set([
-  "서울특별시",
-  "부산광역시",
-  "대구광역시",
-  "인천광역시",
-  "광주광역시",
-  "대전광역시",
-  "울산광역시",
-  "세종특별자치시",
-])
 
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 
@@ -73,43 +64,6 @@ type PartySlot = {
   isMe: boolean
   slotIndex: number
   totalSlots: number
-}
-
-// 폴리곤 면적 가중 centroid (shoelace) — bbox 중심과 달리 오목한 해안선에서도 도형 내부에 안착
-function ringCentroid(
-  ring: Array<Array<number>>
-): { center: [number, number]; area: number } | null {
-  let area = 0
-  let cx = 0
-  let cy = 0
-  for (let i = 0; i < ring.length - 1; i++) {
-    const [x0, y0] = ring[i]
-    const [x1, y1] = ring[i + 1]
-    const cross = x0 * y1 - x1 * y0
-    area += cross
-    cx += (x0 + x1) * cross
-    cy += (y0 + y1) * cross
-  }
-  area /= 2
-  if (area === 0) return null
-  return { center: [cx / (6 * area), cy / (6 * area)], area: Math.abs(area) }
-}
-
-function computeCentroid(feature: GeoJSON.Feature): [number, number] | null {
-  const g = feature.geometry
-  let rings: Array<Array<Array<number>>> = []
-  if (g.type === "Polygon") rings = [g.coordinates[0]]
-  else if (g.type === "MultiPolygon") rings = g.coordinates.map((p) => p[0])
-  else return null
-
-  if (rings.length === 0) return null
-
-  const computed = rings.map(ringCentroid).filter((r) => r !== null)
-  if (computed.length === 0) return null
-
-  // 가장 큰 폴리곤(본토) 기준
-  const largest = computed.reduce((a, b) => (a.area >= b.area ? a : b))
-  return largest.center
 }
 
 function addLayers(
@@ -194,34 +148,6 @@ function addLayers(
   return true
 }
 
-// 지역 폴리곤 전체 bbox — 등록 플로우 진입 시 fitBounds용
-function computeFeatureBBox(
-  feature: GeoJSON.Feature
-): [[number, number], [number, number]] | null {
-  const g = feature.geometry
-  let rings: Array<Array<Array<number>>> = []
-  if (g.type === "Polygon") rings = g.coordinates
-  else if (g.type === "MultiPolygon") rings = g.coordinates.flat()
-  else return null
-  let minLng = Infinity
-  let minLat = Infinity
-  let maxLng = -Infinity
-  let maxLat = -Infinity
-  for (const ring of rings) {
-    for (const [lng, lat] of ring) {
-      if (lng < minLng) minLng = lng
-      if (lng > maxLng) maxLng = lng
-      if (lat < minLat) minLat = lat
-      if (lat > maxLat) maxLat = lat
-    }
-  }
-  if (minLng === Infinity) return null
-  return [
-    [minLng, minLat],
-    [maxLng, maxLat],
-  ]
-}
-
 const MAP_INTERACTIONS = [
   "dragPan",
   "scrollZoom",
@@ -233,50 +159,12 @@ const MAP_INTERACTIONS = [
 
 const SLOT_SIZE_2X = 80
 
-// 등간격 원형 분포 — N명을 원 위에 균등 배치, 겹치지 않음
-function getSlotOffset(total: number, index: number): [number, number] {
-  if (total === 1) return [0, 0]
-  const radius = total <= 3 ? 64 : total <= 6 ? 80 : 96
-  // 12시 방향 시작
-  const angle = (index / total) * 2 * Math.PI - Math.PI / 2
-  return [Math.cos(angle) * radius, Math.sin(angle) * radius]
-}
-
 // 0: 초기 / 1: 경계선+"+" / 2: 색상+72px 핀 / 3: 파티 슬롯(최대 줌)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
   if (zoom >= PARTY_ENTER) return 3
   if (zoom >= ZOOM_COLOR) return 2
   if (zoom >= BOUNDARY_ZOOM) return 1
   return 0
-}
-
-type PhotoTileProps = {
-  label: string
-  imageUrl: string
-  size: number
-  onClick: (e: React.MouseEvent) => void
-}
-
-// 사진 핀 / 파티 슬롯 공용 타일 — 닉네임/지역명 칩 + 정사각 이미지
-function PhotoTile({ label, imageUrl, size, onClick }: PhotoTileProps) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="group flex flex-col items-center gap-1"
-    >
-      <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
-        {label}
-      </span>
-      <span
-        className="block overflow-hidden rounded-2xl border-2 border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] transition-all group-hover:scale-105"
-        style={{ width: size, height: size }}
-      >
-        <img src={imageUrl} alt="" className="size-full object-cover" />
-      </span>
-    </button>
-  )
 }
 
 export type TravelMapImplProps = {
@@ -675,69 +563,8 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     initedRef.current = true
     mapInstanceRef.current = map
 
-    Promise.all([
-      fetch(MUNICIPALITIES_URL).then((r) => r.json()),
-      fetch(PROVINCES_URL).then((r) => r.json()),
-    ])
-      .then(([muniTopo, provTopo]: [Topology, Topology]) => {
-        const muniKey = Object.keys(muniTopo.objects)[0]
-        const muniGeoms = (
-          muniTopo.objects[muniKey] as {
-            geometries: Array<{ properties: Record<string, unknown> }>
-          }
-        ).geometries
-
-        // 구가 있는 일반시 → 시 이름으로 그룹핑 후 merge
-        const cityGroups = new Map<string, typeof muniGeoms>()
-        for (const geom of muniGeoms) {
-          const name = geom.properties.name as string | undefined
-          if (!name?.endsWith("구") || !name.includes("시")) continue
-          const cityName = name.match(/^(.+시)/)?.[1]
-          if (!cityName) continue
-          if (!cityGroups.has(cityName)) cityGroups.set(cityName, [])
-          cityGroups.get(cityName)!.push(geom)
-        }
-
-        const mergedCityFeatures: Array<GeoJSON.Feature> = []
-        for (const [cityName, geoms] of cityGroups) {
-          const merged = toMerge(
-            muniTopo,
-            geoms as Parameters<typeof toMerge>[1]
-          )
-          mergedCityFeatures.push({
-            type: "Feature",
-            geometry: merged,
-            properties: { name: cityName },
-          })
-        }
-
-        // 군 + 단일 시 (구 없는 시) — merge로 이미 만든 시는 원본에서 제외해 중복 방지
-        const muniRaw = toFeature(
-          muniTopo,
-          muniTopo.objects[muniKey]
-        ) as unknown as GeoJSON.FeatureCollection
-        const gunFeatures = muniRaw.features.filter((f) => {
-          const name = f.properties?.name as string | undefined
-          if (!name || cityGroups.has(name)) return false
-          return name.endsWith("군") || name.endsWith("시")
-        })
-
-        const provKey = Object.keys(provTopo.objects)[0]
-        const provRaw = toFeature(
-          provTopo,
-          provTopo.objects[provKey]
-        ) as unknown as GeoJSON.FeatureCollection
-        const cityFeatures = provRaw.features.filter((f) =>
-          METRO_CITIES.has(f.properties?.name as string)
-        )
-
-        const geojson: GeoJSON.FeatureCollection = {
-          type: "FeatureCollection",
-          features: [...cityFeatures, ...mergedCityFeatures, ...gunFeatures],
-        }
-        geojson.features.forEach((f, i) => {
-          f.id = i
-        })
+    loadKoreaGeoJson()
+      .then((geojson) => {
         geojsonRef.current = geojson
 
         if (addLayers(map, MUNI_SRC, MUNI_FILL, MUNI_LINE, geojson)) {
