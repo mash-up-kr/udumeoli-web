@@ -43,8 +43,9 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
           "px-2 text-h5-1 text-fg-neutral-bold",
           classNames?.caption_label
         ),
+        // month(relative)가 DOM상 뒤에 그려져 캡션 행이 버튼 클릭을 가로채지 않도록 z-10
         nav: cn(
-          "absolute top-0 right-0 flex h-10 items-center gap-2",
+          "absolute top-0 right-0 z-10 flex h-10 items-center gap-2",
           classNames?.nav
         ),
         button_previous: cn(navButton, classNames?.button_previous),
