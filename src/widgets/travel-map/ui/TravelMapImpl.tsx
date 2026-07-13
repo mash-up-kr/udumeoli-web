@@ -3,6 +3,7 @@ import * as React from "react"
 import { Map as MapGL, Marker } from "react-map-gl/maplibre"
 import { feature as toFeature, merge as toMerge } from "topojson-client"
 import { Plus } from "lucide-react"
+import { POPULAR_REGIONS } from "../model/popular-regions"
 import { RegionCardCarousel } from "./RegionCardCarousel"
 import { useRegionHighlight } from "./useRegionHighlight"
 import type { MapRef } from "react-map-gl/maplibre"
@@ -15,16 +16,19 @@ import {
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
-import { useRegionColorStore } from "@/entities/region"
+import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { ButtonIcon } from "@/shared/ui/button-icon"
+import { showToast } from "@/shared/ui/toast"
 import { GalleryPanel, openPhotoViewer } from "@/features/photo-gallery"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 import {
   RegionDecorateFlow,
+  partySlotOffset,
   useDecorateStore,
 } from "@/features/region-decorate"
+import iconAddSrc from "@/shared/assets/icon-add.svg"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY as string
@@ -50,10 +54,9 @@ const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const MUNI_SRC = "municipalities"
 const MUNI_FILL = "municipality-fill"
 const MUNI_LINE = "municipality-line"
-const MUNI_DASH = "municipality-dash" // 첫 여행 등록 플로우의 점선 강조
-// 등록 플로우 점선 색 — Step1 다크 / Step2·3 주황 (시안 raw 값, 토큰 없음)
-const DASH_DARK = "#232936"
-const DASH_ORANGE = "#ff9331"
+const MUNI_DASH = "municipality-dash" // 첫 여행 등록 플로우의 강조선
+// 등록 플로우 강조선 — 색상 미선택 시 다크, 선택 시 해당 색 500 (Figma 1319-16850)
+const DASH_DARK = "#232936" // --color-neutral-800
 const BOUNDARY_ZOOM = 7.5 // 경계선 + "+" 버튼 등장
 const ZOOM_COLOR = 8.5 // 2개 핀 + 72px 사이즈
 const PARTY_ZOOM = 9.5 // 파티 슬롯 자동 노출 임계점 = 맵 최대 줌
@@ -155,8 +158,9 @@ function addLayers(
           "case",
           isActive,
           0.15,
+          // 100 컬러의 60% = primitive {color}-100-alpha (Figma 1319-16850)
           hasColor,
-          0.7,
+          0.6,
           hasPhoto,
           0.08,
           0,
@@ -179,7 +183,7 @@ function addLayers(
     },
     firstSymbolId
   )
-  // 첫 여행 등록 플로우 점선 강조 — 평소엔 아무 지역도 매칭하지 않음
+  // 첫 여행 등록 플로우 강조선(실선) — 평소엔 아무 지역도 매칭하지 않음
   map.addLayer({
     id: MUNI_DASH,
     type: "line",
@@ -187,8 +191,7 @@ function addLayers(
     filter: ["==", ["get", "name"], "__none__"],
     paint: {
       "line-color": DASH_DARK,
-      "line-width": 2.5,
-      "line-dasharray": [2, 2],
+      "line-width": 2,
     },
   })
   return true
@@ -233,14 +236,8 @@ const MAP_INTERACTIONS = [
 
 const SLOT_SIZE_2X = 80
 
-// 등간격 원형 분포 — N명을 원 위에 균등 배치, 겹치지 않음
-function getSlotOffset(total: number, index: number): [number, number] {
-  if (total === 1) return [0, 0]
-  const radius = total <= 3 ? 64 : total <= 6 ? 80 : 96
-  // 12시 방향 시작
-  const angle = (index / total) * 2 * Math.PI - Math.PI / 2
-  return [Math.cos(angle) * radius, Math.sin(angle) * radius]
-}
+// 사진 핀 기본 크기 — 줌 레벨과 무관하게 항상 고정 (Figma 1319-13186 #1)
+const PHOTO_PIN_SIZE = 60
 
 // 0: 초기 / 1: 경계선+"+" / 2: 색상+72px 핀 / 3: 파티 슬롯(최대 줌)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
@@ -315,7 +312,7 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
   const [galleryExpanded, setGalleryExpanded] = React.useState(false)
   // 첫 여행 등록 플로우 — 진행 중인 지역명 (null이면 일반 모드)
   const decorating = useDecorateStore((s) => s.region)
-  const decorateStep = useDecorateStore((s) => s.step)
+  const decoratePreview = useDecorateStore((s) => s.preview)
   const startDecorate = useDecorateStore((s) => s.start)
   const decoratingRef = React.useRef<string | null>(null)
   const flyingRef = React.useRef(false)
@@ -435,8 +432,9 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     setActiveByName(map, MUNI_SRC, selectedRegion)
   }, [selectedRegion, setActiveByName])
 
-  // 등록 플로우 진입/이탈 — 지도 잠금 + 점선 강조 + 지역 화면 중앙 fit
+  // 등록 플로우 진입/이탈 — 지도 잠금 + 강조선 + 지역 화면 중앙 fit
   React.useEffect(() => {
+    const prevDecorating = decoratingRef.current
     decoratingRef.current = decorating
     const map = mapInstanceRef.current
     if (!map || !map.getLayer(MUNI_DASH)) return
@@ -460,52 +458,68 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     } else {
       for (const name of MAP_INTERACTIONS) map[name].enable()
       map.setFilter(MUNI_DASH, ["==", ["get", "name"], "__none__"])
-    }
-  }, [decorating])
 
-  // 스텝별 점선 색 — Step1 다크 / Step2·3 주황
+      // 업로드 커밋으로 플로우가 끝났다면(사진 생김) 지역 상세로 복귀 (Figma 1340-18364)
+      if (prevDecorating && photoRegionSet.has(prevDecorating)) {
+        setSelectedRegion(prevDecorating)
+        const c = centroidMap.get(prevDecorating)
+        if (c) flyToRegion(map, c)
+      }
+    }
+  }, [decorating, photoRegionSet, centroidMap, flyToRegion])
+
+  // 강조선 색 — 색상 미선택 시 다크, 스와치 탭 즉시 해당 색 500 (Figma 1319-16850)
   React.useEffect(() => {
     const map = mapInstanceRef.current
     if (!map || !map.getLayer(MUNI_DASH)) return
     map.setPaintProperty(
       MUNI_DASH,
       "line-color",
-      decorateStep === "color" ? DASH_DARK : DASH_ORANGE
+      decoratePreview?.stroke ?? DASH_DARK
     )
-  }, [decorateStep])
+  }, [decoratePreview])
 
-  // 줌 단계별 핀 크기 (px) — 파티 슬롯은 SLOT_SIZE_2X 고정
-  const pinSize = zoomStage >= 2 ? 72 : 60
+  // 색상 미리보기 채움 — 스와치 탭 즉시 지역을 100-alpha로 칠하고, 이탈 시 저장값 복원
+  React.useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map || !map.getSource(MUNI_SRC) || !decorating) return
+    const id = nameToIdRef.current.get(decorating)
+    if (id === undefined) return
 
-  // 단계별 지역당 최대 핀 수
-  const maxPerRegion = zoomStage >= 2 ? 2 : 1
-
-  // 2단계: centroid 기준 좌우 배치, 1단계: 사진 실제 위치
-  const visiblePins = React.useMemo(() => {
-    const byRegion = new Map<string, typeof photos>()
-    for (const p of photos) {
-      byRegion.set(p.region, [...(byRegion.get(p.region) ?? []), p])
+    if (decoratePreview) {
+      map.setFeatureState(
+        { source: MUNI_SRC, id },
+        { color: decoratePreview.fill, hasColor: true }
+      )
     }
-    return [...byRegion.entries()].flatMap(([region, group]) => {
-      const sorted = [...group]
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, maxPerRegion)
-      const c = centroidMap.get(region)
-      const lat = c?.lat ?? sorted[0].lat
-      const lng = c?.lng ?? sorted[0].lng
-      return sorted.map((p, i) => ({
-        ...p,
-        pinLat: lat,
-        pinLng: lng,
-        offset:
-          sorted.length < 2
-            ? ([0, 0] as [number, number])
-            : i === 0
-              ? ([-44, 0] as [number, number])
-              : ([44, 0] as [number, number]),
-      }))
+    return () => {
+      const stored = fillsRef.current[decorating] as RegionFill | undefined
+      if (stored && stored.type === "color") {
+        map.setFeatureState(
+          { source: MUNI_SRC, id },
+          { color: stored.value, hasColor: true }
+        )
+      } else {
+        map.setFeatureState(
+          { source: MUNI_SRC, id },
+          { color: null, hasColor: false }
+        )
+      }
+    }
+  }, [decorating, decoratePreview, mapReady, nameToIdRef])
+
+  // 지역당 최신 사진 1개, centroid 위치 고정 — 사진 개수·크기는 줌 레벨과 무관
+  const visiblePins = React.useMemo(() => {
+    const byRegion = new Map<string, (typeof photos)[number]>()
+    for (const p of photos) {
+      const existing = byRegion.get(p.region)
+      if (!existing || p.date > existing.date) byRegion.set(p.region, p)
+    }
+    return [...byRegion.values()].map((p) => {
+      const c = centroidMap.get(p.region)
+      return { ...p, pinLat: c?.lat ?? p.lat, pinLng: c?.lng ?? p.lng }
     })
-  }, [photos, maxPerRegion, centroidMap])
+  }, [photos, centroidMap])
 
   const partySlots = React.useMemo<Array<PartySlot>>(() => {
     if (!selectedRegion || partyMembers.length === 0) return []
@@ -517,8 +531,12 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
       const existing = photoByUser.get(p.uploaderId)
       if (!existing || p.date > existing.date) photoByUser.set(p.uploaderId, p)
     }
-    const total = partyMembers.length
-    return partyMembers.map((member, i) => {
+    // 내 슬롯이 배치의 마지막 자리(우하단)에 오도록 정렬
+    const ordered = [...partyMembers].sort(
+      (a, b) => Number(a.id === currentUserId) - Number(b.id === currentUserId)
+    )
+    const total = ordered.length
+    return ordered.map((member, i) => {
       const photo = photoByUser.get(member.id) ?? null
       return {
         region: selectedRegion,
@@ -765,6 +783,14 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
 
           setupClickHandler(map, MUNI_FILL, (name) => {
             if (decoratingRef.current) return
+            // 안 가본 지역(색칠·사진 없음)은 줌인 대신 첫 여행 등록 플로우로 진입
+            if (
+              !Object.hasOwn(fillsRef.current, name) &&
+              !photoRegionsRef.current.has(name)
+            ) {
+              startDecorate(name)
+              return
+            }
             setSelectedRegion(name)
             const c = computed.find((x) => x.name === name)
             if (c) flyToRegion(map, c)
@@ -793,6 +819,7 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     setupClickHandler,
     updateViewportCentroids,
     flyToRegion,
+    startDecorate,
     photos,
   ])
 
@@ -852,8 +879,13 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
                     nearest = c
                   }
                 }
-                if (nearest.name !== selectedRegion)
-                  setSelectedRegion(nearest.name)
+                if (nearest.name !== selectedRegion) {
+                  // 안 가본 지역(색칠·사진 없음)은 상세 진입 대신 "+" 버튼 노출 유지
+                  const visited =
+                    Object.hasOwn(fillsRef.current, nearest.name) ||
+                    photoRegionsRef.current.has(nearest.name)
+                  setSelectedRegion(visited ? nearest.name : null)
+                }
               } else if (
                 vs.zoom < PARTY_ENTER &&
                 selectedRegion !== null &&
@@ -870,9 +902,12 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
           !decorating &&
           viewportCentroids
             // 색칠은 첫 여행 등록 시에만 — 이미 색칠했거나 사진이 있는 지역은 "+" 미노출
+            // 줌 2단계(zoomStage 1)는 관광지 상위 30%만, 줌 3단계(zoomStage 2+)는 전부 노출
             .filter(
               ({ name }) =>
-                !Object.hasOwn(fills, name) && !photoRegionSet.has(name)
+                !Object.hasOwn(fills, name) &&
+                !photoRegionSet.has(name) &&
+                (zoomStage >= 2 || POPULAR_REGIONS.has(name))
             )
             .map(({ name, lng, lat }) => (
               <Marker
@@ -888,11 +923,13 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
                     e.stopPropagation()
                     startDecorate(name)
                   }}
-                  className="flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
+                  className="flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
                 >
-                  <Plus className="size-3.5 text-foreground/40 drop-shadow-sm" />
-                  <span className="text-[9px] leading-none font-medium text-foreground/60 drop-shadow-sm">
-                    {name}
+                  <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+                    <img src={iconAddSrc} alt="" className="size-5" />
+                  </span>
+                  <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+                    {formatRegionName(name)}
                   </span>
                 </button>
               </Marker>
@@ -904,8 +941,8 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
             latitude={centroidMap.get(decorating)!.lat}
             anchor="center"
           >
-            <span className="text-h1 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-              {decorating}
+            <span className="text-h2 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+              {formatRegionName(decorating)}
             </span>
           </Marker>
         ) : null}
@@ -918,12 +955,11 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
               longitude={p.pinLng}
               latitude={p.pinLat}
               anchor="bottom"
-              offset={p.offset}
             >
               <PhotoTile
-                label={p.region}
+                label={formatRegionName(p.region)}
                 imageUrl={p.thumbnailUrl}
-                size={pinSize}
+                size={PHOTO_PIN_SIZE}
                 onClick={(e) => {
                   e.stopPropagation()
                   const map = mapInstanceRef.current
@@ -937,7 +973,7 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
 
         {!decorating &&
           partySlots.map((slot) => {
-            const offset = getSlotOffset(slot.totalSlots, slot.slotIndex)
+            const offset = partySlotOffset(slot.totalSlots, slot.slotIndex)
             const slotPhoto = slot.photo
             return (
               <Marker
@@ -975,6 +1011,12 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
                             date,
                             uploaderId: currentUserId,
                             region: slot.region,
+                          })
+                          // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
+                          showToast({
+                            message: "업로드가 완료됐어요",
+                            icon: "check",
+                            className: "bottom-[256px]",
                           })
                         })
                       })
@@ -1014,7 +1056,9 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
             <ButtonIcon aria-label="뒤로 가기" onClick={handleBackToHome}>
               <img src={iconArrowLeftSrc} alt="" className="size-6" />
             </ButtonIcon>
-            <span className="text-h3 text-fg-neutral-bold">{detailRegion}</span>
+            <span className="text-h3 text-fg-neutral-bold">
+              {formatRegionName(detailRegion)}
+            </span>
           </div>
         </div>
       ) : null}
