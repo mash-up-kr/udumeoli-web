@@ -4,6 +4,7 @@ import type { Photo } from "@/entities/photo"
 import type { ImageCardPatternItem } from "@/shared/ui/image-card-pattern"
 import { ImageCardPattern } from "@/shared/ui/image-card-pattern"
 import { cn } from "@/shared/lib/utils"
+import { formatRegionName } from "@/entities/region"
 
 /**
  * 지도 하단 지역별 사진 커브드 캐러셀 (Figma #1048-5977).
@@ -27,7 +28,7 @@ function buildItems(photos: Array<Photo>): Array<ImageCardPatternItem> {
         item: {
           id: region,
           src: latest.thumbnailUrl,
-          title: region,
+          title: formatRegionName(region),
           subtitle: `${days}day${days > 1 ? "s" : ""}`,
         },
       }
