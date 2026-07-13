@@ -13,6 +13,7 @@ import {
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
+import { formatRegionName } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
@@ -143,6 +144,12 @@ export function GalleryPanel({
       uploaderId: currentUserId,
     })
     setPoppedDate(date)
+    // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
+    showToast({
+      message: "업로드가 완료됐어요",
+      icon: "check",
+      className: expanded ? undefined : "bottom-[256px]",
+    })
   }
 
   // 날짜 행의 add 슬롯: 날짜 고정, 이미지 선택만
@@ -186,7 +193,9 @@ export function GalleryPanel({
         </ButtonIcon>
         <span className="inline-flex items-center gap-2 rounded-full bg-bg-neutral-inverse px-5 py-2">
           <MapPin className="size-6 text-fg-neutral-inverse" />
-          <span className="text-h3 text-fg-neutral-inverse">{region}</span>
+          <span className="text-h3 text-fg-neutral-inverse">
+            {formatRegionName(region)}
+          </span>
         </span>
         <ButtonIcon
           variant="label"
