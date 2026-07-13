@@ -1,5 +1,4 @@
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
 
 export type RegionFill =
   | { type: "color"; value: string }
@@ -14,27 +13,22 @@ interface RegionFillState {
   clearAll: () => void
 }
 
-// 새로고침에도 지도 꾸미기(색·이미지)가 유지되도록 localStorage 영속.
-// 이미지 dataUrl이 커서 용량 초과 시 저장만 실패하고 세션 내 동작은 유지된다.
-export const useRegionColorStore = create<RegionFillState>()(
-  persist(
-    (set) => ({
-      fills: {},
-      setColor: (region, value) =>
-        set((s) => ({
-          fills: { ...s.fills, [region]: { type: "color", value } },
-        })),
-      setImage: (region, imageId, dataUrl) =>
-        set((s) => ({
-          fills: { ...s.fills, [region]: { type: "image", imageId, dataUrl } },
-        })),
-      clearFill: (region) =>
-        set((s) => {
-          const { [region]: _, ...rest } = s.fills
-          return { fills: rest }
-        }),
-      clearAll: () => set({ fills: {} }),
+// 러프 단계 in-memory 스토어 — 사진 목 데이터처럼 새로고침 시 함께 초기화된다.
+// (persist는 실제 API 연동 시 재검토)
+export const useRegionColorStore = create<RegionFillState>()((set) => ({
+  fills: {},
+  setColor: (region, value) =>
+    set((s) => ({
+      fills: { ...s.fills, [region]: { type: "color", value } },
+    })),
+  setImage: (region, imageId, dataUrl) =>
+    set((s) => ({
+      fills: { ...s.fills, [region]: { type: "image", imageId, dataUrl } },
+    })),
+  clearFill: (region) =>
+    set((s) => {
+      const { [region]: _, ...rest } = s.fills
+      return { fills: rest }
     }),
-    { name: "photato-region-fills" }
-  )
-)
+  clearAll: () => set({ fills: {} }),
+}))
