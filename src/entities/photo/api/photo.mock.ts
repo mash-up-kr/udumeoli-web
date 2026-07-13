@@ -1,8 +1,57 @@
 import type { Photo } from "../model/types"
 
-// 러프 단계 목 데이터 — 지역명은 municipalities TopoJSON 군(郡) 명칭과 일치해야 함
+// 러프 단계 목 데이터 — 지역명은 municipalities TopoJSON 명칭과 일치해야 함.
+// uploaderId는 pot.mock의 멤버 id(나 user-1, 그 외 m-<닉네임>-<i>)와 일치해야 슬롯에 매칭된다.
 export const MOCK_PHOTOS: Array<Photo> = [
-  // 양양군 — 갤러리 예시: 2026-05-21 전원(4명) 업로드 완료(파란 tint),
+  // 강릉시 — 나(user-1)만 미업로드, 나머지 전원 업로드 완료.
+  // N명 팟 어디서든 마지막(내) 업로드 시 완료 애니메이션 확인용
+  {
+    id: "p13",
+    region: "강릉시",
+    lat: 37.752,
+    lng: 128.876,
+    date: "2026-05-12",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-13/200/200",
+  },
+  {
+    id: "p14",
+    region: "강릉시",
+    lat: 37.76,
+    lng: 128.89,
+    date: "2026-05-12",
+    uploaderId: "m-성아-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-14/200/200",
+  },
+  {
+    id: "p15",
+    region: "강릉시",
+    lat: 37.745,
+    lng: 128.862,
+    date: "2026-05-12",
+    uploaderId: "m-가연-2",
+    thumbnailUrl: "https://picsum.photos/seed/photato-15/200/200",
+  },
+  {
+    id: "p16",
+    region: "강릉시",
+    lat: 37.767,
+    lng: 128.905,
+    date: "2026-05-12",
+    uploaderId: "m-수빈-3",
+    thumbnailUrl: "https://picsum.photos/seed/photato-16/200/200",
+  },
+  {
+    id: "p17",
+    region: "강릉시",
+    lat: 37.738,
+    lng: 128.847,
+    date: "2026-05-12",
+    uploaderId: "m-민지-4",
+    thumbnailUrl: "https://picsum.photos/seed/photato-17/200/200",
+  },
+
+  // 양양군 — 갤러리 예시: 2026-05-21 전원(4명 팟 기준) 업로드 완료(파란 tint),
   // 2026-05-20 나(user-1)만 미업로드 → 업로드 시 파란 tint 전환 확인용
   {
     id: "p1",
@@ -19,7 +68,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.082,
     lng: 128.641,
     date: "2026-05-21",
-    uploaderId: "user-2",
+    uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-2/200/200",
   },
   {
@@ -28,7 +77,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.063,
     lng: 128.609,
     date: "2026-05-21",
-    uploaderId: "user-3",
+    uploaderId: "m-성아-1",
     thumbnailUrl: "https://picsum.photos/seed/photato-3/200/200",
   },
   {
@@ -37,7 +86,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.09,
     lng: 128.655,
     date: "2026-05-21",
-    uploaderId: "user-4",
+    uploaderId: "m-가연-2",
     thumbnailUrl: "https://picsum.photos/seed/photato-4/200/200",
   },
   {
@@ -46,7 +95,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.071,
     lng: 128.631,
     date: "2026-05-20",
-    uploaderId: "user-2",
+    uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-10/200/200",
   },
   {
@@ -55,7 +104,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.086,
     lng: 128.618,
     date: "2026-05-20",
-    uploaderId: "user-3",
+    uploaderId: "m-성아-1",
     thumbnailUrl: "https://picsum.photos/seed/photato-11/200/200",
   },
   {
@@ -64,7 +113,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.078,
     lng: 128.648,
     date: "2026-05-20",
-    uploaderId: "user-4",
+    uploaderId: "m-가연-2",
     thumbnailUrl: "https://picsum.photos/seed/photato-12/200/200",
   },
 
@@ -84,7 +133,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 38.395,
     lng: 128.48,
     date: "2026-04-11",
-    uploaderId: "user-2",
+    uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-6/200/200",
   },
 
@@ -95,7 +144,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 34.571,
     lng: 126.599,
     date: "2026-03-15",
-    uploaderId: "user-3",
+    uploaderId: "m-성아-1",
     thumbnailUrl: "https://picsum.photos/seed/photato-7/200/200",
   },
   {
@@ -115,7 +164,7 @@ export const MOCK_PHOTOS: Array<Photo> = [
     lat: 37.37,
     lng: 128.39,
     date: "2026-02-10",
-    uploaderId: "user-2",
+    uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-9/200/200",
   },
 ]

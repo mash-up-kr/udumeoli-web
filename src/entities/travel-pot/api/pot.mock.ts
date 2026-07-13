@@ -19,31 +19,19 @@ function members(names: Array<string>): Array<PotMember> {
   }))
 }
 
-export const MOCK_POTS: Array<TravelPot> = [
-  {
-    id: "pot-1",
-    name: "우두머리",
-    inviteCode: "260619",
-    members: [
-      { id: "user-1", nickname: "정민", profileImageUrl: null },
-      { id: "user-2", nickname: "유지", profileImageUrl: null },
-      { id: "user-3", nickname: "성아", profileImageUrl: null },
-      { id: "user-4", nickname: "가연", profileImageUrl: null },
-    ],
-  },
-  {
-    id: "pot-2",
-    name: "민지 ❤️ 성준  영원히 함께하자 안녕하세요 민지 성준입니다",
-    inviteCode: "26ab19",
-    members: members(["민지", "성준"]),
-  },
-  {
-    id: "pot-3",
-    name: "매쉬업",
-    inviteCode: "260618",
-    members: members(["정민", "유지", "성아"]),
-  },
-]
+// 인원수별(1~6명) 슬롯 배치 케이스 확인용 예시 팟 — "나"(user-1)는 모든 팟에 포함
+const ME: PotMember = { id: "user-1", nickname: "정민", profileImageUrl: null }
+const OTHERS = members(["유지", "성아", "가연", "수빈", "민지"])
+
+export const MOCK_POTS: Array<TravelPot> = Array.from(
+  { length: 6 },
+  (_, i) => ({
+    id: `pot-${i + 1}`,
+    name: `${i + 1}명 팟`,
+    inviteCode: `26061${i}`,
+    members: [ME, ...OTHERS.slice(0, i)],
+  })
+)
 
 // 참여 코드 입력 시 확인 모달 미리보기 (러프: 코드와 무관하게 동일 샘플)
 export const JOIN_PREVIEW: TravelPot = {

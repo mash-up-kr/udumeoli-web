@@ -21,7 +21,8 @@ interface PotState {
 // 러프 단계 in-memory 목 스토어. 추후 entities/travel-pot/api로 GraphQL 교체.
 export const usePotStore = create<PotState>((set, get) => ({
   pots: MOCK_POTS,
-  currentPotId: MOCK_POTS[0].id,
+  // 기본 선택 팟 — 5인 팟
+  currentPotId: "pot-5",
   selectPot: (id) => set({ currentPotId: id }),
   createPot: (name) => {
     const pot: TravelPot = {
