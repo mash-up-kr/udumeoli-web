@@ -10,6 +10,8 @@ interface RegionFillState {
   setColor: (region: string, value: string) => void
   setImage: (region: string, imageId: string, dataUrl: string) => void
   clearFill: (region: string) => void
+  /** 계정 삭제 시 지도 꾸미기 전체 초기화. */
+  clearAll: () => void
 }
 
 // 새로고침에도 지도 꾸미기(색·이미지)가 유지되도록 localStorage 영속.
@@ -31,6 +33,7 @@ export const useRegionColorStore = create<RegionFillState>()(
           const { [region]: _, ...rest } = s.fills
           return { fills: rest }
         }),
+      clearAll: () => set({ fills: {} }),
     }),
     { name: "photato-region-fills" }
   )

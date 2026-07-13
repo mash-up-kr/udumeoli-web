@@ -13,6 +13,7 @@ import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { usePhotoUploadStore } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
+import { useRegionColorStore } from "@/entities/region"
 import { useSessionStore } from "@/entities/user"
 import iconAlertSrc from "@/shared/assets/icon-alert.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
@@ -44,6 +45,20 @@ const menuLabelCls = "min-w-0 flex-1 truncate text-h8-1 text-fg-neutral-bold"
 
 function openExternal(url: string) {
   window.open(url, "_blank", "noopener,noreferrer")
+}
+
+// 계정 관련 브라우저 저장소 초기화 — 온보딩 노출 여부·영속 스토어·쿠키까지 지워서
+// 재가입 시 첫 진입(온보딩)부터 다시 시작되게 한다
+function clearAccountStorage() {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("photato-")) localStorage.removeItem(key)
+  }
+  sessionStorage.clear()
+  for (const cookie of document.cookie.split(";")) {
+    const name = cookie.split("=")[0]?.trim()
+    if (name)
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+  }
 }
 
 // 계정 삭제 재확인 팝업 — 알림 아이콘 + 데이터 영구 삭제 안내 + 취소/계정 삭제(danger)
@@ -101,6 +116,7 @@ function MenuView({
     (s) => s.removePhotosByUploader
   )
   const leaveAllPots = usePotStore((s) => s.leaveAllPots)
+  const clearAllFills = useRegionColorStore((s) => s.clearAll)
 
   // 로그아웃 진행 후 스플래시 화면 이동 + 완료 토스트
   const handleLogout = async () => {
@@ -131,7 +147,9 @@ function MenuView({
               removePhotosByUploader(user.id)
               leaveAllPots(user.id)
             }
+            clearAllFills()
             logout()
+            clearAccountStorage()
             onClose()
             await router.navigate({ to: "/" })
             showToast({
