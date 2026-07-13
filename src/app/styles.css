@@ -150,6 +150,7 @@
     --color-blue-900: #2d4f69;
 
     --color-red-50: #fff2f1;
+    --color-red-100-alpha: color-mix(in srgb, var(--color-red-100) 60%, transparent);
     --color-red-100: #ffc5bf;
     --color-red-500: #e8453a;
     --color-red-600: #c42e24;

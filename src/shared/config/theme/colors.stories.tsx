@@ -48,6 +48,7 @@ const BLUE: Array<Swatch> = [
 
 const RED: Array<Swatch> = [
   { cls: "bg-red-50", step: "50", hex: "#FFF2F1" },
+  { cls: "bg-red-100-alpha", step: "100-alpha", hex: "#FFC5BF (60%)" },
   { cls: "bg-red-100", step: "100", hex: "#FFC5BF" },
   { cls: "bg-red-500", step: "500", hex: "#E8453A" },
   { cls: "bg-red-600", step: "600", hex: "#C42E24" },
