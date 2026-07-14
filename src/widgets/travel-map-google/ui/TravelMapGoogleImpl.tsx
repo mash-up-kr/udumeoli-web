@@ -18,8 +18,9 @@ import {
 import { Plus } from "lucide-react"
 
 import { createRegionDataLayer } from "../lib/regionDataLayer"
-import { ImageFillOverlay } from "../lib/ImageFillOverlay"
+import { createImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
+import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 
 import type { RegionFill } from "@/entities/region"
 import {
@@ -167,7 +168,7 @@ function MapController({
       })
       dataLayerRef.current = dataLayer
 
-      const overlay = new ImageFillOverlay(
+      const overlay = createImageFillOverlay(
         () => fills,
         () => geojsonRef.current
       )
