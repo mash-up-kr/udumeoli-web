@@ -281,9 +281,15 @@ export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
 }
 
+// 아직 꾸미기 이력이 없는 팟의 안정 참조 — 셀렉터가 매번 새 객체를 만들지 않도록
+const EMPTY_FILLS: Record<string, RegionFill> = {}
+
 export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
-  const photos = useAllPhotos()
-  const fills = useRegionColorStore((s) => s.fills)
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const photos = useAllPhotos(currentPotId)
+  const fills = useRegionColorStore(
+    (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
+  )
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
@@ -1011,6 +1017,7 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
                             date,
                             uploaderId: currentUserId,
                             region: slot.region,
+                            potId: currentPotId,
                           })
                           // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
                           showToast({

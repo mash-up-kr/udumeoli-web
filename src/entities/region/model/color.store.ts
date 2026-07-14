@@ -5,10 +5,16 @@ export type RegionFill =
   | { type: "image"; imageId: string; dataUrl: string }
 
 interface RegionFillState {
-  fills: Record<string, RegionFill>
-  setColor: (region: string, value: string) => void
-  setImage: (region: string, imageId: string, dataUrl: string) => void
-  clearFill: (region: string) => void
+  /** 팟별 지도 꾸미기 — potId → (지역명 → 채움) */
+  fillsByPot: Record<string, Record<string, RegionFill>>
+  setColor: (potId: string, region: string, value: string) => void
+  setImage: (
+    potId: string,
+    region: string,
+    imageId: string,
+    dataUrl: string
+  ) => void
+  clearFill: (potId: string, region: string) => void
   /** 계정 삭제 시 지도 꾸미기 전체 초기화. */
   clearAll: () => void
 }
@@ -16,19 +22,31 @@ interface RegionFillState {
 // 러프 단계 in-memory 스토어 — 사진 목 데이터처럼 새로고침 시 함께 초기화된다.
 // (persist는 실제 API 연동 시 재검토)
 export const useRegionColorStore = create<RegionFillState>()((set) => ({
-  fills: {},
-  setColor: (region, value) =>
+  fillsByPot: {},
+  setColor: (potId, region, value) =>
     set((s) => ({
-      fills: { ...s.fills, [region]: { type: "color", value } },
+      fillsByPot: {
+        ...s.fillsByPot,
+        [potId]: {
+          ...s.fillsByPot[potId],
+          [region]: { type: "color", value },
+        },
+      },
     })),
-  setImage: (region, imageId, dataUrl) =>
+  setImage: (potId, region, imageId, dataUrl) =>
     set((s) => ({
-      fills: { ...s.fills, [region]: { type: "image", imageId, dataUrl } },
+      fillsByPot: {
+        ...s.fillsByPot,
+        [potId]: {
+          ...s.fillsByPot[potId],
+          [region]: { type: "image", imageId, dataUrl },
+        },
+      },
     })),
-  clearFill: (region) =>
+  clearFill: (potId, region) =>
     set((s) => {
-      const { [region]: _, ...rest } = s.fills
-      return { fills: rest }
+      const { [region]: _, ...rest } = s.fillsByPot[potId] ?? {}
+      return { fillsByPot: { ...s.fillsByPot, [potId]: rest } }
     }),
-  clearAll: () => set({ fills: {} }),
+  clearAll: () => set({ fillsByPot: {} }),
 }))

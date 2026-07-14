@@ -2,7 +2,7 @@ import type { Photo } from "../model/types"
 
 // 러프 단계 목 데이터 — 지역명은 municipalities TopoJSON 명칭과 일치해야 함.
 // uploaderId는 pot.mock의 멤버 id(나 user-1, 그 외 m-<닉네임>-<i>)와 일치해야 슬롯에 매칭된다.
-export const MOCK_PHOTOS: Array<Photo> = [
+const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
   // 강릉시 — 나(user-1)만 미업로드, 나머지 전원 업로드 완료.
   // N명 팟 어디서든 마지막(내) 업로드 시 완료 애니메이션 확인용
   {
@@ -168,3 +168,24 @@ export const MOCK_PHOTOS: Array<Photo> = [
     thumbnailUrl: "https://picsum.photos/seed/photato-9/200/200",
   },
 ]
+
+// pot.mock의 OTHERS[i]("m-<닉네임>-<i>")는 (i+2)명 팟부터 멤버, user-1(나)은 전 팟 멤버
+function isMemberOfPot(uploaderId: string, potSize: number): boolean {
+  if (uploaderId === "user-1") return true
+  const idx = Number(uploaderId.split("-").at(-1))
+  return Number.isInteger(idx) && idx + 2 <= potSize
+}
+
+// 팟별로 사진을 분리 — 각 팟(pot-1~pot-6)에는 그 팟 멤버가 올린 사진만 존재.
+// 썸네일 시드도 팟별로 달리해 팟마다 다른 사진처럼 보이게 한다.
+export const MOCK_PHOTOS: Array<Photo> = Array.from(
+  { length: 6 },
+  (_, i) => `pot-${i + 1}`
+).flatMap((potId, i) =>
+  BASE_PHOTOS.filter((p) => isMemberOfPot(p.uploaderId, i + 1)).map((p) => ({
+    ...p,
+    potId,
+    id: `${potId}-${p.id}`,
+    thumbnailUrl: `https://picsum.photos/seed/photato-${potId}-${p.id}/200/200`,
+  }))
+)

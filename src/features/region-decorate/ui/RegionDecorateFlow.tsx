@@ -57,6 +57,7 @@ export function RegionDecorateFlow({
   region,
   center,
 }: RegionDecorateFlowProps) {
+  const currentPotId = usePotStore((s) => s.currentPotId)
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
@@ -104,7 +105,7 @@ export function RegionDecorateFlow({
     }
     // photo — 최종 커밋
     if (fill?.type !== "color" || !photoUrl || !currentUserId) return
-    setColor(region, fill.value)
+    setColor(currentPotId, region, fill.value)
     addPhoto({
       id: `up-${region}-${Date.now()}`,
       region,
@@ -113,6 +114,7 @@ export function RegionDecorateFlow({
       lng: center.lng,
       thumbnailUrl: photoUrl,
       uploaderId: currentUserId,
+      potId: currentPotId,
     })
     onClose()
     // 지역 상세로 복귀하며 완료 토스트 3초 노출 — 갤러리 패널(하단 244px) 위 (Figma 1340-18364)

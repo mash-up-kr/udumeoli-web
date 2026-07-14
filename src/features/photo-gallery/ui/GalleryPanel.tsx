@@ -39,7 +39,8 @@ export function GalleryPanel({
   expanded,
   onExpandedChange,
 }: GalleryPanelProps) {
-  const photos = useAllPhotos().filter((p) => p.region === region)
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const photos = useAllPhotos(currentPotId).filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
@@ -142,6 +143,7 @@ export function GalleryPanel({
       lng: center.lng,
       thumbnailUrl: url,
       uploaderId: currentUserId,
+      potId: currentPotId,
     })
     setPoppedDate(date)
     // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
