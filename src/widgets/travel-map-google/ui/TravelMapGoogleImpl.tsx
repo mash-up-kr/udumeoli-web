@@ -61,6 +61,9 @@ const DASH_ORANGE = "#ff9331"
 const BOUNDARY_ZOOM = 7.5
 const ZOOM_COLOR = 8.5
 const PARTY_ZOOM = 9.5
+// 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
+const PARTY_ZOOM_EPSILON = 0.01
+const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
 
 type Centroid = { name: string; lng: number; lat: number }
 
@@ -77,7 +80,7 @@ type PartySlot = {
 }
 
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
-  if (zoom >= PARTY_ZOOM) return 3
+  if (zoom >= PARTY_ENTER) return 3
   if (zoom >= ZOOM_COLOR) return 2
   if (zoom >= BOUNDARY_ZOOM) return 1
   return 0
@@ -115,6 +118,7 @@ function MapController({
   dataLayerRef,
   overlayRef,
   fills,
+  fillsRef,
   photoRegionSet,
   selectedRegion,
   setSelectedRegion,
@@ -131,6 +135,8 @@ function MapController({
   dataLayerRef: React.MutableRefObject<RegionDataLayer | null>
   overlayRef: React.MutableRefObject<ImageFillOverlay | null>
   fills: Record<string, RegionFill>
+  /** 오버레이 draw()가 항상 최신 fills를 읽도록 ref 경유 (클로저 고정 방지) */
+  fillsRef: React.MutableRefObject<Record<string, RegionFill>>
   photoRegionSet: Set<string>
   selectedRegion: string | null
   setSelectedRegion: (name: string | null) => void
@@ -143,81 +149,148 @@ function MapController({
   onFeatureClick: (name: string) => void
 }) {
   const map = useMap()
-  const initedRef = React.useRef(false)
   const featureClickedRef = React.useRef(false)
   const decoratingRef = React.useRef<string | null>(decorating)
   decoratingRef.current = decorating
+  // idle 리스너가 등록 시점 클로저가 아닌 최신 선택 상태로 판정하도록 ref 경유
+  const selectedRegionRef = React.useRef<string | null>(selectedRegion)
+  selectedRegionRef.current = selectedRegion
+  const photoRegionSetRef = React.useRef(photoRegionSet)
+  photoRegionSetRef.current = photoRegionSet
 
-  // 지도 준비 + geojson 로드 + Data 레이어/오버레이/리스너 초기화 (1회)
+  // 지도 인스턴스별 초기화 — StrictMode 이중 마운트나 리마운트로 vis.gl이 지도를
+  // 재생성하면 새 인스턴스에 레이어/리스너를 다시 붙여야 하므로 "1회 가드" 대신
+  // map 기준 초기화 + cleanup 으로 관리한다
   React.useEffect(() => {
-    if (!map || initedRef.current) return
-    initedRef.current = true
+    if (!map) return
     mapRef.current = map
 
-    loadKoreaGeoJson().then((geojson) => {
-      geojsonRef.current = geojson
+    // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음
+    map.setOptions({ isFractionalZoomEnabled: true })
 
-      const dataLayer = createRegionDataLayer(map, geojson, {
-        accent: ACCENT,
-        initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
-        onFeatureClick: (name) => {
-          featureClickedRef.current = true
-          if (decoratingRef.current) return
-          onFeatureClick(name)
-        },
-      })
-      dataLayerRef.current = dataLayer
+    let cancelled = false
+    const listeners: Array<google.maps.MapsEventListener> = []
+    let dataLayer: RegionDataLayer | null = null
+    let overlay: ImageFillOverlay | null = null
 
-      const overlay = createImageFillOverlay(
-        () => fills,
-        () => geojsonRef.current
-      )
-      overlay.setMap(map)
-      overlayRef.current = overlay
+    loadKoreaGeoJson()
+      .then((geojson) => {
+        if (cancelled) return
+        geojsonRef.current = geojson
 
-      const computed: Array<Centroid> = []
-      for (const f of geojson.features) {
-        const name = f.properties?.name as string | undefined
-        if (!name) continue
-        const center = computeCentroid(f)
-        if (center) computed.push({ name, lng: center[0], lat: center[1] })
-      }
-      centroidsRef.current = computed
-      setCentroids(computed)
+        dataLayer = createRegionDataLayer(map, geojson, {
+          accent: ACCENT,
+          initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
+          onFeatureClick: (name) => {
+            featureClickedRef.current = true
+            if (decoratingRef.current) return
+            onFeatureClick(name)
+          },
+        })
+        dataLayerRef.current = dataLayer
 
-      dataLayer.sync({ fills, hasPhotoRegions: photoRegionSet })
-
-      // 배경(지역 밖) 클릭 시 선택 해제 — Data feature 클릭과 겹치면 스킵
-      map.addListener("click", () => {
-        if (featureClickedRef.current) {
-          featureClickedRef.current = false
-          return
-        }
-        if (decoratingRef.current) return
-        if ((map.getZoom() ?? 0) < PARTY_ZOOM) setSelectedRegion(null)
-      })
-
-      const syncViewport = () => {
-        const bounds = map.getBounds()
-        if (!bounds) return
-        setViewportCentroids(
-          centroidsRef.current.filter(({ lng, lat }) =>
-            bounds.contains({ lat, lng })
-          )
+        overlay = createImageFillOverlay(
+          () => fillsRef.current,
+          () => geojsonRef.current
         )
-      }
+        overlay.setMap(map)
+        overlayRef.current = overlay
 
-      map.addListener("zoom_changed", () => {
-        const zoom = map.getZoom() ?? KOREA_VIEW.zoom
-        setZoomStage(getZoomStage(zoom))
-        dataLayer.syncZoom(zoom)
-      })
-      map.addListener("idle", () => {
+        const computed: Array<Centroid> = []
+        for (const f of geojson.features) {
+          const name = f.properties?.name as string | undefined
+          if (!name) continue
+          const center = computeCentroid(f)
+          if (center) computed.push({ name, lng: center[0], lat: center[1] })
+        }
+        centroidsRef.current = computed
+        setCentroids(computed)
+
+        dataLayer.sync({
+          fills: fillsRef.current,
+          hasPhotoRegions: photoRegionSetRef.current,
+        })
+
+        // 배경(지역 밖) 클릭 시 선택 해제 — Data feature 클릭과 겹치면 스킵
+        listeners.push(
+          map.addListener("click", () => {
+            if (featureClickedRef.current) {
+              featureClickedRef.current = false
+              return
+            }
+            if (decoratingRef.current) return
+            if ((map.getZoom() ?? 0) < PARTY_ENTER) setSelectedRegion(null)
+          })
+        )
+
+        const syncViewport = () => {
+          const bounds = map.getBounds()
+          if (!bounds) return
+          setViewportCentroids(
+            centroidsRef.current.filter(({ lng, lat }) =>
+              bounds.contains({ lat, lng })
+            )
+          )
+        }
+
+        listeners.push(
+          map.addListener("zoom_changed", () => {
+            const zoom = map.getZoom() ?? KOREA_VIEW.zoom
+            setZoomStage(getZoomStage(zoom))
+            dataLayer?.syncZoom(zoom)
+          })
+        )
+        listeners.push(
+          map.addListener("idle", () => {
+            syncViewport()
+            overlay?.draw()
+
+            // 최대 줌에서 화면 중앙과 가장 가까운 지역을 자동 선택 (MapLibre onMove 포팅)
+            // Google은 move 이벤트가 idle에서만 안정되므로 제스처 종료 시점에 판정한다
+            if (decoratingRef.current) return
+            const zoom = map.getZoom() ?? 0
+            const center = map.getCenter()
+            if (
+              zoom >= PARTY_ENTER &&
+              center &&
+              centroidsRef.current.length > 0
+            ) {
+              const lng = center.lng()
+              const lat = center.lat()
+              let nearest = centroidsRef.current[0]
+              let minDist = Infinity
+              for (const c of centroidsRef.current) {
+                const d = (c.lng - lng) ** 2 + (c.lat - lat) ** 2
+                if (d < minDist) {
+                  minDist = d
+                  nearest = c
+                }
+              }
+              if (nearest.name !== selectedRegionRef.current)
+                setSelectedRegion(nearest.name)
+            } else if (
+              zoom < PARTY_ENTER &&
+              selectedRegionRef.current !== null
+            ) {
+              setSelectedRegion(null)
+            }
+          })
+        )
+        // 초기 줌 스테이지·뷰포트 반영
+        setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncViewport()
-        overlay.draw()
       })
-      syncViewport()
-    })
+      .catch(console.error)
+
+    return () => {
+      cancelled = true
+      for (const l of listeners) l.remove()
+      dataLayer?.destroy()
+      overlay?.setMap(null)
+      if (dataLayerRef.current === dataLayer) dataLayerRef.current = null
+      if (overlayRef.current === overlay) overlayRef.current = null
+      if (mapRef.current === map) mapRef.current = null
+    }
   }, [
     map,
     mapRef,
@@ -225,8 +298,7 @@ function MapController({
     dataLayerRef,
     overlayRef,
     centroidsRef,
-    fills,
-    photoRegionSet,
+    fillsRef,
     onFeatureClick,
     setCentroids,
     setSelectedRegion,
@@ -297,6 +369,11 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   const dataLayerRef = React.useRef<RegionDataLayer | null>(null)
   const overlayRef = React.useRef<ImageFillOverlay | null>(null)
   const centroidsRef = React.useRef<Array<Centroid>>([])
+  // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
+  const fillsRef = React.useRef(fills)
+  React.useEffect(() => {
+    fillsRef.current = fills
+  }, [fills])
 
   const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
     getZoomStage(KOREA_VIEW.zoom)
@@ -444,6 +521,7 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
           dataLayerRef={dataLayerRef}
           overlayRef={overlayRef}
           fills={fills}
+          fillsRef={fillsRef}
           photoRegionSet={photoRegionSet}
           selectedRegion={selectedRegion}
           setSelectedRegion={setSelectedRegion}

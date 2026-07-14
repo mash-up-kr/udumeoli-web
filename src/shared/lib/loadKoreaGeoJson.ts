@@ -80,6 +80,29 @@ export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
   }
   geojson.features.forEach((f, i) => {
     f.id = i
+    closeRings(f)
   })
   return geojson
+}
+
+// topojson merge()가 만드는 링은 시작/끝 좌표가 다를 수 있다.
+// MapLibre는 관대하지만 Google Maps data.addGeoJson()은 GeoJSON 스펙(링 폐합)을
+// 엄격 검증해 InvalidValueError를 던지므로, 열린 링은 첫 좌표를 복제해 닫아준다.
+function closeRings(feature: GeoJSON.Feature) {
+  const g = feature.geometry
+  const polys =
+    g.type === "Polygon"
+      ? [g.coordinates]
+      : g.type === "MultiPolygon"
+        ? g.coordinates
+        : []
+  for (const poly of polys) {
+    for (const ring of poly) {
+      const first = ring[0]
+      const last = ring[ring.length - 1]
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        ring.push([first[0], first[1]])
+      }
+    }
+  }
 }
