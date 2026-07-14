@@ -236,6 +236,9 @@ const MAP_INTERACTIONS = [
 
 const SLOT_SIZE_2X = 80
 
+// 지역 상세 갤러리 패널의 지도 뷰 노출 높이 — GalleryPanel PEEK_VISIBLE와 동일 값
+const GALLERY_PEEK = 244
+
 // 사진 핀 기본 크기 — 줌 레벨과 무관하게 항상 고정 (Figma 1319-13186 #1)
 const PHOTO_PIN_SIZE = 60
 
@@ -396,7 +399,13 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     flyingTimeoutRef.current = setTimeout(() => {
       flyingRef.current = false
     }, 600)
-    map.flyTo({ center: [c.lng, c.lat], zoom: PARTY_ZOOM, duration: 350 })
+    // 하단 갤러리 패널을 제외한 가시 영역의 세로 중앙에 지역이 오도록 위로 보정
+    map.flyTo({
+      center: [c.lng, c.lat],
+      zoom: PARTY_ZOOM,
+      duration: 350,
+      offset: [0, -GALLERY_PEEK / 2],
+    })
     map.once("moveend", () => {
       if (flyingTimeoutRef.current !== null)
         clearTimeout(flyingTimeoutRef.current)
