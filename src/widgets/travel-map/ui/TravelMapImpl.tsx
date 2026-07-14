@@ -536,11 +536,17 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     if (!selectedRegion || partyMembers.length === 0) return []
     const c = centroidMap.get(selectedRegion)
     if (!c) return []
+    // 갤러리 최신 날짜 행과 동일 기준 — 가장 최근 여행 일자에 올린 사진만 슬롯에 매칭
+    // (과거 일자 사진까지 채우면 갤러리의 "안 올림" 표시와 어긋난다)
+    const regionPhotos = photos.filter((p) => p.region === selectedRegion)
+    const latestDate = regionPhotos.reduce<string | null>(
+      (acc, p) => (acc === null || p.date > acc ? p.date : acc),
+      null
+    )
     const photoByUser = new Map<string, (typeof photos)[number]>()
-    for (const p of photos) {
-      if (p.region !== selectedRegion) continue
-      const existing = photoByUser.get(p.uploaderId)
-      if (!existing || p.date > existing.date) photoByUser.set(p.uploaderId, p)
+    for (const p of regionPhotos) {
+      // 같은 유저·같은 날짜에 여러 장이면 마지막 등록분 노출 (갤러리와 동일)
+      if (p.date === latestDate) photoByUser.set(p.uploaderId, p)
     }
     // 내 슬롯이 배치의 마지막 자리(우하단)에 오도록 정렬
     const ordered = [...partyMembers].sort(
