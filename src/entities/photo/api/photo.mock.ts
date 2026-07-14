@@ -50,6 +50,34 @@ const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
     uploaderId: "m-민지-4",
     thumbnailUrl: "https://picsum.photos/seed/photato-17/200/200",
   },
+  // 강릉시 추가 여행 일자 (총 3개) — 최신 일자는 05-12("나만 미업로드" 시나리오) 유지
+  {
+    id: "p18",
+    region: "강릉시",
+    lat: 37.755,
+    lng: 128.88,
+    date: "2026-05-01",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-18/200/200",
+  },
+  {
+    id: "p19",
+    region: "강릉시",
+    lat: 37.748,
+    lng: 128.869,
+    date: "2026-05-01",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-19/200/200",
+  },
+  {
+    id: "p20",
+    region: "강릉시",
+    lat: 37.762,
+    lng: 128.893,
+    date: "2025-12-30",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-20/200/200",
+  },
 
   // 양양군 — 갤러리 예시: 2026-05-21 전원(4명 팟 기준) 업로드 완료(파란 tint),
   // 2026-05-20 나(user-1)만 미업로드 → 업로드 시 파란 tint 전환 확인용
@@ -116,8 +144,63 @@ const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
     uploaderId: "m-가연-2",
     thumbnailUrl: "https://picsum.photos/seed/photato-12/200/200",
   },
+  // 양양군 추가 여행 일자 (총 5개)
+  {
+    id: "p21",
+    region: "양양군",
+    lat: 38.068,
+    lng: 128.615,
+    date: "2026-05-19",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-21/200/200",
+  },
+  {
+    id: "p22",
+    region: "양양군",
+    lat: 38.085,
+    lng: 128.637,
+    date: "2026-05-19",
+    uploaderId: "m-성아-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-22/200/200",
+  },
+  {
+    id: "p23",
+    region: "양양군",
+    lat: 38.076,
+    lng: 128.652,
+    date: "2025-11-08",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-23/200/200",
+  },
+  {
+    id: "p24",
+    region: "양양군",
+    lat: 38.066,
+    lng: 128.626,
+    date: "2025-08-15",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-24/200/200",
+  },
+  {
+    id: "p25",
+    region: "양양군",
+    lat: 38.088,
+    lng: 128.644,
+    date: "2025-08-15",
+    uploaderId: "m-가연-2",
+    thumbnailUrl: "https://picsum.photos/seed/photato-25/200/200",
+  },
+  {
+    id: "p26",
+    region: "양양군",
+    lat: 38.072,
+    lng: 128.658,
+    date: "2025-08-15",
+    uploaderId: "m-수빈-3",
+    thumbnailUrl: "https://picsum.photos/seed/photato-26/200/200",
+  },
 
-  // 고성군 — 2장
+  // 고성군 — 여행 일자 4개
   {
     id: "p5",
     region: "고성군",
@@ -136,8 +219,35 @@ const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
     uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-6/200/200",
   },
+  {
+    id: "p31",
+    region: "고성군",
+    lat: 38.388,
+    lng: 128.472,
+    date: "2026-04-12",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-31/200/200",
+  },
+  {
+    id: "p32",
+    region: "고성군",
+    lat: 38.399,
+    lng: 128.486,
+    date: "2026-04-12",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-32/200/200",
+  },
+  {
+    id: "p33",
+    region: "고성군",
+    lat: 38.374,
+    lng: 128.459,
+    date: "2025-12-25",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-33/200/200",
+  },
 
-  // 해남군 — 2장
+  // 해남군 — 여행 일자 4개
   {
     id: "p7",
     region: "해남군",
@@ -156,8 +266,44 @@ const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
     uploaderId: "user-1",
     thumbnailUrl: "https://picsum.photos/seed/photato-8/200/200",
   },
+  {
+    id: "p27",
+    region: "해남군",
+    lat: 34.565,
+    lng: 126.605,
+    date: "2026-03-17",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-27/200/200",
+  },
+  {
+    id: "p28",
+    region: "해남군",
+    lat: 34.575,
+    lng: 126.618,
+    date: "2026-03-17",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-28/200/200",
+  },
+  {
+    id: "p29",
+    region: "해남군",
+    lat: 34.552,
+    lng: 126.594,
+    date: "2025-10-03",
+    uploaderId: "m-가연-2",
+    thumbnailUrl: "https://picsum.photos/seed/photato-29/200/200",
+  },
+  {
+    id: "p30",
+    region: "해남군",
+    lat: 34.561,
+    lng: 126.588,
+    date: "2025-10-03",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-30/200/200",
+  },
 
-  // 평창군 — 1장
+  // 평창군 — 여행 일자 2개
   {
     id: "p9",
     region: "평창군",
@@ -166,6 +312,24 @@ const BASE_PHOTOS: Array<Omit<Photo, "potId">> = [
     date: "2026-02-10",
     uploaderId: "m-유지-0",
     thumbnailUrl: "https://picsum.photos/seed/photato-9/200/200",
+  },
+  {
+    id: "p34",
+    region: "평창군",
+    lat: 37.377,
+    lng: 128.402,
+    date: "2026-02-11",
+    uploaderId: "user-1",
+    thumbnailUrl: "https://picsum.photos/seed/photato-34/200/200",
+  },
+  {
+    id: "p35",
+    region: "평창군",
+    lat: 37.364,
+    lng: 128.381,
+    date: "2026-02-11",
+    uploaderId: "m-유지-0",
+    thumbnailUrl: "https://picsum.photos/seed/photato-35/200/200",
   },
 ]
 
