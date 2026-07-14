@@ -22,7 +22,7 @@ import { useSessionStore } from "@/entities/user"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
 import { GalleryPanel, openPhotoViewer } from "@/features/photo-gallery"
-import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
+import { pickImageFile } from "@/features/photo-upload"
 import {
   RegionDecorateFlow,
   partySlotOffset,
@@ -283,6 +283,10 @@ export type TravelMapImplProps = {
 
 // 아직 꾸미기 이력이 없는 팟의 안정 참조 — 셀렉터가 매번 새 객체를 만들지 않도록
 const EMPTY_FILLS: Record<string, RegionFill> = {}
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
 
 export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
   const currentPotId = usePotStore((s) => s.currentPotId)
@@ -1021,24 +1025,28 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
                     onClick={(e) => {
                       e.stopPropagation()
                       pickImageFile((url) => {
-                        openDatePickerSheet((date) => {
-                          if (!currentUserId) return
-                          addPhoto({
-                            id: `uploaded-${Date.now()}`,
-                            lat: slot.lat,
-                            lng: slot.lng,
-                            thumbnailUrl: url,
-                            date,
-                            uploaderId: currentUserId,
-                            region: slot.region,
-                            potId: currentPotId,
-                          })
-                          // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
-                          showToast({
-                            message: "업로드가 완료됐어요",
-                            icon: "check",
-                            className: "bottom-[256px]",
-                          })
+                        if (!currentUserId) return
+                        // 팟원들이 올린 이 지역 사진의 최신 날짜에 합류, 없으면 오늘
+                        const latestDate = photos
+                          .filter((p) => p.region === slot.region)
+                          .reduce<
+                            string | null
+                          >((acc, p) => (acc === null || p.date > acc ? p.date : acc), null)
+                        addPhoto({
+                          id: `uploaded-${Date.now()}`,
+                          lat: slot.lat,
+                          lng: slot.lng,
+                          thumbnailUrl: url,
+                          date: latestDate ?? toISODate(new Date()),
+                          uploaderId: currentUserId,
+                          region: slot.region,
+                          potId: currentPotId,
+                        })
+                        // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
+                        showToast({
+                          message: "업로드가 완료됐어요",
+                          icon: "check",
+                          className: "bottom-[256px]",
                         })
                       })
                     }}
