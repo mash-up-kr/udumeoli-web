@@ -801,6 +801,8 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
 
           setupClickHandler(map, MUNI_FILL, (name) => {
             if (decoratingRef.current) return
+            // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
+            if (map.getZoom() < BOUNDARY_ZOOM) return
             // 안 가본 지역(색칠·사진 없음)은 줌인 대신 첫 여행 등록 플로우로 진입
             if (
               !Object.hasOwn(fillsRef.current, name) &&
