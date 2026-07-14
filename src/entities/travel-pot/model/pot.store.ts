@@ -6,13 +6,13 @@ import {
   MOCK_POTS,
   makeInviteCode,
 } from "../api/pot.mock"
-import type { JoinPreviewResult, TravelPot } from "./types"
+import type { JoinPreviewResult, PotMember, TravelPot } from "./types"
 
 interface PotState {
   pots: Array<TravelPot>
   currentPotId: string
   selectPot: (id: string) => void
-  createPot: (name: string) => TravelPot
+  createPot: (name: string, creator: PotMember) => TravelPot
   leaveAllPots: (memberId: string) => void
   previewJoin: (code: string) => JoinPreviewResult
   confirmJoin: (pot: TravelPot) => void
@@ -24,12 +24,13 @@ export const usePotStore = create<PotState>((set, get) => ({
   // 기본 선택 팟 — 5인 팟
   currentPotId: "pot-5",
   selectPot: (id) => set({ currentPotId: id }),
-  createPot: (name) => {
+  // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
+  createPot: (name, creator) => {
     const pot: TravelPot = {
       id: `pot-${MOCK_POTS.length}-${name}`,
       name,
       inviteCode: makeInviteCode(),
-      members: [{ id: "me", nickname: "나", profileImageUrl: null }],
+      members: [creator],
     }
     set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
     return pot
