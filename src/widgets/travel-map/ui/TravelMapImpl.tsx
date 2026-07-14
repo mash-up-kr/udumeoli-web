@@ -293,7 +293,8 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
-  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const currentUserId = currentUser?.id ?? null
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
   const mapRef = React.useRef<MapRef>(null)
   const mapInstanceRef = React.useRef<MapLibreMap | null>(null)
@@ -544,19 +545,30 @@ export function TravelMapImpl({ onRegionDetailChange }: TravelMapImplProps) {
     const total = ordered.length
     return ordered.map((member, i) => {
       const photo = photoByUser.get(member.id) ?? null
+      const isMe = member.id === currentUserId
       return {
         region: selectedRegion,
         lat: c.lat,
         lng: c.lng,
         memberId: member.id,
-        nickname: member.nickname,
+        // 내 슬롯은 목 멤버 닉네임 대신 로그인한 세션 닉네임 노출
+        nickname: isMe
+          ? (currentUser?.nickname ?? member.nickname)
+          : member.nickname,
         photo: photo ? { thumbnailUrl: photo.thumbnailUrl } : null,
-        isMe: member.id === currentUserId,
+        isMe,
         slotIndex: i,
         totalSlots: total,
       }
     })
-  }, [selectedRegion, partyMembers, photos, centroidMap, currentUserId])
+  }, [
+    selectedRegion,
+    partyMembers,
+    photos,
+    centroidMap,
+    currentUser,
+    currentUserId,
+  ])
 
   // draw image fills onto canvas overlay — RAF throttled (max 1 per frame)
   const drawImageFills = React.useCallback(() => {

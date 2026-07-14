@@ -45,7 +45,8 @@ export function GalleryPanel({
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
-  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const currentUserId = currentUser?.id ?? null
   // 방금 업로드한 날짜 — 해당 행의 내 슬롯에 등록 팝 애니메이션
   const [poppedDate, setPoppedDate] = useState<string | null>(null)
 
@@ -122,12 +123,18 @@ export function GalleryPanel({
     return partyMembers.map((member) => {
       // 같은 유저·같은 날짜에 여러 장이면 마지막 등록분 노출
       const photo = group.filter((p) => p.uploaderId === member.id).at(-1)
+      const isMe = member.id === currentUserId
       return {
         memberId: member.id,
-        nickname: member.nickname,
-        profileImageUrl: member.profileImageUrl,
+        // 내 슬롯은 목 멤버 정보 대신 로그인한 세션 닉네임·프로필 노출
+        nickname: isMe
+          ? (currentUser?.nickname ?? member.nickname)
+          : member.nickname,
+        profileImageUrl: isMe
+          ? (currentUser?.profileImageUrl ?? member.profileImageUrl)
+          : member.profileImageUrl,
         photoUrl: photo ? photo.thumbnailUrl : null,
-        isMe: member.id === currentUserId,
+        isMe,
       }
     })
   }
