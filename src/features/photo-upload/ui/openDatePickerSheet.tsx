@@ -18,9 +18,12 @@ function DatePickerSheet({
   return (
     <div className="flex flex-col gap-5">
       <DialogTitle className="text-h5">다녀온 날짜를 선택해 주세요</DialogTitle>
-      <div className="flex justify-center">
-        <Calendar mode="single" selected={selected} onSelect={setSelected} />
-      </div>
+      <Calendar
+        mode="single"
+        selected={selected}
+        onSelect={setSelected}
+        classNames={{ root: "w-full" }}
+      />
       <ButtonCta
         disabled={!selected}
         onClick={() => selected && onConfirm(toISODate(selected))}
