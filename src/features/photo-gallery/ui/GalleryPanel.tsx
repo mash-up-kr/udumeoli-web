@@ -13,6 +13,7 @@ import {
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
+import { formatRegionName } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
@@ -38,12 +39,14 @@ export function GalleryPanel({
   expanded,
   onExpandedChange,
 }: GalleryPanelProps) {
-  const photos = useAllPhotos().filter((p) => p.region === region)
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const photos = useAllPhotos(currentPotId).filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
-  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const currentUserId = currentUser?.id ?? null
   // 방금 업로드한 날짜 — 해당 행의 내 슬롯에 등록 팝 애니메이션
   const [poppedDate, setPoppedDate] = useState<string | null>(null)
 
@@ -120,12 +123,18 @@ export function GalleryPanel({
     return partyMembers.map((member) => {
       // 같은 유저·같은 날짜에 여러 장이면 마지막 등록분 노출
       const photo = group.filter((p) => p.uploaderId === member.id).at(-1)
+      const isMe = member.id === currentUserId
       return {
         memberId: member.id,
-        nickname: member.nickname,
-        profileImageUrl: member.profileImageUrl,
+        // 내 슬롯은 목 멤버 정보 대신 로그인한 세션 닉네임·프로필 노출
+        nickname: isMe
+          ? (currentUser?.nickname ?? member.nickname)
+          : member.nickname,
+        profileImageUrl: isMe
+          ? (currentUser?.profileImageUrl ?? member.profileImageUrl)
+          : member.profileImageUrl,
         photoUrl: photo ? photo.thumbnailUrl : null,
-        isMe: member.id === currentUserId,
+        isMe,
       }
     })
   }
@@ -141,8 +150,15 @@ export function GalleryPanel({
       lng: center.lng,
       thumbnailUrl: url,
       uploaderId: currentUserId,
+      potId: currentPotId,
     })
     setPoppedDate(date)
+    // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
+    showToast({
+      message: "업로드가 완료됐어요",
+      icon: "check",
+      className: expanded ? undefined : "bottom-[256px]",
+    })
   }
 
   // 날짜 행의 add 슬롯: 날짜 고정, 이미지 선택만
@@ -186,7 +202,9 @@ export function GalleryPanel({
         </ButtonIcon>
         <span className="inline-flex items-center gap-2 rounded-full bg-bg-neutral-inverse px-5 py-2">
           <MapPin className="size-6 text-fg-neutral-inverse" />
-          <span className="text-h3 text-fg-neutral-inverse">{region}</span>
+          <span className="text-h3 text-fg-neutral-inverse">
+            {formatRegionName(region)}
+          </span>
         </span>
         <ButtonIcon
           variant="label"

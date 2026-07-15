@@ -355,9 +355,15 @@ function MapController({
   return null
 }
 
+// 아직 꾸미기 이력이 없는 팟의 안정 참조 — 셀렉터가 매번 새 객체를 만들지 않도록
+const EMPTY_FILLS: Record<string, RegionFill> = {}
+
 function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
-  const photos = useAllPhotos()
-  const fills = useRegionColorStore((s) => s.fills)
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const photos = useAllPhotos(currentPotId)
+  const fills = useRegionColorStore(
+    (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
+  )
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
@@ -648,6 +654,7 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
                               date,
                               uploaderId: currentUserId,
                               region: slot.region,
+                              potId: currentPotId,
                             })
                           })
                         })

@@ -1,31 +1,34 @@
 import * as React from "react"
-import { ArrowLeft, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 
+import { partySlotOffset } from "../lib/slot-layout"
 import { useDecorateStore } from "../model/decorate.store"
 import type { DecorateStep } from "../model/decorate.store"
 
 import type { RegionFill } from "@/entities/region"
 import { ButtonCta } from "@/shared/ui/button-cta"
+import { ButtonIcon } from "@/shared/ui/button-icon"
 import { Calendar } from "@/shared/ui/calendar"
 import { ColorSwatch } from "@/shared/ui/color-swatch"
-import { ImageContainer } from "@/shared/ui/image-container"
 import { Profile } from "@/shared/ui/profile"
 import { Tooltip } from "@/shared/ui/tooltip"
+import { showToast } from "@/shared/ui/toast"
+import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { usePhotoUploadStore } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
-import { useRegionColorStore } from "@/entities/region"
+import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { useSessionStore } from "@/entities/user"
 
-// 피그마 Color Swatch 팔레트 — primitive 100 계열 토큰 값.
-// MapLibre feature-state가 CSS 변수를 해석하지 못해 hex로 직접 저장한다.
+// 피그마 Color Swatch 팔레트 — fill: primitive 100, stroke: primitive 500 토큰 값.
+// MapLibre feature-state/paint가 CSS 변수를 해석하지 못해 hex로 직접 저장한다.
 const PALETTE = [
-  "#ffc5bf", // --color-red-100
-  "#ffdab5", // --color-orange-100
-  "#fff0b1", // --color-yellow-100
-  "#c8f0c0", // --color-green-100
-  "#d1eafd", // --color-blue-100
-  "#c4c8ff", // --color-indigo-100
-  "#e4bfff", // --color-violet-100
+  { fill: "#ffc5bf", stroke: "#e8453a" }, // red
+  { fill: "#ffdab5", stroke: "#e3800f" }, // orange
+  { fill: "#fff0b1", stroke: "#dbb71f" }, // yellow
+  { fill: "#c8f0c0", stroke: "#7cb571" }, // green
+  { fill: "#d1eafd", stroke: "#6cbcf9" }, // blue
+  { fill: "#c4c8ff", stroke: "#7b7fbf" }, // indigo
+  { fill: "#e4bfff", stroke: "#b689d7" }, // violet
 ]
 
 const STEP_TITLE: Record<DecorateStep, (region: string) => string> = {
@@ -36,14 +39,6 @@ const STEP_TITLE: Record<DecorateStep, (region: string) => string> = {
 
 function toISODate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
-
-// 파티 슬롯 원형 분포 — 지역이 화면 중앙에 고정된 상태라 화면 좌표 기준 배치
-function slotOffset(total: number, index: number): [number, number] {
-  if (total === 1) return [0, 0]
-  const radius = total <= 3 ? 96 : total <= 5 ? 116 : 132
-  const angle = (index / total) * 2 * Math.PI - Math.PI / 2
-  return [Math.cos(angle) * radius, Math.sin(angle) * radius]
 }
 
 const SLOT_SIZE = 80
@@ -62,42 +57,31 @@ export function RegionDecorateFlow({
   region,
   center,
 }: RegionDecorateFlowProps) {
+  const currentPotId = usePotStore((s) => s.currentPotId)
   const partyMembers = usePotStore(
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
   )
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const setColor = useRegionColorStore((s) => s.setColor)
-  const setImage = useRegionColorStore((s) => s.setImage)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
   const step = useDecorateStore((s) => s.step)
   const goStep = useDecorateStore((s) => s.setStep)
+  const setPreview = useDecorateStore((s) => s.setPreview)
   const onClose = useDecorateStore((s) => s.close)
 
   const [fill, setFill] = React.useState<RegionFill | null>(null)
-  const [date, setDate] = React.useState<Date>()
+  // 캘린더 진입 시 오늘 날짜 기본 선택 (Figma 1319-17083 #4)
+  const [date, setDate] = React.useState<Date>(() => new Date())
   const [photoUrl, setPhotoUrl] = React.useState<string | null>(null)
-  const fillInputRef = React.useRef<HTMLInputElement>(null)
   const photoInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleBack = () => {
     if (step === "color") onClose()
-    else if (step === "date") goStep("color")
-    else goStep("date")
-  }
-
-  const handleFillImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string
-      setFill({
-        type: "image",
-        imageId: `region-img-${region}-${Date.now()}`,
-        dataUrl,
-      })
-    }
-    reader.readAsDataURL(file)
+    else if (step === "date") {
+      // 선택 중이던 날짜는 저장하지 않고 오늘로 초기화 (Figma 1319-17083 #1)
+      setDate(new Date())
+      goStep("color")
+    } else goStep("date")
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,13 +100,12 @@ export function RegionDecorateFlow({
       return
     }
     if (step === "date") {
-      if (date) goStep("photo")
+      goStep("photo")
       return
     }
     // photo — 최종 커밋
-    if (!fill || !date || !photoUrl || !currentUserId) return
-    if (fill.type === "color") setColor(region, fill.value)
-    else setImage(region, fill.imageId, fill.dataUrl)
+    if (fill?.type !== "color" || !photoUrl || !currentUserId) return
+    setColor(currentPotId, region, fill.value)
     addPhoto({
       id: `up-${region}-${Date.now()}`,
       region,
@@ -131,17 +114,28 @@ export function RegionDecorateFlow({
       lng: center.lng,
       thumbnailUrl: photoUrl,
       uploaderId: currentUserId,
+      potId: currentPotId,
     })
     onClose()
+    // 지역 상세로 복귀하며 완료 토스트 3초 노출 — 갤러리 패널(하단 244px) 위 (Figma 1340-18364)
+    showToast({
+      message: "업로드가 완료됐어요",
+      icon: "check",
+      className: "bottom-[256px]",
+    })
   }
 
+  // date 스텝은 오늘이 기본 선택이라 확인이 항상 활성 (Figma 1319-17083 #6)
   const confirmDisabled =
     (step === "color" && fill === null) ||
-    (step === "date" && date === undefined) ||
     (step === "photo" && photoUrl === null)
 
+  // 내 슬롯이 배치의 마지막 자리(우하단 큰 슬롯)에 오도록 정렬
+  const orderedMembers = [...partyMembers].sort(
+    (a, b) => Number(a.id === currentUserId) - Number(b.id === currentUserId)
+  )
+
   const selectedColor = fill?.type === "color" ? fill.value : null
-  const selectedImage = fill?.type === "image" ? fill : null
   const uploadedCount = photoUrl ? 1 : 0
 
   return (
@@ -150,26 +144,27 @@ export function RegionDecorateFlow({
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-white/0" />
       <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-white/0" />
 
-      {/* 헤더 — 뒤로가기 + 스텝 타이틀 */}
-      <div className="absolute inset-x-0 top-0 flex flex-col px-4 pt-3">
-        <button
-          type="button"
-          aria-label="뒤로 가기"
-          onClick={handleBack}
-          className="pointer-events-auto flex size-[42px] items-center justify-center self-start rounded-full bg-bg-neutral-weak shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
-        >
-          <ArrowLeft className="size-6 text-fg-neutral-bold" />
-        </button>
-        <h2 className="mt-2 text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-          {STEP_TITLE[step](region)}
+      {/* 헤더 — 뒤로가기 + 스텝 타이틀 (Figma 1245-8962) */}
+      <div className="absolute inset-x-0 top-0 flex flex-col px-4 pt-[env(safe-area-inset-top)]">
+        <div className="flex h-[76px] items-center">
+          <ButtonIcon
+            aria-label="뒤로 가기"
+            onClick={handleBack}
+            className="pointer-events-auto"
+          >
+            <img src={iconArrowLeftSrc} alt="" className="size-6" />
+          </ButtonIcon>
+        </div>
+        <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+          {STEP_TITLE[step](formatRegionName(region))}
         </h2>
       </div>
 
-      {/* Step 3 — 파티 슬롯 (지역이 화면 중앙에 맞춰진 상태 기준 원형 배치) */}
+      {/* Step 3 — 파티 슬롯 (지역이 화면 중앙에 맞춰진 상태 기준 인원수별 배치) */}
       {step === "photo" ? (
         <div className="absolute top-[44%] left-1/2">
-          {partyMembers.map((member, i) => {
-            const [dx, dy] = slotOffset(partyMembers.length, i)
+          {orderedMembers.map((member, i) => {
+            const [dx, dy] = partySlotOffset(orderedMembers.length, i)
             const isMe = member.id === currentUserId
             return (
               <div
@@ -228,41 +223,29 @@ export function RegionDecorateFlow({
       {/* 하단 패널 — 스텝별 콘텐츠 + 확인 */}
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 flex flex-col items-center gap-[27px] px-4 pb-[34px]">
         {step === "color" ? (
-          <div className="flex w-full items-center gap-4 overflow-x-auto pb-1">
-            {selectedImage ? (
-              <button
-                type="button"
-                aria-label="이미지 다시 선택"
-                onClick={() => fillInputRef.current?.click()}
-                className="shrink-0"
-              >
-                <ImageContainer
-                  src={selectedImage.dataUrl}
-                  className="size-12 rounded-[12px] border-4 border-stroke-neutral-bold"
-                />
-              </button>
-            ) : (
-              <ColorSwatch
-                variant="add"
-                aria-label="이미지 추가"
-                onClick={() => fillInputRef.current?.click()}
-              />
-            )}
-            <input
-              ref={fillInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleFillImageUpload}
+          <div className="flex w-full [scrollbar-width:none] items-center gap-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
+            <ColorSwatch
+              variant="empty"
+              selected={fill === null}
+              aria-label="색상 없음"
+              onClick={() => {
+                setFill(null)
+                setPreview(null)
+              }}
             />
+            <span className="h-8 w-px shrink-0 rounded-full bg-stroke-neutral-subtle" />
             {PALETTE.map((color) => (
               <ColorSwatch
-                key={color}
+                key={color.fill}
                 variant="color"
-                color={color}
-                selected={selectedColor === color}
-                aria-label={`색상 ${color}`}
-                onClick={() => setFill({ type: "color", value: color })}
+                color={color.fill}
+                selected={selectedColor === color.fill}
+                aria-label={`색상 ${color.fill}`}
+                onClick={() => {
+                  // 스와치 탭 즉시 지도 채움 미리보기 — 확인 전에 여러 색을 비교
+                  setFill({ type: "color", value: color.fill })
+                  setPreview(color)
+                }}
               />
             ))}
           </div>
@@ -271,6 +254,7 @@ export function RegionDecorateFlow({
         {step === "date" ? (
           <Calendar
             mode="single"
+            required
             selected={date}
             onSelect={setDate}
             classNames={{ root: "w-full" }}

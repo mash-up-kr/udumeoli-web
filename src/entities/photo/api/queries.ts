@@ -13,9 +13,12 @@ export function usePhotos() {
   return useQuery({ queryKey: photoKeys.list(), queryFn: fetchPhotos })
 }
 
-// 서버(목) 사진 + 세션 업로드 사진 병합
-export function useAllPhotos() {
+// 서버(목) 사진 + 세션 업로드 사진 병합 — 현재 팟 소속 사진만
+export function useAllPhotos(potId: string) {
   const { data = [] } = usePhotos()
   const uploaded = usePhotoUploadStore((s) => s.uploaded)
-  return React.useMemo(() => [...data, ...uploaded], [data, uploaded])
+  return React.useMemo(
+    () => [...data, ...uploaded].filter((p) => p.potId === potId),
+    [data, uploaded, potId]
+  )
 }

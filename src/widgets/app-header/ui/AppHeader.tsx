@@ -23,9 +23,11 @@ function AppHeader({
   onProfileClick?: () => void
 }) {
   return (
+    // 지도 위에 떠 있으므로 헤더 박스 자체는 클릭을 통과시키고,
+    // 실제 인터랙티브 요소(버튼·팟 선택)에만 pointer-events를 준다
     <header
       className={cn(
-        "flex w-full flex-col items-start gap-2 bg-transparent px-4 py-3",
+        "pointer-events-none flex w-full flex-col items-start gap-2 bg-transparent px-4 py-3",
         className
       )}
       {...props}
@@ -42,7 +44,7 @@ function AppHeader({
             size="icon"
             radius="full"
             shadow="sm"
-            className="size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
+            className="pointer-events-auto size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
             aria-label="리캡 생성"
             onClick={onRecapClick}
           >
@@ -53,7 +55,7 @@ function AppHeader({
             size="icon"
             radius="full"
             shadow="sm"
-            className="size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
+            className="pointer-events-auto size-[42px] bg-white/75 text-blue-900 backdrop-blur-[2px]"
             aria-label="마이"
             onClick={onProfileClick}
           >
@@ -62,10 +64,12 @@ function AppHeader({
         </div>
       </div>
 
-      {potSelector ?? (
+      {potSelector ? (
+        <div className="pointer-events-auto">{potSelector}</div>
+      ) : (
         <button
           type="button"
-          className="flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          className="pointer-events-auto flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         >
           <span className="text-b5 text-fg-neutral-bold">정민이와나</span>
           <img src={iconChevronDownSrc} alt="" className="size-6" />

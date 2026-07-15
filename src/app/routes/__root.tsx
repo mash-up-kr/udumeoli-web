@@ -6,6 +6,13 @@ import { OverlayProvider } from "overlay-kit"
 import appCss from "../styles.css?url"
 import { QueryProvider } from "@/shared/api/QueryProvider"
 
+// Microsoft Clarity 사용자 행동 분석 스니펫
+const CLARITY_SNIPPET = `(function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "xl5xvglqsb");`
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -17,6 +24,7 @@ export const Route = createRootRoute({
       { title: "udumeoli" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
+    scripts: [{ children: CLARITY_SNIPPET }],
   }),
   notFoundComponent: () => (
     <main className="container mx-auto p-4 pt-16">

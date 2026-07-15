@@ -28,7 +28,6 @@ export function MapPage() {
           {!decorating && detailRegion === null ? (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
               <AppHeader
-                className="pointer-events-auto"
                 potSelector={<PotSelector />}
                 onRecapClick={() =>
                   showToast({ message: "준비 중인 기능이에요" })

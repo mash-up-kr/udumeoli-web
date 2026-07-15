@@ -91,7 +91,8 @@ function PotJoinSheet({ close }: { close: () => void }) {
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
   // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
-  const hasRegionCards = useAllPhotos().length > 0
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const hasRegionCards = useAllPhotos(currentPotId).length > 0
   const [code, setCode] = React.useState("")
   // 코드 검증 실패 시 에러 테두리 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)

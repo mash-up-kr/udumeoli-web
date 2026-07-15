@@ -11,6 +11,7 @@ import {
 } from "@/shared/ui/bottom-sheet"
 import { showToast } from "@/shared/ui/toast"
 import { usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 import partySrc from "@/shared/assets/party.svg"
 
 function CreatedStep({
@@ -82,6 +83,7 @@ function CreatedStep({
 
 function PotCreateSheet({ close }: { close: () => void }) {
   const createPot = usePotStore((s) => s.createPot)
+  const currentUser = useSessionStore((s) => s.currentUser)
   const [name, setName] = React.useState("")
   const [created, setCreated] = React.useState<{
     name: string
@@ -113,7 +115,12 @@ function PotCreateSheet({ close }: { close: () => void }) {
         <ButtonCta
           disabled={!name.trim()}
           onClick={() => {
-            const pot = createPot(name.trim())
+            // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
+            const pot = createPot(name.trim(), {
+              id: currentUser?.id ?? "me",
+              nickname: currentUser?.nickname ?? "나",
+              profileImageUrl: currentUser?.profileImageUrl ?? null,
+            })
             setCreated({ name: pot.name, code: pot.inviteCode })
           }}
         >
