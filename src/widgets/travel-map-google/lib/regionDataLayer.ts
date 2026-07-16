@@ -15,6 +15,8 @@ export type RegionVisualState = {
   active: boolean
   /** 첫 여행 등록 플로우 진행 중인 지역이면 강조 테두리 색 (점선 대신 굵은 실선으로 근사) */
   decorateColor?: string
+  /** 스와치 탭 즉시 미리 칠할 색 — 저장된 color보다 우선 */
+  previewColor?: string
 }
 
 function computeStyle(
@@ -22,14 +24,16 @@ function computeStyle(
   zoom: number,
   accent: string
 ): google.maps.Data.StyleOptions {
+  const hasColor = state.hasColor || Boolean(state.previewColor)
   const fillOpacity = state.active
     ? 0.15
-    : state.hasColor
-      ? 0.7
+    : hasColor
+      ? 0.6
       : state.hasPhoto
         ? 0.08
         : 0
-  const fillColor = state.hasColor && state.color ? state.color : accent
+  const fillColor =
+    state.previewColor ?? (state.hasColor && state.color ? state.color : accent)
 
   let strokeColor = state.active ? accent : "#aaaaaa"
   let strokeWeight = state.active ? 2.5 : 0.9
@@ -67,6 +71,7 @@ export type RegionDataLayer = {
     activeRegion?: string | null
     decorateRegion?: string | null
     decorateColor?: string
+    decoratePreviewColor?: string
   }) => void
   /** 줌 변경 시 경계선 minzoom 게이팅 재계산 */
   syncZoom: (zoom: number) => void
@@ -97,6 +102,7 @@ export function createRegionDataLayer(
   }
 
   let zoom = opts.initialZoom
+  let isAboveBoundary = zoom >= BOUNDARY_ZOOM
 
   const applyOne = (name: string) => {
     const feature = nameToFeature.get(name)
@@ -110,6 +116,13 @@ export function createRegionDataLayer(
   }
 
   applyAll()
+
+  // 색칠/사진 지역 수만큼만 유지 — sync가 매번 이 name들만 재계산하면 되므로
+  // 전체 ~250개 지역을 매번 순회하는 비용을 피한다
+  let prevFillNames = new Set<string>()
+  let prevPhotoNames = new Set<string>()
+  let prevActiveName: string | null = null
+  let prevDecorateName: string | null = null
 
   data.setStyle({ clickable: true, fillOpacity: 0, strokeOpacity: 0 })
 
@@ -129,9 +142,19 @@ export function createRegionDataLayer(
     data,
     nameToFeature,
     sync: (patch) => {
+      // 이번 sync로 실제 스타일이 바뀔 수 있는 지역만 모아 그만큼만 재계산한다 —
+      // patch.fills/hasPhotoRegions는 매번 "현재 전체" 스냅샷이라, 이전 스냅샷과의
+      // 합집합(추가된 것 + 빠진 것)만 영향받는다
+      const dirty = new Set<string>()
+
       if (patch.fills) {
-        for (const [name, state] of states) {
+        const nextNames = new Set(Object.keys(patch.fills))
+        for (const name of nextNames) dirty.add(name)
+        for (const name of prevFillNames) dirty.add(name)
+        for (const name of nextNames) {
           const fill = patch.fills[name]
+          const state = states.get(name)
+          if (!state) continue
           if (fill?.type === "color") {
             state.hasColor = true
             state.color = fill.value
@@ -140,27 +163,68 @@ export function createRegionDataLayer(
             state.color = undefined
           }
         }
+        for (const name of prevFillNames) {
+          if (nextNames.has(name)) continue
+          const state = states.get(name)
+          if (state) {
+            state.hasColor = false
+            state.color = undefined
+          }
+        }
+        prevFillNames = nextNames
       }
       if (patch.hasPhotoRegions) {
-        for (const [name, state] of states) {
-          state.hasPhoto = patch.hasPhotoRegions.has(name)
+        const next = patch.hasPhotoRegions
+        for (const name of next) dirty.add(name)
+        for (const name of prevPhotoNames) dirty.add(name)
+        for (const name of dirty) {
+          const state = states.get(name)
+          if (state) state.hasPhoto = next.has(name)
         }
+        prevPhotoNames = new Set(next)
       }
       if (patch.activeRegion !== undefined) {
-        for (const [name, state] of states) {
-          state.active = name === patch.activeRegion
+        if (prevActiveName) dirty.add(prevActiveName)
+        if (patch.activeRegion) dirty.add(patch.activeRegion)
+        if (prevActiveName && prevActiveName !== patch.activeRegion) {
+          const prevState = states.get(prevActiveName)
+          if (prevState) prevState.active = false
         }
+        if (patch.activeRegion) {
+          const state = states.get(patch.activeRegion)
+          if (state) state.active = true
+        }
+        prevActiveName = patch.activeRegion
       }
       if (patch.decorateRegion !== undefined) {
-        for (const [name, state] of states) {
-          state.decorateColor =
-            name === patch.decorateRegion ? patch.decorateColor : undefined
+        if (prevDecorateName) dirty.add(prevDecorateName)
+        if (patch.decorateRegion) dirty.add(patch.decorateRegion)
+        if (prevDecorateName && prevDecorateName !== patch.decorateRegion) {
+          const prevState = states.get(prevDecorateName)
+          if (prevState) {
+            prevState.decorateColor = undefined
+            prevState.previewColor = undefined
+          }
         }
+        if (patch.decorateRegion) {
+          const state = states.get(patch.decorateRegion)
+          if (state) {
+            state.decorateColor = patch.decorateColor
+            state.previewColor = patch.decoratePreviewColor
+          }
+        }
+        prevDecorateName = patch.decorateRegion
       }
-      applyAll()
+
+      for (const name of dirty) applyOne(name)
     },
     syncZoom: (newZoom) => {
       zoom = newZoom
+      // BOUNDARY_ZOOM 경계를 넘나들 때만 스타일이 실제로 바뀐다 — 매 프레임 오는
+      // zoom_changed마다 전체 재계산하면 스크롤 줌 중 심하게 끊긴다
+      const nowAboveBoundary = zoom >= BOUNDARY_ZOOM
+      if (nowAboveBoundary === isAboveBoundary) return
+      isAboveBoundary = nowAboveBoundary
       applyAll()
     },
     destroy: () => {
