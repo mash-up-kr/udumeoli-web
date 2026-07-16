@@ -3,7 +3,6 @@ import * as React from "react"
 import { Map as MapGL, Marker } from "react-map-gl/maplibre"
 import { feature as toFeature, merge as toMerge } from "topojson-client"
 import { Plus } from "lucide-react"
-import { POPULAR_REGIONS } from "../model/popular-regions"
 import { useRegionHighlight } from "./useRegionHighlight"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { Map as MapLibreMap } from "maplibre-gl"
@@ -15,7 +14,11 @@ import {
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
-import { formatRegionName, useRegionColorStore } from "@/entities/region"
+import {
+  POPULAR_REGIONS,
+  formatRegionName,
+  useRegionColorStore,
+} from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { ButtonIcon } from "@/shared/ui/button-icon"
