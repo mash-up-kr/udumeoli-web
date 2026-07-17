@@ -5,9 +5,9 @@ import { Chip } from "@/shared/ui/chip"
 import { cn } from "@/shared/lib/utils"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
 import iconZoomInoutSrc from "@/shared/assets/icon-zoom-inout.svg"
-import photo1Src from "@/shared/assets/onboarding-photo-1.jpg"
-import photo2Src from "@/shared/assets/onboarding-photo-2.jpg"
-import photo3Src from "@/shared/assets/onboarding-photo-3.jpg"
+import photoSeoulSrc from "@/shared/assets/ut-서울.jpg"
+import photoYangyangSrc from "@/shared/assets/ut-양양.jpg"
+import photoPohangSrc from "@/shared/assets/ut-포항.jpg"
 
 const SEEN_KEY = "photato-onboarding-seen"
 
@@ -117,18 +117,18 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
             가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
         <span className="relative block h-[60px] w-[204px]">
           <PhotoFrame
-            src={photo3Src}
-            cropPosition="52% 15%"
+            src={photoPohangSrc}
+            cropPosition="50% 60%"
             className="top-[2px] left-[122px] rotate-4"
           />
           <PhotoFrame
-            src={photo1Src}
-            cropPosition="55% 30%"
+            src={photoSeoulSrc}
+            cropPosition="50% 58%"
             className="top-[2px] left-[30px]"
           />
           <PhotoFrame
-            src={photo2Src}
-            cropPosition="50% 35%"
+            src={photoYangyangSrc}
+            cropPosition="48% 70%"
             className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
           />
         </span>
