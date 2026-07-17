@@ -49,8 +49,9 @@ export function MapGooglePage() {
 
           {!decorating && detailRegion === null ? (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
+              {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
+                  빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
               <AppHeader
-                className="pointer-events-auto"
                 potSelector={<PotSelector />}
                 onRecapClick={() => void loadUtData()}
                 onProfileClick={() => openMyPageModal()}
