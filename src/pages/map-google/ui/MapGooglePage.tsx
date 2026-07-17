@@ -9,10 +9,6 @@ import { RequireAuth } from "@/features/auth"
 import { openMyPageModal } from "@/features/my-page"
 import { useDecorateStore } from "@/features/region-decorate"
 
-/**
- * Google Maps 이식 스파이크(#76) 확인용 페이지. /map(MapLibre)과 별도,
- * 확정 아님 — PoC 검증 전용. 삭제해도 /map에는 영향 없음.
- */
 export function MapGooglePage() {
   const decorating = useDecorateStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)

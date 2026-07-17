@@ -46,7 +46,7 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const hydrated = useSessionHydrated()
   const router = useRouter()
   React.useEffect(() => {
-    if (hydrated && isAuthenticated) router.navigate({ to: "/map" })
+    if (hydrated && isAuthenticated) router.navigate({ to: "/map-google" })
   }, [hydrated, isAuthenticated, router])
   if (!hydrated || isAuthenticated) return null
   return <>{children}</>
