@@ -9,8 +9,8 @@ import utPohangSrc from "@/shared/assets/ut-포항.jpg"
 
 // 1차 UT 시드용 사진 데이터 — 지역명은 TopoJSON 명칭(광역시는 provinces, 시군은
 // municipalities)과 일치해야 지도에 반영된다.
-// 지역당 일자 3개 → 지역 카드에 "3days"로 노출. 사진은 첫 UT 팟(딸깍, pot-ut-1)
-// 소속이며 업로더 id는 pot.mock UT_POTS[0] 멤버와 일치해야 갤러리 슬롯에 매칭된다.
+// 지역당 일자 3개 → 지역 카드에 "3days"로 노출. 세 팟 모두 동일한 지역·사진으로
+// 시드하며, 업로더 id는 pot.mock UT_POTS 멤버와 일치해야 갤러리 슬롯에 매칭된다.
 type UtRegionSeed = {
   region: string
   lat: number
@@ -71,25 +71,34 @@ const UT_REGIONS: Array<UtRegionSeed> = [
   },
 ]
 
-const UT_POT_ID = "pot-ut-1"
-const UT_UPLOADERS = [
-  "user-1",
-  "m-축구왕 준표-0",
-  "m-존잘 창우-1",
-  "m-사진작가 정우-2",
-]
+// 팟별 "나(user-1) 외" 멤버 id — pot.mock UT_POTS의 멤버 구성과 일치해야 함
+const UT_POT_OTHERS: Record<string, Array<string>> = {
+  "pot-ut-1": ["m-축구왕 준표-0", "m-존잘 창우-1", "m-사진작가 정우-2"],
+  "pot-ut-2": ["m-권예인-0", "m-김나희-1", "m-이원영-2"],
+  "pot-ut-3": ["m-김수연-0", "m-장서휘-1", "m-전계원-2"],
+}
 
-export const UT_PHOTOS: Array<Photo> = UT_REGIONS.flatMap((r, ri) =>
-  r.dates.map((date, di) => ({
-    id: `ut-${r.region}-${di}`,
-    potId: UT_POT_ID,
-    region: r.region,
-    // 같은 지역 내 사진끼리 핀이 겹치지 않게 살짝 오프셋
-    lat: r.lat + di * 0.008,
-    lng: r.lng + di * 0.008,
-    date,
-    // 멤버 4명이 골고루 업로더가 되도록 지역·일자 인덱스로 순환
-    uploaderId: UT_UPLOADERS[(ri + di) % UT_UPLOADERS.length],
-    thumbnailUrl: r.thumbnailUrl,
-  }))
+// 지역당 5장: 앞선 두 일자는 나·멤버 1명, 가장 최근 일자는 나를 제외한 전원 업로드
+// → 어느 지역이든 내가 마지막으로 업로드하는 시나리오(완료 애니메이션)를 테스트할 수 있다
+export const UT_PHOTOS: Array<Photo> = Object.entries(UT_POT_OTHERS).flatMap(
+  ([potId, others]) =>
+    UT_REGIONS.flatMap((r, ri) => {
+      const [first, second, latest] = r.dates
+      const uploads = [
+        { date: first, uploaderId: "user-1" },
+        { date: second, uploaderId: others[ri % others.length] },
+        ...others.map((uploaderId) => ({ date: latest, uploaderId })),
+      ]
+      return uploads.map((u, i) => ({
+        id: `ut-${potId}-${r.region}-${i}`,
+        potId,
+        region: r.region,
+        // 같은 지역 내 사진끼리 핀이 겹치지 않게 살짝 오프셋
+        lat: r.lat + i * 0.006,
+        lng: r.lng + i * 0.006,
+        date: u.date,
+        uploaderId: u.uploaderId,
+        thumbnailUrl: r.thumbnailUrl,
+      }))
+    })
 )
