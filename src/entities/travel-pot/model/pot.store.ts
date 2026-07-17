@@ -15,7 +15,7 @@ interface PotState {
   seedUtPot: () => void
   selectPot: (id: string) => void
   createPot: (name: string, creator: PotMember) => TravelPot
-  leaveAllPots: (memberId: string) => void
+  resetPots: () => void
   previewJoin: (code: string) => JoinPreviewResult
   confirmJoin: (pot: TravelPot) => void
 }
@@ -53,14 +53,8 @@ export const usePotStore = create<PotState>((set, get) => ({
     set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
     return pot
   },
-  // 계정 삭제 정책: 속한 모든 여행팟에서 탈퇴(자리는 공석), 여행팟 자체는 유지.
-  leaveAllPots: (memberId) =>
-    set((s) => ({
-      pots: s.pots.map((p) => ({
-        ...p,
-        members: p.members.filter((m) => m.id !== memberId),
-      })),
-    })),
+  // 계정 삭제 시 로컬 팟 상태 전체 초기화 — 재가입하면 신규 유저 기준 빈 상태로 시작
+  resetPots: () => set({ pots: [], currentPotId: "" }),
   previewJoin: (code) => {
     if (get().pots.some((p) => p.inviteCode === code)) {
       return { status: "already_joined" }

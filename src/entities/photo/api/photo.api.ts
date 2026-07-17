@@ -10,6 +10,11 @@ export function seedUtPhotos() {
   utSeeded = true
 }
 
+/** UT 시드 해제(계정 삭제 등) — 신규 유저 기준 빈 사진 목록으로 되돌린다. */
+export function resetUtPhotos() {
+  utSeeded = false
+}
+
 export function fetchPhotos(): Promise<Array<Photo>> {
   if (USE_MOCK) return mockResponse<Array<Photo>>(utSeeded ? UT_PHOTOS : [])
   // TODO(graphql): return gqlClient.request(PHOTOS_QUERY).then((dto) => dto.photos.map(toPhoto))

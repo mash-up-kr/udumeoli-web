@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
@@ -11,7 +12,7 @@ import {
 } from "@/shared/ui/bottom-sheet"
 import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
-import { usePhotoUploadStore } from "@/entities/photo"
+import { photoKeys, resetUtPhotos, usePhotoUploadStore } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
 import { useRegionColorStore } from "@/entities/region"
 import { useSessionStore } from "@/entities/user"
@@ -115,8 +116,9 @@ function MenuView({
   const removePhotosByUploader = usePhotoUploadStore(
     (s) => s.removePhotosByUploader
   )
-  const leaveAllPots = usePotStore((s) => s.leaveAllPots)
+  const resetPots = usePotStore((s) => s.resetPots)
   const clearAllFills = useRegionColorStore((s) => s.clearAll)
+  const queryClient = useQueryClient()
 
   // 로그아웃 진행 후 스플래시 화면 이동 + 완료 토스트
   const handleLogout = async () => {
@@ -135,7 +137,8 @@ function MenuView({
     })
   }
 
-  // 계정 삭제: 업로드 사진 삭제 + 모든 여행팟 공석 처리(팟 유지) 후 스플래시 이동
+  // 계정 삭제: 업로드 사진·팟·UT 시드·사진 캐시까지 전부 비워
+  // 재가입 시 신규 유저 기준 빈 상태에서 다시 시작되게 한다
   const handleDelete = () => {
     openModal(
       ({ close }) => (
@@ -145,8 +148,10 @@ function MenuView({
             close()
             if (user) {
               removePhotosByUploader(user.id)
-              leaveAllPots(user.id)
             }
+            resetPots()
+            resetUtPhotos()
+            queryClient.removeQueries({ queryKey: photoKeys.all })
             clearAllFills()
             logout()
             clearAccountStorage()

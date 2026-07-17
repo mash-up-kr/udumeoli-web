@@ -16,3 +16,13 @@ describe("selectCurrentPotMembers", () => {
     expect(selectCurrentPotMembers(state)).toBe(current?.members)
   })
 })
+
+describe("resetPots", () => {
+  it("시드 이후에도 빈 초기 상태로 되돌린다 (계정 삭제)", () => {
+    usePotStore.getState().seedUtPot()
+    usePotStore.getState().resetPots()
+    const state = usePotStore.getState()
+    expect(state.pots).toHaveLength(0)
+    expect(state.currentPotId).toBe("")
+  })
+})
