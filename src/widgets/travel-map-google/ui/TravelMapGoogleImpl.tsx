@@ -240,6 +240,7 @@ function MapController({
 
     let cancelled = false
     const listeners: Array<google.maps.MapsEventListener> = []
+    const domCleanups: Array<() => void> = []
     let dataLayer: RegionDataLayer | null = null
     let overlay: ImageFillOverlay | null = null
 
@@ -299,9 +300,23 @@ function MapController({
               return
             }
             if (decoratingRef.current) return
+            // 핀 클릭으로 비행 중일 땐 지연 도착한 맵 클릭이 방금 선택을 지우지 않게
+            if (flyingRef.current) return
             if ((map.getZoom() ?? 0) < PARTY_ENTER) setSelectedRegion(null)
           })
         )
+
+        // 사용자 제스처가 시작되면 비행 잠금 해제 — 이후 idle부터 자동 선택 재개
+        const mapDiv = map.getDiv()
+        const unlockFlight = () => {
+          flyingRef.current = false
+        }
+        mapDiv.addEventListener("pointerdown", unlockFlight)
+        mapDiv.addEventListener("wheel", unlockFlight)
+        domCleanups.push(() => {
+          mapDiv.removeEventListener("pointerdown", unlockFlight)
+          mapDiv.removeEventListener("wheel", unlockFlight)
+        })
 
         const syncViewport = () => {
           const bounds = map.getBounds()
@@ -372,6 +387,7 @@ function MapController({
     return () => {
       cancelled = true
       for (const l of listeners) l.remove()
+      for (const c of domCleanups) c()
       dataLayer?.destroy()
       overlay?.setMap(null)
       if (dataLayerRef.current === dataLayer) dataLayerRef.current = null
@@ -485,17 +501,14 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   const dataLayerRef = React.useRef<RegionDataLayer | null>(null)
   const overlayRef = React.useRef<ImageFillOverlay | null>(null)
   const centroidsRef = React.useRef<Array<Centroid>>([])
-  // flyToRegion 이동 직후 idle의 "최근접 지역 자동 선택" 재계산을 건너뛰기 위한 플래그
-  // (MapLibre 구현의 flyingRef와 동일 — panTo/setZoom엔 완료 콜백이 없어 idle 1회 + 타임아웃으로 해제)
+  // flyToRegion 등 프로그래밍 이동 후 idle의 "최근접 지역 자동 선택"과 배경 클릭
+  // 해제가 방금 선택을 덮어쓰지 않도록 잠금. 도착(idle)·타임아웃 시점에 풀면
+  // 도착 직후 늦게 오는 idle/지연 클릭이 선택을 풀어버려 상세 진입이 튕긴다 —
+  // 사용자 제스처(pointerdown/wheel) 시점에만 해제한다
   const flyingRef = React.useRef(false)
-  const flyingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  )
   const cameraRafRef = React.useRef<number | null>(null)
   React.useEffect(() => {
     return () => {
-      if (flyingTimeoutRef.current !== null)
-        clearTimeout(flyingTimeoutRef.current)
       if (cameraRafRef.current !== null)
         cancelAnimationFrame(cameraRafRef.current)
     }
@@ -543,24 +556,13 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
     setGalleryExpanded(false)
   }, [detailRegion])
 
-  // flyToRegion/handleBackToHome 공용 — 잠금 세팅 + 이동 애니메이션 + idle/타임아웃 해제
+  // flyToRegion/handleBackToHome 공용 — 잠금 세팅 + 이동 애니메이션.
+  // 잠금 해제는 사용자 제스처(MapController의 pointerdown/wheel 리스너)에서만 한다
   const runCameraMove = React.useCallback(
     (target: { lat: number; lng: number; zoom: number }, duration: number) => {
       const map = mapRef.current
       if (!map) return
-      // idle의 최근접 지역 자동 선택이 이 이동 직후 재계산해 방금 고른 지역을 덮어쓰지
-      // 않도록 잠금 — moveend가 없어 idle 1회 + 타임아웃으로 해제 (MapLibre flyingRef와 동일)
       flyingRef.current = true
-      if (flyingTimeoutRef.current !== null)
-        clearTimeout(flyingTimeoutRef.current)
-      flyingTimeoutRef.current = setTimeout(() => {
-        flyingRef.current = false
-      }, duration + 150)
-      google.maps.event.addListenerOnce(map, "idle", () => {
-        if (flyingTimeoutRef.current !== null)
-          clearTimeout(flyingTimeoutRef.current)
-        flyingRef.current = false
-      })
       animateCamera(map, target, duration, cameraRafRef)
     },
     []
