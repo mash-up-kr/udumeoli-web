@@ -14,7 +14,7 @@ import {
   usePhotoUploadStore,
 } from "@/entities/photo"
 import { formatRegionName } from "@/entities/region"
-import { usePotStore } from "@/entities/travel-pot"
+import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 
@@ -42,9 +42,7 @@ export function GalleryPanel({
   const currentPotId = usePotStore((s) => s.currentPotId)
   const photos = useAllPhotos(currentPotId).filter((p) => p.region === region)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
-  const partyMembers = usePotStore(
-    (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
-  )
+  const partyMembers = usePotStore(selectCurrentPotMembers)
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
   // 방금 업로드한 날짜 — 해당 행의 내 슬롯에 등록 팝 애니메이션

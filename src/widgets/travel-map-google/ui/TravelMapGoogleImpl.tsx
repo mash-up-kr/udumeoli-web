@@ -33,7 +33,7 @@ import {
   formatRegionName,
   useRegionColorStore,
 } from "@/entities/region"
-import { usePotStore } from "@/entities/travel-pot"
+import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
@@ -474,9 +474,7 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   const fills = useRegionColorStore(
     (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
   )
-  const partyMembers = usePotStore(
-    (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
-  )
+  const partyMembers = usePotStore(selectCurrentPotMembers)
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)

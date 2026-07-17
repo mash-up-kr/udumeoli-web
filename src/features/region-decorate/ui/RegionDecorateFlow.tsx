@@ -15,7 +15,7 @@ import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { usePhotoUploadStore } from "@/entities/photo"
-import { usePotStore } from "@/entities/travel-pot"
+import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { useSessionStore } from "@/entities/user"
 
@@ -58,9 +58,7 @@ export function RegionDecorateFlow({
   center,
 }: RegionDecorateFlowProps) {
   const currentPotId = usePotStore((s) => s.currentPotId)
-  const partyMembers = usePotStore(
-    (s) => s.pots.find((p) => p.id === s.currentPotId)?.members ?? []
-  )
+  const partyMembers = usePotStore(selectCurrentPotMembers)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const setColor = useRegionColorStore((s) => s.setColor)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)

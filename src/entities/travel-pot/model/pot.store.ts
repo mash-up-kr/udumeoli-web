@@ -20,6 +20,14 @@ interface PotState {
   confirmJoin: (pot: TravelPot) => void
 }
 
+// 팟 미선택/미존재 시에도 안정 참조를 반환하기 위한 상수 — 셀렉터가 매번
+// 새 배열을 만들면 useSyncExternalStore가 무한 리렌더에 빠진다
+const EMPTY_MEMBERS: Array<PotMember> = []
+
+/** 현재 선택된 팟의 멤버 목록 (팟이 없으면 안정된 빈 배열) */
+export const selectCurrentPotMembers = (s: PotState): Array<PotMember> =>
+  s.pots.find((p) => p.id === s.currentPotId)?.members ?? EMPTY_MEMBERS
+
 // 러프 단계 in-memory 목 스토어. 추후 entities/travel-pot/api로 GraphQL 교체.
 export const usePotStore = create<PotState>((set, get) => ({
   // 신규 유저 기준 빈 상태로 시작 — 목 팟은 UT 데이터 시드로만 주입
