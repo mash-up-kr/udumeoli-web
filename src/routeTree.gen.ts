@@ -8,49 +8,49 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./app/routes/__root"
-import { Route as SignupRouteImport } from "./app/routes/signup"
-import { Route as MapGoogleRouteImport } from "./app/routes/map-google"
-import { Route as IndexRouteImport } from "./app/routes/index"
+import { Route as rootRouteImport } from './app/routes/__root'
+import { Route as SignupRouteImport } from './app/routes/signup'
+import { Route as MapGoogleRouteImport } from './app/routes/map-google'
+import { Route as IndexRouteImport } from './app/routes/index'
 
 const SignupRoute = SignupRouteImport.update({
-  id: "/signup",
-  path: "/signup",
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapGoogleRoute = MapGoogleRouteImport.update({
-  id: "/map-google",
-  path: "/map-google",
+  id: '/map-google',
+  path: '/map-google',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
-  "/map-google": typeof MapGoogleRoute
-  "/signup": typeof SignupRoute
+  '/': typeof IndexRoute
+  '/map-google': typeof MapGoogleRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
-  "/map-google": typeof MapGoogleRoute
-  "/signup": typeof SignupRoute
+  '/': typeof IndexRoute
+  '/map-google': typeof MapGoogleRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
-  "/map-google": typeof MapGoogleRoute
-  "/signup": typeof SignupRoute
+  '/': typeof IndexRoute
+  '/map-google': typeof MapGoogleRoute
+  '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/map-google" | "/signup"
+  fullPaths: '/' | '/map-google' | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/map-google" | "/signup"
-  id: "__root__" | "/" | "/map-google" | "/signup"
+  to: '/' | '/map-google' | '/signup'
+  id: '__root__' | '/' | '/map-google' | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -59,26 +59,26 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/signup": {
-      id: "/signup"
-      path: "/signup"
-      fullPath: "/signup"
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/map-google": {
-      id: "/map-google"
-      path: "/map-google"
-      fullPath: "/map-google"
+    '/map-google': {
+      id: '/map-google'
+      path: '/map-google'
+      fullPath: '/map-google'
       preLoaderRoute: typeof MapGoogleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -94,9 +94,9 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./app/router.tsx"
-import type { createStart } from "@tanstack/react-start"
-declare module "@tanstack/react-start" {
+import type { getRouter } from './app/router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

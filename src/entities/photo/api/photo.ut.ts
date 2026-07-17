@@ -9,8 +9,8 @@ import utPohangSrc from "@/shared/assets/ut-포항.jpg"
 
 // 1차 UT 시드용 사진 데이터 — 지역명은 TopoJSON 명칭(광역시는 provinces, 시군은
 // municipalities)과 일치해야 지도에 반영된다.
-// 지역당 일자 3개 → 지역 카드에 "3days"로 노출. 업로더는 UT 팟(pot-ut) 멤버
-// (나 user-1, 유지 m-유지-0)와 일치해야 갤러리 슬롯에 매칭된다.
+// 지역당 일자 3개 → 지역 카드에 "3days"로 노출. 사진은 첫 UT 팟(딸깍, pot-ut-1)
+// 소속이며 업로더 id는 pot.mock UT_POTS[0] 멤버와 일치해야 갤러리 슬롯에 매칭된다.
 type UtRegionSeed = {
   region: string
   lat: number
@@ -71,16 +71,25 @@ const UT_REGIONS: Array<UtRegionSeed> = [
   },
 ]
 
-export const UT_PHOTOS: Array<Photo> = UT_REGIONS.flatMap((r) =>
+const UT_POT_ID = "pot-ut-1"
+const UT_UPLOADERS = [
+  "user-1",
+  "m-축구왕 준표-0",
+  "m-존잘 창우-1",
+  "m-사진작가 정우-2",
+]
+
+export const UT_PHOTOS: Array<Photo> = UT_REGIONS.flatMap((r, ri) =>
   r.dates.map((date, di) => ({
     id: `ut-${r.region}-${di}`,
-    potId: "pot-ut",
+    potId: UT_POT_ID,
     region: r.region,
     // 같은 지역 내 사진끼리 핀이 겹치지 않게 살짝 오프셋
     lat: r.lat + di * 0.008,
     lng: r.lng + di * 0.008,
     date,
-    uploaderId: di % 2 === 0 ? "user-1" : "m-유지-0",
+    // 멤버 4명이 골고루 업로더가 되도록 지역·일자 인덱스로 순환
+    uploaderId: UT_UPLOADERS[(ri + di) % UT_UPLOADERS.length],
     thumbnailUrl: r.thumbnailUrl,
   }))
 )

@@ -18,7 +18,7 @@ export function MapGooglePage() {
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
 
   const queryClient = useQueryClient()
-  const seedUtPot = usePotStore((s) => s.seedUtPot)
+  const seedUtPots = usePotStore((s) => s.seedUtPots)
 
   // 상단 공유 버튼 — 1차 UT용 데이터(여행팟+사진) 시드 트리거로 임시 사용
   const loadUtData = async () => {
@@ -28,7 +28,7 @@ export function MapGooglePage() {
     })
     if (!ok) return
     seedUtPhotos()
-    seedUtPot()
+    seedUtPots()
     await queryClient.invalidateQueries({ queryKey: photoKeys.list() })
     // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게
     showToast({
