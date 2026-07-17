@@ -23,14 +23,19 @@ export function MapGooglePage() {
   // 상단 공유 버튼 — 1차 UT용 데이터(여행팟+사진) 시드 트리거로 임시 사용
   const loadUtData = async () => {
     const ok = await openConfirm({
-      title: "UT용 데이터를 불러올까요?",
+      title: "🥔 UT용 데이터를 불러올까요?",
       description: "미리 준비된 여행팟과 사진이 세팅돼요.",
     })
     if (!ok) return
     seedUtPhotos()
     seedUtPot()
     await queryClient.invalidateQueries({ queryKey: photoKeys.list() })
-    showToast({ message: "UT용 데이터를 불러왔어요" })
+    // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게
+    showToast({
+      message: "UT용 데이터를 불러왔어요",
+      icon: "check",
+      className: "bottom-[256px]",
+    })
   }
 
   return (
