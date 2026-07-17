@@ -753,8 +753,8 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
             }}
             anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
           >
-            {/* Google 기본 지도는 지명 라벨이 깔려 있어 text-shadow만으론 겹쳐 보임 → pill 배경 */}
-            <span className="rounded-full bg-white/85 px-5 py-1.5 text-h2 text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.2)]">
+            {/* 시안대로 배경 없는 텍스트만 — 지도 지명 라벨과 겹칠 때 대비용 은은한 글로우 */}
+            <span className="text-h2 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
               {formatRegionName(decorating)}
             </span>
           </AdvancedMarker>
