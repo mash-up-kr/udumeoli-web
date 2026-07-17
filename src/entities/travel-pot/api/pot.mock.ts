@@ -33,6 +33,14 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
   })
 )
 
+// 1차 UT 시드용 팟 (시안 "정민이와나") — 사진 시드(photo.ut)의 potId·uploaderId와 일치해야 함
+export const UT_POT: TravelPot = {
+  id: "pot-ut",
+  name: "정민이와나",
+  inviteCode: "260617",
+  members: [ME, ...OTHERS.slice(0, 1)],
+}
+
 // 참여 코드 입력 시 확인 모달 미리보기 (러프: 코드와 무관하게 동일 샘플)
 export const JOIN_PREVIEW: TravelPot = {
   id: "pot-join-preview",

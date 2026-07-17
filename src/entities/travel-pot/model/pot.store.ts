@@ -4,6 +4,7 @@ import {
   JOIN_ERROR_CODES,
   JOIN_PREVIEW,
   MOCK_POTS,
+  UT_POT,
   makeInviteCode,
 } from "../api/pot.mock"
 import type { JoinPreviewResult, PotMember, TravelPot } from "./types"
@@ -11,6 +12,7 @@ import type { JoinPreviewResult, PotMember, TravelPot } from "./types"
 interface PotState {
   pots: Array<TravelPot>
   currentPotId: string
+  seedUtPot: () => void
   selectPot: (id: string) => void
   createPot: (name: string, creator: PotMember) => TravelPot
   leaveAllPots: (memberId: string) => void
@@ -23,6 +25,14 @@ export const usePotStore = create<PotState>((set, get) => ({
   // 신규 유저 기준 빈 상태로 시작 — 목 팟은 UT 데이터 시드로만 주입
   pots: [],
   currentPotId: "",
+  // UT용 팟 주입 — 사용자가 직접 만든 팟은 유지하고 UT 팟을 추가·선택
+  seedUtPot: () =>
+    set((s) => ({
+      pots: s.pots.some((p) => p.id === UT_POT.id)
+        ? s.pots
+        : [...s.pots, UT_POT],
+      currentPotId: UT_POT.id,
+    })),
   selectPot: (id) => set({ currentPotId: id }),
   // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
   createPot: (name, creator) => {
