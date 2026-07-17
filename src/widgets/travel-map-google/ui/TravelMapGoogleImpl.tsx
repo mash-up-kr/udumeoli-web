@@ -57,7 +57,8 @@ const GOOGLE_MAP_ID =
   (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined) ||
   "DEMO_MAP_ID"
 
-const KOREA_VIEW = { lat: 36.2, lng: 127.8, zoom: 6.5 }
+// 중심을 북서쪽에 둬서 화면상 대한민국이 우측·하단에 놓이게 한다
+const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 6.7 }
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
@@ -722,6 +723,8 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
                 key={`centroid-${name}`}
                 position={{ lat, lng }}
                 anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+                // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 내부 버튼 클릭 불가
+                clickable
               >
                 <button
                   type="button"
@@ -766,6 +769,7 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
               key={`photo-${p.id}`}
               position={{ lat: p.pinLat, lng: p.pinLng }}
               anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+              clickable
             >
               <PhotoTile
                 label={formatRegionName(p.region)}
@@ -791,6 +795,7 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
                 key={`slot-${slot.region}-${slot.memberId}`}
                 position={{ lat: slot.lat, lng: slot.lng }}
                 anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+                clickable
               >
                 <div
                   style={{
