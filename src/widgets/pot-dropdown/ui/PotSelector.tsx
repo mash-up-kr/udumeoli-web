@@ -20,7 +20,8 @@ export function PotSelector() {
   const selectPot = usePotStore((s) => s.selectPot)
   const [open, setOpen] = React.useState(false)
 
-  const current = pots.find((p) => p.id === currentPotId) ?? pots[0]
+  // 팟이 하나도 없으면(신규 유저) 트리거에 안내 문구 노출 — 드롭다운엔 추가 카드만 남는다
+  const current = pots.find((p) => p.id === currentPotId) ?? pots.at(0)
 
   return (
     <div className="relative">
@@ -31,7 +32,7 @@ export function PotSelector() {
         className="flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
       >
         <span className="max-w-40 truncate text-b5 text-fg-neutral-bold">
-          {current.name}
+          {current?.name ?? "여행팟 추가"}
         </span>
         <img src={iconChevronDownSrc} alt="" className="size-6" />
       </button>
@@ -48,40 +49,42 @@ export function PotSelector() {
 
           {/* 트리거 위치를 덮는 카드 2개 (참여 중 여행팟 / 여행팟 추가) */}
           <div className="absolute top-0 left-0 z-50 flex w-[220px] flex-col gap-1">
-            <div className={cardCls}>
-              <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">
-                여행팟
-              </p>
-              <div className="flex w-full flex-col">
-                {pots.map((pot) => (
-                  <button
-                    key={pot.id}
-                    type="button"
-                    onClick={() => {
-                      selectPot(pot.id)
-                      setOpen(false)
-                    }}
-                    className={rowCls}
-                  >
-                    {pot.id === currentPotId ? (
+            {pots.length > 0 ? (
+              <div className={cardCls}>
+                <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">
+                  여행팟
+                </p>
+                <div className="flex w-full flex-col">
+                  {pots.map((pot) => (
+                    <button
+                      key={pot.id}
+                      type="button"
+                      onClick={() => {
+                        selectPot(pot.id)
+                        setOpen(false)
+                      }}
+                      className={rowCls}
+                    >
+                      {pot.id === currentPotId ? (
+                        <img
+                          src={iconCheckSrc}
+                          alt="현재 여행팟"
+                          className="size-6 shrink-0"
+                        />
+                      ) : null}
+                      <span className={`${labelCls} line-clamp-2`}>
+                        {pot.name}
+                      </span>
                       <img
-                        src={iconCheckSrc}
-                        alt="현재 여행팟"
+                        src={iconChevronRightSrc}
+                        alt=""
                         className="size-6 shrink-0"
                       />
-                    ) : null}
-                    <span className={`${labelCls} line-clamp-2`}>
-                      {pot.name}
-                    </span>
-                    <img
-                      src={iconChevronRightSrc}
-                      alt=""
-                      className="size-6 shrink-0"
-                    />
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className={cardCls}>
               <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">

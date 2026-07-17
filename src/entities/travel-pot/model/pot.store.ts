@@ -20,9 +20,9 @@ interface PotState {
 
 // 러프 단계 in-memory 목 스토어. 추후 entities/travel-pot/api로 GraphQL 교체.
 export const usePotStore = create<PotState>((set, get) => ({
-  pots: MOCK_POTS,
-  // 기본 선택 팟 — 5인 팟
-  currentPotId: "pot-5",
+  // 신규 유저 기준 빈 상태로 시작 — 목 팟은 UT 데이터 시드로만 주입
+  pots: [],
+  currentPotId: "",
   selectPot: (id) => set({ currentPotId: id }),
   // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
   createPot: (name, creator) => {
