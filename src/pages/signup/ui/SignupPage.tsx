@@ -13,7 +13,6 @@ import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
-import mashUpSrc from "@/shared/assets/mash-up.jpg"
 
 // 기본 아바타 후보 4종 — 현재 이미지가 1개뿐이라 동일 이미지로 채움 (추후 교체 예정)
 const DEFAULT_AVATARS = [
@@ -144,7 +143,7 @@ function openPermissionFlow() {
   )
 }
 
-// 가입 완료 팝업 — /map-google 이동 후 표시 (그래픽은 임시 마스코트, 추후 교체 예정)
+// 가입 완료 팝업 — /map-google 이동 후 표시 (그래픽은 추후 교체 예정 placeholder)
 // 확인 버튼(onConfirm)만 온보딩으로 이어지고, X(onClose)는 그냥 닫는다
 function SignupCompleteContent({
   nickname,
@@ -165,12 +164,7 @@ function SignupCompleteContent({
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
       </button>
-      {/* 가로로 긴 슬롯이라 마스코트 얼굴이 중앙에 오도록 세로 크롭 위치 조정 */}
-      <img
-        src={mashUpSrc}
-        alt=""
-        className="h-[120px] w-full rounded-[12px] object-cover object-[50%_38%]"
-      />
+      <div className="h-[120px] rounded-[12px] bg-bg-neutral-subtle" />
       <div className="flex flex-col gap-[10px] py-2 text-center">
         <DialogTitle className="text-h5-1 text-fg-neutral-bold">
           {nickname}님

@@ -5,7 +5,6 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RedirectIfAuthed } from "@/features/auth"
 import iconKakaoSrc from "@/shared/assets/icon-kakao.svg"
 import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
-import mashUpSrc from "@/shared/assets/mash-up.jpg"
 
 export function LandingPage() {
   const router = useRouter()
@@ -23,12 +22,10 @@ export function LandingPage() {
           {"로그인하고\n서비스를 사용해 보세요"}
         </p>
 
-        {/* 그래픽 슬롯 (Figma 343×335, radius 10) — 임시 개발팀 마스코트, 추후 실제 그래픽으로 교체 */}
-        <img
-          src={mashUpSrc}
-          alt=""
-          className="absolute inset-x-4 top-1/2 h-[335px] -translate-y-1/2 rounded-[10px] object-cover"
-        />
+        {/* 그래픽 placeholder (Figma 343×335, radius 10) — 화면 세로 정중앙, 추후 실제 그래픽으로 교체 */}
+        <div className="absolute inset-x-4 top-1/2 flex h-[335px] -translate-y-1/2 items-center justify-center rounded-[10px] bg-neutral-200 text-b5 text-muted-foreground">
+          그래픽
+        </div>
 
         <div className="flex-1" />
 
