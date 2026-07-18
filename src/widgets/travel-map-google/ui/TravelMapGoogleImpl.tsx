@@ -814,53 +814,61 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
                         openPhotoViewer(slotPhoto.thumbnailUrl)
                       }}
                     />
-                  ) : slot.isMe ? (
-                    <button
-                      type="button"
-                      aria-label="내 사진 등록"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        pickImageFile((url) => {
-                          if (!currentUserId) return
-                          // 팟원들이 올린 이 지역 사진의 최신 날짜에 합류, 없으면 오늘
-                          const latestDate = photos
-                            .filter((p) => p.region === slot.region)
-                            .reduce<
-                              string | null
-                            >((acc, p) => (acc === null || p.date > acc ? p.date : acc), null)
-                          addPhoto({
-                            id: `uploaded-${Date.now()}`,
-                            lat: slot.lat,
-                            lng: slot.lng,
-                            thumbnailUrl: url,
-                            date: latestDate ?? toISODate(new Date()),
-                            uploaderId: currentUserId,
-                            region: slot.region,
-                            potId: currentPotId,
-                          })
-                          // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
-                          showToast({
-                            message: "업로드가 완료됐어요",
-                            icon: "check",
-                            className: "bottom-[256px]",
-                          })
-                        })
-                      }}
-                      className="flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-white transition-colors hover:border-primary hover:bg-primary/5"
-                      style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                    >
-                      <Plus className="size-6 text-primary/60" />
-                    </button>
                   ) : (
-                    <div
-                      className="flex items-center justify-center rounded-2xl border-2 border-dashed border-foreground/20 bg-white"
-                      style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                    >
-                      <img
-                        src="/icon-zzz.svg"
-                        alt="사진 없음"
-                        className="size-9 opacity-70"
-                      />
+                    // 빈 슬롯도 PhotoTile과 동일한 닉네임 칩 노출 (칩 + 타일 세로 배치)
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
+                        {slot.nickname}
+                      </span>
+                      {slot.isMe ? (
+                        <button
+                          type="button"
+                          aria-label="내 사진 등록"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            pickImageFile((url) => {
+                              if (!currentUserId) return
+                              // 팟원들이 올린 이 지역 사진의 최신 날짜에 합류, 없으면 오늘
+                              const latestDate = photos
+                                .filter((p) => p.region === slot.region)
+                                .reduce<
+                                  string | null
+                                >((acc, p) => (acc === null || p.date > acc ? p.date : acc), null)
+                              addPhoto({
+                                id: `uploaded-${Date.now()}`,
+                                lat: slot.lat,
+                                lng: slot.lng,
+                                thumbnailUrl: url,
+                                date: latestDate ?? toISODate(new Date()),
+                                uploaderId: currentUserId,
+                                region: slot.region,
+                                potId: currentPotId,
+                              })
+                              // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
+                              showToast({
+                                message: "업로드가 완료됐어요",
+                                icon: "check",
+                                className: "bottom-[256px]",
+                              })
+                            })
+                          }}
+                          className="flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-white transition-colors hover:border-primary hover:bg-primary/5"
+                          style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
+                        >
+                          <Plus className="size-6 text-primary/60" />
+                        </button>
+                      ) : (
+                        <div
+                          className="flex items-center justify-center rounded-2xl border-2 border-dashed border-foreground/20 bg-white"
+                          style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
+                        >
+                          <img
+                            src="/icon-zzz.svg"
+                            alt="사진 없음"
+                            className="size-9 opacity-70"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
