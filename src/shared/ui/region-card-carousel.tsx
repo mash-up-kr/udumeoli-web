@@ -1,9 +1,11 @@
 import * as React from "react"
 
+// eslint-disable-next-line boundaries/element-types -- 기존 FSD 위반, 별도 작업으로 정리 예정
 import type { Photo } from "@/entities/photo"
 import type { ImageCardPatternItem } from "@/shared/ui/image-card-pattern"
 import { ImageCardPattern } from "@/shared/ui/image-card-pattern"
 import { cn } from "@/shared/lib/utils"
+// eslint-disable-next-line boundaries/element-types -- 기존 FSD 위반, 별도 작업으로 정리 예정
 import { formatRegionName } from "@/entities/region"
 
 /**
