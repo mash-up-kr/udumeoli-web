@@ -35,7 +35,7 @@ category: AI / Prompt
 
 ```
 [COORDINATOR] Task received: <$ARGUMENTS 요약>
-Phases: Plan → Human review → Implement → Review(자동 재시도 ≤2) → PR → Report
+Phases: Plan → Human review → Implement → Review(자동 재시도 ≤2) → Commit → Report
 ```
 
 현재 작업 디렉터리와 관련 파일을 간략히 탐색해 컨텍스트를 수집한다.
@@ -136,25 +136,23 @@ reviewer가 검증 실패(수정 필요한 이슈)를 반환하면 사람에게 
 
 ---
 
-## Phase 5. PR 생성
+## Phase 5. Commit (승인 후)
 
-reviewer 검증을 통과하면(또는 재시도 소진 후 사람이 계속 진행을 승인하면) 브랜치를 만들고 PR을 올린다. 머지는 사람이 한다.
+reviewer 검증을 통과하면(또는 재시도 소진 후 사람이 계속 진행을 승인하면) 커밋까지만 진행한다. **PR 오픈은 coordinator 범위 밖이다** — 필요하면 사람이 별도로 `.claude/skills/pr` 절차를 요청한다.
 
 ```
-[COORDINATOR → GIT] Creating branch, preparing commit...
+[COORDINATOR → GIT] Preparing commit...
 ```
 
-- 작업 브랜치 생성 (`main`에서 분기)
-- 커밋할 변경사항(diff 요약)과 제안 커밋 메시지를 사용자에게 보여주고 **커밋 승인을 기다린다** — 여기서 자동으로 `git commit`을 실행하지 않는다 (`.claude/rules/behavior.md` 커밋 승인 규칙)
-- 승인되면 커밋 → 원격에 push
-- `gh pr create`로 PR 오픈. 본문에 원본 작업 요청, 계획 요약, reviewer 검증 결과, 재시도 이력(있다면) 포함
-- **PR을 자동으로 머지하지 않는다.** merge는 항상 사람이 CI green 확인 후 직접 진행한다.
+- `.claude/skills/commit` 절차를 따른다: 변경사항을 관심사별로 그룹핑
+- 각 그룹 커밋 직전 diff 요약과 제안 커밋 메시지를 사용자에게 보여주고 **승인을 기다린다** — 승인 없이 `git commit` 실행하지 않는다 (`.claude/rules/behavior.md` 커밋 승인 규칙)
+- 승인된 그룹만 커밋한다. push, 브랜치 생성, PR 오픈은 하지 않는다.
 
 ---
 
 ## Phase 6. Final Report
 
-reviewer의 검증 결과와 PR 링크를 사용자에게 출력한다.
+reviewer의 검증 결과와 커밋 내역을 사용자에게 출력한다.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -164,9 +162,9 @@ reviewer의 검증 결과와 PR 링크를 사용자에게 출력한다.
 [결과 요약]
 [reviewer 검증 결과]
 [재시도 이력 (있다면)]
-[PR 링크]
+[커밋 내역]
 [실패한 단계 또는 미완료 항목]
-[다음 권장 액션 — 사람이 merge]
+[다음 권장 액션 — PR은 사람이 요청 시 /pr 스킬로]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -180,6 +178,6 @@ reviewer의 검증 결과와 PR 링크를 사용자에게 출력한다.
 - implementer 결과가 부분 실패이면 reviewer 검증 후 사용자에게 판단을 묻는다
 - reviewer 실패는 재시도 2회까지 사람 개입 없이 자체적으로 돌린다 (범위 이탈 등 재시도로 못 고치는 문제는 예외)
 - `git commit`은 매번 사람 승인 후에만 실행한다 — 재시도 루프가 자동이어도 커밋 자체는 자동화 대상 아님
-- PR은 커밋 승인 이후엔 자동으로 올리되 merge는 절대 자동으로 하지 않는다 — 항상 사람이 CI 확인 후 직접 머지
+- PR 오픈은 coordinator가 하지 않는다 — Phase 5는 커밋까지, PR은 사람이 요청하면 별도로 `.claude/skills/pr` 절차를 따른다
 - 프로젝트 규칙과 요청 범위를 벗어난 기능 추가를 계획이나 구현에 섞지 않는다
 - 코디네이터 자신의 컨텍스트는 최소로 유지한다 (탐색은 요약만 보관)
