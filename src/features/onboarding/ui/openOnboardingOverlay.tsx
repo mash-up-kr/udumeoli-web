@@ -97,53 +97,49 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
 
       {/* Step 2 — 처음부터 마운트해 사진을 미리 디코드하고, 전환은 컴포지터에서
           처리되는 opacity/translate 트랜지션만 사용해 버벅임 없이 스르륵 등장 */}
-      {/* 안내 문구 + 예시 사진 — 화면 상단에서 320px, 문구·사진 간 Spacing/x4 (Figma 5_첫진입_2) */}
+      {/* 안내 영역(상단 320px)과 확인 버튼(하단 246px)을 한 컨테이너로 묶어
+          화면 높이가 줄어도 flex 흐름상 서로 겹치지 않게 하고 최소 간격을 보장 */}
       <span
         aria-hidden={step !== 2}
         className={cn(
-          "absolute top-[320px] left-1/2 flex -translate-x-1/2 transform-gpu flex-col items-center gap-4 transition-[opacity,translate] duration-700 ease-out",
+          "absolute inset-x-0 top-[320px] bottom-[246px] flex transform-gpu flex-col items-center justify-between gap-6 transition-[opacity,translate] duration-700 ease-out",
           // 스텝 1 페이드 아웃(300ms)이 끝난 뒤 등장
           step === 2
             ? "translate-y-0 opacity-100 delay-300"
             : "translate-y-3 opacity-0"
         )}
       >
-        <StepTitle
-          iconSrc={iconCameraAddSrc}
-          hint="여행지를 클릭하고"
-          title="사진을 업로드해주세요!"
-        />
-        {/* 예시 사진 3장 — 세 장 모두 세로 중앙(y 30) 정렬, 왼쪽 무회전 x30 ·
-            가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
-        <span className="relative block h-[60px] w-[204px]">
-          <PhotoFrame
-            src={photoPohangSrc}
-            cropPosition="50% 60%"
-            className="top-[2px] left-[122px] rotate-4"
+        {/* 안내 문구 + 예시 사진 — 문구·사진 간 Spacing/x4 (Figma 5_첫진입_2) */}
+        <span className="flex flex-col items-center gap-4">
+          <StepTitle
+            iconSrc={iconCameraAddSrc}
+            hint="여행지를 클릭하고"
+            title="사진을 업로드해주세요!"
           />
-          <PhotoFrame
-            src={photoSeoulSrc}
-            cropPosition="50% 58%"
-            className="top-[2px] left-[30px]"
-          />
-          <PhotoFrame
-            src={photoYangyangSrc}
-            cropPosition="48% 70%"
-            className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
-          />
+          {/* 예시 사진 3장 — 세 장 모두 세로 중앙(y 30) 정렬, 왼쪽 무회전 x30 ·
+              가운데 -4° 중앙(x102) · 오른쪽 +4° x122 (Figma 1300-10145, 컨테이너 204×60) */}
+          <span className="relative block h-[60px] w-[204px]">
+            <PhotoFrame
+              src={photoPohangSrc}
+              cropPosition="50% 60%"
+              className="top-[2px] left-[122px] rotate-4"
+            />
+            <PhotoFrame
+              src={photoSeoulSrc}
+              cropPosition="50% 58%"
+              className="top-[2px] left-[30px]"
+            />
+            <PhotoFrame
+              src={photoYangyangSrc}
+              cropPosition="48% 70%"
+              className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
+            />
+          </span>
         </span>
-      </span>
-      {/* 확인했어요 — 화면 하단에서 246px, 가로 중앙 */}
-      <span
-        aria-hidden={step !== 2}
-        className={cn(
-          "absolute bottom-[246px] left-1/2 -translate-x-1/2 transform-gpu rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 whitespace-nowrap text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] transition-[opacity,translate] duration-700 ease-out",
-          step === 2
-            ? "translate-y-0 opacity-100 delay-300"
-            : "translate-y-3 opacity-0"
-        )}
-      >
-        확인했어요
+        {/* 확인했어요 */}
+        <span className="rounded-full bg-bg-neutral-weak px-5 py-3 text-h8 whitespace-nowrap text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+          확인했어요
+        </span>
       </span>
     </button>
   )
