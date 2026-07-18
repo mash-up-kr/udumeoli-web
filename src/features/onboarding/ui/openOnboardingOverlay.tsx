@@ -102,7 +102,7 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
       <span
         aria-hidden={step !== 2}
         className={cn(
-          "absolute inset-x-0 top-[320px] bottom-[246px] flex transform-gpu flex-col items-center justify-between gap-6 transition-[opacity,translate] duration-700 ease-out",
+          "absolute inset-x-0 top-[320px] bottom-[246px] flex transform-gpu flex-col items-center justify-center gap-6 transition-[opacity,translate] duration-700 ease-out",
           // 스텝 1 페이드 아웃(300ms)이 끝난 뒤 등장
           step === 2
             ? "translate-y-0 opacity-100 delay-300"
