@@ -33,6 +33,14 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
   })
 )
 
+// 신규 유저 기본 세팅 팟 — 나(user-1) 포함 4인, 사진은 등록되지 않은 상태
+export const DEFAULT_POT: TravelPot = {
+  id: "pot-default",
+  name: "여행 4인팟",
+  inviteCode: "260609",
+  members: [ME, ...members(["친구1", "친구2", "친구3"])],
+}
+
 // 1차 UT 시드용 팟 3개 — 각 팟은 나(user-1) 포함 4인.
 // 사진 시드(photo.ut)의 potId·uploaderId(UT_POT_OTHERS)와 일치해야 함
 export const UT_POTS: Array<TravelPot> = [

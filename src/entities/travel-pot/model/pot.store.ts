@@ -1,6 +1,7 @@
 import { create } from "zustand"
 
 import {
+  DEFAULT_POT,
   JOIN_ERROR_CODES,
   JOIN_PREVIEW,
   MOCK_POTS,
@@ -30,9 +31,9 @@ export const selectCurrentPotMembers = (s: PotState): Array<PotMember> =>
 
 // 러프 단계 in-memory 목 스토어. 추후 entities/travel-pot/api로 GraphQL 교체.
 export const usePotStore = create<PotState>((set, get) => ({
-  // 신규 유저 기준 빈 상태로 시작 — 목 팟은 UT 데이터 시드로만 주입
-  pots: [],
-  currentPotId: "",
+  // 신규 유저도 기본 팟(여행 4인팟) 하나가 세팅된 상태로 시작
+  pots: [DEFAULT_POT],
+  currentPotId: DEFAULT_POT.id,
   // UT용 팟 3개 주입 — 사용자가 직접 만든 팟은 유지하고 UT 팟을 추가, 첫 팟(딸깍) 선택
   seedUtPots: () =>
     set((s) => ({
@@ -54,8 +55,8 @@ export const usePotStore = create<PotState>((set, get) => ({
     set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
     return pot
   },
-  // 계정 삭제 시 로컬 팟 상태 전체 초기화 — 재가입하면 신규 유저 기준 빈 상태로 시작
-  resetPots: () => set({ pots: [], currentPotId: "" }),
+  // 계정 삭제 시 로컬 팟 상태 초기화 — 재가입하면 신규 유저 기준 기본 팟만 남는다
+  resetPots: () => set({ pots: [DEFAULT_POT], currentPotId: DEFAULT_POT.id }),
   previewJoin: (code) => {
     if (get().pots.some((p) => p.inviteCode === code)) {
       return { status: "already_joined" }
