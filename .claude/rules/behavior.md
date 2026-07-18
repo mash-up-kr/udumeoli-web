@@ -65,6 +65,14 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Commit Only With Explicit Approval
+
+**`git commit` never runs without the user confirming that specific commit first — no exceptions, including automated flows (e.g. coordinator).**
+
+- Finish the change, show what would be committed (diff/summary + proposed message), then wait.
+- This applies even mid-task, even when the user has been steadily approving prior steps — approval doesn't carry forward to the next commit.
+- The `udumeoli-coordinator` PR phase must pause for commit approval before running `git commit`, even though branch creation and PR opening downstream can stay automatic once the commit is approved.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
