@@ -164,10 +164,10 @@ export function GalleryPanel({
     pickImageFile((url) => registerPhoto(date, url))
   }
 
-  // 헤더 추가: 이미지 선택 → 날짜 선택
+  // 헤더 추가: 날짜 선택 → 이미지 선택
   const uploadWithDatePicker = () => {
-    pickImageFile((url) => {
-      openDatePickerSheet((date) => registerPhoto(date, url))
+    openDatePickerSheet((date) => {
+      pickImageFile((url) => registerPhoto(date, url))
     })
   }
 
