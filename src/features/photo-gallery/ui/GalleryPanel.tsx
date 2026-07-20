@@ -16,6 +16,7 @@ import {
 import { formatRegionName } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
+// eslint-disable-next-line boundaries/element-types -- 기존 FSD 위반(features 간 직접 import), 별도 작업으로 정리 예정
 import { openDatePickerSheet, pickImageFile } from "@/features/photo-upload"
 
 // Figma 812 프레임 기준(1319-14756): 지도 뷰 top 568 → 노출 높이 244, 리스트 뷰 top 54

@@ -35,7 +35,7 @@ category: AI / Prompt
 
 ```
 [COORDINATOR] Task received: <$ARGUMENTS 요약>
-Phases: Plan → Human review → Implement → Review
+Phases: Plan → Human review → Implement → Review(자동 재시도 ≤2) → Commit → Report
 ```
 
 현재 작업 디렉터리와 관련 파일을 간략히 탐색해 컨텍스트를 수집한다.
@@ -123,9 +123,36 @@ Results: "<implementer 단계별 결과 요약>"
 
 ---
 
-## Phase 5. Final Report
+reviewer가 검증 실패(수정 필요한 이슈)를 반환하면 사람에게 묻지 않고 자동으로 되돌린다:
 
-reviewer의 검증 결과를 사용자에게 출력한다.
+```
+[COORDINATOR → IMPLEMENTER] Review feedback loop (attempt N/2): <reviewer 지적 사항>
+```
+
+- `udumeoli-implementer`에게 reviewer 피드백을 그대로 전달해 수정시킨다.
+- 수정 후 `udumeoli-reviewer`를 다시 호출해 재검증한다.
+- 최대 2회까지 자동 재시도한다. 2회 후에도 실패하면 Phase 6로 넘어가되 미해결 이슈로 보고하고 사람 판단을 요청한다.
+- 범위 이탈, 계획 자체의 오류처럼 implementer 재시도로 해결 불가능한 실패는 즉시 사람에게 확인한다 (재시도 소진 기다리지 않음).
+
+---
+
+## Phase 5. Commit (승인 후)
+
+reviewer 검증을 통과하면(또는 재시도 소진 후 사람이 계속 진행을 승인하면) 커밋까지만 진행한다. **PR 오픈은 coordinator 범위 밖이다** — 필요하면 사람이 별도로 `.claude/skills/pr` 절차를 요청한다.
+
+```
+[COORDINATOR → GIT] Preparing commit...
+```
+
+- `.claude/skills/commit` 절차를 따른다: 변경사항을 관심사별로 그룹핑
+- 각 그룹 커밋 직전 diff 요약과 제안 커밋 메시지를 사용자에게 보여주고 **승인을 기다린다** — 승인 없이 `git commit` 실행하지 않는다 (`.claude/rules/behavior.md` 커밋 승인 규칙)
+- 승인된 그룹만 커밋한다. push, 브랜치 생성, PR 오픈은 하지 않는다.
+
+---
+
+## Phase 6. Final Report
+
+reviewer의 검증 결과와 커밋 내역을 사용자에게 출력한다.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -134,8 +161,10 @@ reviewer의 검증 결과를 사용자에게 출력한다.
 
 [결과 요약]
 [reviewer 검증 결과]
+[재시도 이력 (있다면)]
+[커밋 내역]
 [실패한 단계 또는 미완료 항목]
-[다음 권장 액션]
+[다음 권장 액션 — PR은 사람이 요청 시 /pr 스킬로]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -147,5 +176,8 @@ reviewer의 검증 결과를 사용자에게 출력한다.
 - Phase 2 승인 없이 Phase 3을 절대 시작하지 않는다
 - 각 Phase 전환 시 `[COORDINATOR → ...]` 레이블을 출력해 현재 상태를 명확히 한다
 - implementer 결과가 부분 실패이면 reviewer 검증 후 사용자에게 판단을 묻는다
+- reviewer 실패는 재시도 2회까지 사람 개입 없이 자체적으로 돌린다 (범위 이탈 등 재시도로 못 고치는 문제는 예외)
+- `git commit`은 매번 사람 승인 후에만 실행한다 — 재시도 루프가 자동이어도 커밋 자체는 자동화 대상 아님
+- PR 오픈은 coordinator가 하지 않는다 — Phase 5는 커밋까지, PR은 사람이 요청하면 별도로 `.claude/skills/pr` 절차를 따른다
 - 프로젝트 규칙과 요청 범위를 벗어난 기능 추가를 계획이나 구현에 섞지 않는다
 - 코디네이터 자신의 컨텍스트는 최소로 유지한다 (탐색은 요약만 보관)

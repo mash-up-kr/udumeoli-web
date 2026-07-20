@@ -65,6 +65,8 @@
     "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^10.4.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "6.0.2",
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
