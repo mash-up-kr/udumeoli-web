@@ -67,18 +67,19 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 5. Commit Only With Explicit Approval
 
-**`git commit` never runs without the user confirming that specific commit first — no exceptions, including automated flows (e.g. coordinator).**
+**`git commit` never runs without the user confirming that specific commit first, except the explicit `/gone-gaming` autopilot flow after its own verification gate passes.**
 
 - Finish the change, show what would be committed (diff/summary + proposed message), then wait.
 - This applies even mid-task, even when the user has been steadily approving prior steps — approval doesn't carry forward to the next commit.
-- The `udumeoli-coordinator` PR phase must pause for commit approval before running `git commit`, even though branch creation and PR opening downstream can stay automatic once the commit is approved.
+- The `udumeoli-coordinator` Commit phase must pause for commit approval before running `git commit`; PR opening stays outside coordinator unless the user separately requests the PR procedure.
+- `/gone-gaming` is the only exception: it must be directly invoked, run on a dedicated non-`main` branch/worktree, and skip commit approval only after required verification and reviewer checks pass. If required verification remains red, it must not commit, push, or open a PR.
 
 ## 6. Always Use the Commit/PR Skill Procedures
 
 **Skill auto-triggering on natural language ("커밋 하자", "PR 올려줘") is not reliable — don't depend on it. Follow the documented procedure regardless of whether the Skill tool itself fires.**
 
 - Why: skills compete for relevance matching each turn; unlike this rules file, they aren't guaranteed to load. On 2026-07-19, casual commit/PR requests were handled ad hoc instead of via `.claude/skills/commit` and `.claude/skills/pr`, producing a PR that didn't match `.github/PULL_REQUEST_TEMPLATE.md`.
-- Any request to commit → follow `.claude/skills/commit` (concern-grouped, per-group approval before `git commit`).
+- Any request to commit → follow `.claude/skills/commit` (concern-grouped, per-group approval before `git commit`; `/gone-gaming` exception only when explicitly invoked).
 - Any request to open/create a PR → follow `.claude/skills/pr` (fill `.github/PULL_REQUEST_TEMPLATE.md` exactly: 작업 내용 / 추가 설명 / 연결 이슈).
 
 ---

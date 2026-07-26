@@ -11,9 +11,13 @@ description: |
 
 ## 작업 절차
 
-1. `git log main...HEAD --oneline`과 `git diff main...HEAD`로 변경사항 전체를 파악한다.
-2. 변경사항을 바탕으로 PR 내용을 작성한다.
-3. `gh pr create` 명령으로 PR을 생성한다. push가 필요하면 먼저 push한다.
+1. `git status --short --branch`로 현재 브랜치와 미커밋 변경을 확인한다.
+   - 현재 브랜치가 `main`이면 중단한다.
+   - 미커밋 변경이 있으면 PR에 포함되지 않으므로, 먼저 커밋 절차가 필요한지 확인한다.
+2. `git fetch origin main` 후 `git log origin/main...HEAD --oneline`과 `git diff origin/main...HEAD`로 변경사항 전체를 파악한다.
+3. 같은 브랜치의 기존 PR이 있는지 확인한다. 있으면 새 PR을 만들지 않고 기존 PR URL을 보고한다.
+4. 변경사항을 바탕으로 PR 내용을 작성한다.
+5. `gh pr create` 명령으로 PR을 생성한다. push가 필요하면 현재 브랜치만 push한다.
 
 ## PR 템플릿 작성 규칙
 
@@ -42,7 +46,8 @@ description: |
 ## 실행
 
 ```bash
-gh pr create --title "<title>" --body "<filled template>"
+gh pr create --base main --title "<title>" --body "<filled template>"
 ```
 
 base 브랜치는 `main`으로 한다.
+force push는 하지 않는다.
