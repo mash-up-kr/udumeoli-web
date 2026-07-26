@@ -65,6 +65,22 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Commit Only With Explicit Approval
+
+**`git commit` never runs without the user confirming that specific commit first — no exceptions, including automated flows (e.g. coordinator).**
+
+- Finish the change, show what would be committed (diff/summary + proposed message), then wait.
+- This applies even mid-task, even when the user has been steadily approving prior steps — approval doesn't carry forward to the next commit.
+- The `udumeoli-coordinator` PR phase must pause for commit approval before running `git commit`, even though branch creation and PR opening downstream can stay automatic once the commit is approved.
+
+## 6. Always Use the Commit/PR Skill Procedures
+
+**Skill auto-triggering on natural language ("커밋 하자", "PR 올려줘") is not reliable — don't depend on it. Follow the documented procedure regardless of whether the Skill tool itself fires.**
+
+- Why: skills compete for relevance matching each turn; unlike this rules file, they aren't guaranteed to load. On 2026-07-19, casual commit/PR requests were handled ad hoc instead of via `.claude/skills/commit` and `.claude/skills/pr`, producing a PR that didn't match `.github/PULL_REQUEST_TEMPLATE.md`.
+- Any request to commit → follow `.claude/skills/commit` (concern-grouped, per-group approval before `git commit`).
+- Any request to open/create a PR → follow `.claude/skills/pr` (fill `.github/PULL_REQUEST_TEMPLATE.md` exactly: 작업 내용 / 추가 설명 / 연결 이슈).
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
