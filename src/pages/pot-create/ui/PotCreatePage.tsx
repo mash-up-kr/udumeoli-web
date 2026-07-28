@@ -103,8 +103,10 @@ export function PotCreatePage() {
     code: string
   } | null>(null)
 
-  // 진입 지점이 지도 화면뿐이라 뒤로가기·닫기 모두 그리로 되돌린다
+  // 완료 화면의 닫기·홈으로는 진입 지점(팟 목록 드롭다운/여행팟 시작 온보딩)과 무관하게 항상 지도로 이동
   const goToMap = () => router.navigate({ to: "/map-google" })
+  // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용
+  const goBack = () => router.history.back()
 
   if (created) {
     return (
@@ -115,7 +117,7 @@ export function PotCreatePage() {
   return (
     <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
-        <ButtonIcon aria-label="뒤로 가기" onClick={goToMap}>
+        <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
         </ButtonIcon>
       </div>
