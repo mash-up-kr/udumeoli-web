@@ -1,11 +1,10 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 import confetti from "canvas-confetti"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, X } from "lucide-react"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
-import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { NumberCode } from "@/shared/ui/number-code"
 import { TextField } from "@/shared/ui/text-field"
@@ -50,29 +49,44 @@ function CreatedStep({
   }
 
   return (
-    <MobileLayout className="flex min-h-dvh flex-col">
-      <Header type="close" title="여행팟 생성" onIconClick={onClose} />
-      <div className="flex w-full flex-1 flex-col items-center gap-6 px-4">
+    <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
+      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
+        <ButtonIcon aria-label="닫기" onClick={onClose}>
+          <X />
+        </ButtonIcon>
+      </div>
+      <main className="flex flex-1 flex-col gap-4 px-4">
         <img src={partySrc} alt="" className="size-[60px]" />
-        <div className="flex w-full flex-col items-center gap-1">
-          <p className="flex items-center justify-center gap-1 text-h5-1 whitespace-nowrap">
-            <span className="text-blue-500 underline">{name}</span>
-            <span className="text-fg-neutral-bold">
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex flex-col">
+            <p className="text-h3-1 text-fg-brand-solid underline">{name}</p>
+            <p className="text-h3-1 text-fg-neutral-bold">
               여행팟 코드가 발급되었어요!
-            </span>
-          </p>
-          <p className="w-full text-center text-b5 text-neutral-500">
+            </p>
+          </div>
+          <p className="text-b6 text-fg-neutral-subtle">
             이제 친구를 초대해 같이 지도를 채워볼까요?
           </p>
         </div>
-        <NumberCode value={code} readOnly />
-      </div>
+        <div className="flex w-full justify-center">
+          <NumberCode value={code} readOnly />
+        </div>
+      </main>
       <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
         {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
         <Tooltip direction="bottom">
           최대 6명까지 함께할 수 있어요. (1/6)
         </Tooltip>
-        <ButtonCta onClick={share}>초대코드 공유하기</ButtonCta>
+        <div className="flex w-full flex-col gap-[10px]">
+          <ButtonCta onClick={share}>초대코드 공유하기</ButtonCta>
+          <ButtonCta
+            variant="secondary"
+            className="shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
+            onClick={onClose}
+          >
+            홈으로
+          </ButtonCta>
+        </div>
       </div>
     </MobileLayout>
   )
