@@ -1,14 +1,15 @@
 import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
 import confetti from "canvas-confetti"
+import { ArrowLeft } from "lucide-react"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
+import { ButtonIcon } from "@/shared/ui/button-icon"
+import { Header } from "@/shared/ui/header"
+import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { NumberCode } from "@/shared/ui/number-code"
 import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
-import {
-  BottomSheetScreenHeader,
-  openBottomSheet,
-} from "@/shared/ui/bottom-sheet"
 import { showToast } from "@/shared/ui/toast"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -49,12 +50,8 @@ function CreatedStep({
   }
 
   return (
-    <>
-      <BottomSheetScreenHeader
-        icon="close"
-        title="여행팟 생성"
-        onIconClick={onClose}
-      />
+    <MobileLayout className="flex min-h-dvh flex-col">
+      <Header type="close" title="여행팟 생성" onIconClick={onClose} />
       <div className="flex w-full flex-1 flex-col items-center gap-6 px-4">
         <img src={partySrc} alt="" className="size-[60px]" />
         <div className="flex w-full flex-col items-center gap-1">
@@ -70,18 +67,20 @@ function CreatedStep({
         </div>
         <NumberCode value={code} readOnly />
       </div>
-      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-[34px]">
+      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
         {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
         <Tooltip direction="bottom">
           최대 6명까지 함께할 수 있어요. (1/6)
         </Tooltip>
         <ButtonCta onClick={share}>초대코드 공유하기</ButtonCta>
       </div>
-    </>
+    </MobileLayout>
   )
 }
 
-function PotCreateSheet({ close }: { close: () => void }) {
+/** 여행팟 생성 페이지 — 이름 입력 → 초대코드 발급(컨페티). (Figma 1893-12129) */
+export function PotCreatePage() {
+  const router = useRouter()
   const createPot = usePotStore((s) => s.createPot)
   const currentUser = useSessionStore((s) => s.currentUser)
   const [name, setName] = React.useState("")
@@ -90,51 +89,55 @@ function PotCreateSheet({ close }: { close: () => void }) {
     code: string
   } | null>(null)
 
+  // 진입 지점이 지도 화면뿐이라 뒤로가기·닫기 모두 그리로 되돌린다
+  const goToMap = () => router.navigate({ to: "/map-google" })
+
   if (created) {
     return (
-      <CreatedStep name={created.name} code={created.code} onClose={close} />
+      <CreatedStep name={created.name} code={created.code} onClose={goToMap} />
     )
   }
 
   return (
-    <>
-      <BottomSheetScreenHeader
-        icon="back"
-        title="여행팟 생성"
-        onIconClick={close}
-      />
-      <div className="flex w-full flex-1 flex-col px-4">
-        <TextField
-          label="여행팟 이름"
-          placeholder="우리 방의 이름을 입력해주세요."
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+    <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
+      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
+        <ButtonIcon aria-label="뒤로 가기" onClick={goToMap}>
+          <ArrowLeft />
+        </ButtonIcon>
       </div>
-      <div className="w-full px-4 pb-[34px]">
-        <ButtonCta
-          disabled={!name.trim()}
-          onClick={() => {
-            // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
-            const pot = createPot(name.trim(), {
-              id: currentUser?.id ?? "me",
-              nickname: currentUser?.nickname ?? "나",
-              profileImageUrl: currentUser?.profileImageUrl ?? null,
-            })
-            setCreated({ name: pot.name, code: pot.inviteCode })
-          }}
-        >
-          다음
-        </ButtonCta>
-      </div>
-    </>
+      <form
+        className="flex flex-1 flex-col"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!name.trim()) return
+          // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
+          const pot = createPot(name.trim(), {
+            id: currentUser?.id ?? "me",
+            nickname: currentUser?.nickname ?? "나",
+            profileImageUrl: currentUser?.profileImageUrl ?? null,
+          })
+          setCreated({ name: pot.name, code: pot.inviteCode })
+        }}
+      >
+        <main className="flex flex-1 flex-col gap-6 px-4">
+          <h1 className="text-h3-1 text-fg-neutral-bold">
+            새로운 팟 이름을
+            <br />
+            정해 주세요
+          </h1>
+          <TextField
+            label="여행팟 이름"
+            placeholder="우리 팟의 이름을 입력해주세요."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </main>
+        <div className="w-full px-4 pb-8">
+          <ButtonCta type="submit" disabled={!name.trim()}>
+            팟 만들기
+          </ButtonCta>
+        </div>
+      </form>
+    </MobileLayout>
   )
-}
-
-/** 여행팟 생성 풀높이 모달 — 이름 입력 → 초대코드 발급(컨페티). */
-export function openPotCreateModal() {
-  openBottomSheet(({ close }) => <PotCreateSheet close={close} />, {
-    variant: "full",
-    showCloseButton: false,
-  })
 }

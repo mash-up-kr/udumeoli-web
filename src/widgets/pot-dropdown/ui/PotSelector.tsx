@@ -1,7 +1,7 @@
 import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
 
 import { usePotStore } from "@/entities/travel-pot"
-import { openPotCreateModal } from "@/features/pot-create"
 import { openPotJoinModal } from "@/features/pot-join"
 import iconCheckSrc from "@/shared/assets/icon-check.svg"
 import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
@@ -15,6 +15,7 @@ const labelCls = "min-w-0 flex-1 text-h8-1 text-fg-neutral-bold"
 
 // 메인 헤더의 여행팟 선택 트리거 + 드롭다운(팟 전환 / 생성·참여 진입)
 export function PotSelector() {
+  const router = useRouter()
   const pots = usePotStore((s) => s.pots)
   const currentPotId = usePotStore((s) => s.currentPotId)
   const selectPot = usePotStore((s) => s.selectPot)
@@ -95,7 +96,7 @@ export function PotSelector() {
                   type="button"
                   onClick={() => {
                     setOpen(false)
-                    openPotCreateModal()
+                    router.navigate({ to: "/pot-create" })
                   }}
                   className={rowCls}
                 >
