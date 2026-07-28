@@ -59,6 +59,16 @@ const GOOGLE_MAP_ID =
 
 // 중심을 북서쪽에 둬서 화면상 대한민국이 우측·하단에 놓이게 한다
 const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 6.7 }
+
+// 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
+// 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
+type CameraSnapshot = {
+  lat: number
+  lng: number
+  zoom: number
+  selectedRegion: string | null
+}
+let lastCameraSnapshot: CameraSnapshot | null = null
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
@@ -392,6 +402,18 @@ function MapController({
       overlay?.setMap(null)
       if (dataLayerRef.current === dataLayer) dataLayerRef.current = null
       if (overlayRef.current === overlay) overlayRef.current = null
+
+      // 언마운트 시점 카메라 위치 스냅샷 저장 (다른 라우트 갔다 돌아왔을 때 복원용)
+      const center = map.getCenter()
+      if (center) {
+        lastCameraSnapshot = {
+          lat: center.lat(),
+          lng: center.lng(),
+          zoom: map.getZoom() ?? KOREA_VIEW.zoom,
+          selectedRegion: selectedRegionRef.current,
+        }
+      }
+
       if (mapRef.current === map) mapRef.current = null
     }
   }, [
@@ -520,14 +542,14 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   }, [fills])
 
   const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
-    getZoomStage(KOREA_VIEW.zoom)
+    getZoomStage(lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom)
   )
   const [centroids, setCentroids] = React.useState<Array<Centroid>>([])
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
   >([])
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(
-    null
+    () => lastCameraSnapshot?.selectedRegion ?? null
   )
   const [galleryExpanded, setGalleryExpanded] = React.useState(false)
 
@@ -679,8 +701,11 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
     <div className="relative size-full">
       <GoogleMap
         mapId={GOOGLE_MAP_ID}
-        defaultCenter={{ lat: KOREA_VIEW.lat, lng: KOREA_VIEW.lng }}
-        defaultZoom={KOREA_VIEW.zoom}
+        defaultCenter={{
+          lat: lastCameraSnapshot?.lat ?? KOREA_VIEW.lat,
+          lng: lastCameraSnapshot?.lng ?? KOREA_VIEW.lng,
+        }}
+        defaultZoom={lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom}
         maxZoom={PARTY_ZOOM}
         gestureHandling="greedy"
         disableDefaultUI
