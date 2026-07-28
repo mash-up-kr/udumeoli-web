@@ -56,7 +56,9 @@ function StickerChip({
   return (
     <span
       className={cn(
-        "absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-[9px] rounded-full px-[15px] py-[7px] whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+        // w-max: absolute 요소의 shrink-to-fit이 컨테이너 우측 edge에 막혀
+        // 배경 pill이 글자보다 좁아지는 것 방지 (액티비티 칩)
+        "absolute flex w-max -translate-x-1/2 -translate-y-1/2 items-center gap-[9px] rounded-full px-[15px] py-[7px] whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
         inverse
           ? "bg-bg-neutral-inverse text-fg-neutral-inverse"
           : "bg-bg-neutral-weak/70 text-fg-neutral-bold",
@@ -191,38 +193,38 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
       // 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응
       className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto bg-bg-neutral-subtle"
     >
-      {/* 헤더(76px) — 스텝 2·3에서만 뒤로가기, 스텝1은 자리만 유지해 타이틀 위치 고정 */}
-      <div className="flex h-[76px] shrink-0 items-start px-4 py-2">
-        {step > 1 && (
-          <ButtonIcon
-            aria-label="이전 단계로"
-            onClick={() => setStep((step - 1) as Step)}
-          >
-            <ArrowLeft />
-          </ButtonIcon>
-        )}
-      </div>
+      {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
+      {step > 1 && (
+        <ButtonIcon
+          aria-label="이전 단계로"
+          className="absolute top-2 left-4 z-10"
+          onClick={() => setStep((step - 1) as Step)}
+        >
+          <ArrowLeft />
+        </ButtonIcon>
+      )}
 
-      {/* 스텝 전환 시 타이틀·그래픽만 가볍게 페이드 인 (시안에 모션 명세 없음) */}
-      <div
-        key={step}
-        className="flex shrink-0 animate-in flex-col items-center duration-300 fade-in-0"
-      >
-        <div className="flex flex-col gap-4 px-4 text-center">
-          <h2 className="text-h3 text-fg-neutral-bold">
-            {title[0]}
-            <br />
-            {title[1]}
-          </h2>
-          <p className="text-h6-1 text-fg-neutral-subtle">{subtitle}</p>
-        </div>
-        {/* 그래픽 영역 343×320 — 시안 annotation상 추후 전부 교체 예정 */}
-        <div aria-hidden className="relative h-[320px] w-[343px]">
-          <Graphic />
+      {/* 타이틀·그래픽 — 하단 컨트롤 위 영역의 세로 중앙에 고정 */}
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+        {/* 스텝 전환 시 가볍게 페이드 인 (시안에 모션 명세 없음) */}
+        <div
+          key={step}
+          className="flex shrink-0 animate-in flex-col items-center duration-300 fade-in-0"
+        >
+          <div className="flex flex-col gap-4 px-4 text-center">
+            <h2 className="text-h3 text-fg-neutral-bold">
+              {title[0]}
+              <br />
+              {title[1]}
+            </h2>
+            <p className="text-h6-1 text-fg-neutral-subtle">{subtitle}</p>
+          </div>
+          {/* 그래픽 영역 343×320 — 시안 annotation상 추후 전부 교체 예정 */}
+          <div aria-hidden className="relative h-[320px] w-[343px]">
+            <Graphic />
+          </div>
         </div>
       </div>
-
-      <div className="min-h-6 flex-1" />
 
       {/* 진행 표시 — 현재 스텝은 16×8 pill, 나머지는 8px 점 */}
       <p className="sr-only">3단계 중 {step}단계</p>
