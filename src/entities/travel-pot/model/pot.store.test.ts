@@ -17,23 +17,21 @@ describe("selectCurrentPotMembers", () => {
   })
 })
 
-describe("기본 팟", () => {
-  it("초기 상태는 기본 팟(여행 4인팟) 하나가 선택돼 있다", () => {
+describe("초기 상태", () => {
+  it("팟이 하나도 없는 상태로 시작한다 (/pot-start 진입 대상)", () => {
     usePotStore.getState().resetPots()
     const state = usePotStore.getState()
-    expect(state.pots).toHaveLength(1)
-    expect(state.pots[0].name).toBe("여행 4인팟")
-    expect(state.pots[0].members).toHaveLength(4)
-    expect(state.currentPotId).toBe(state.pots[0].id)
+    expect(state.pots).toHaveLength(0)
+    expect(state.currentPotId).toBe("")
   })
 })
 
 describe("seedUtPots", () => {
-  it("기본 팟에 UT 팟 3개가 추가되고 각 팟은 나 포함 4인이다", () => {
+  it("UT 팟 3개가 추가되고 각 팟은 나 포함 4인이다", () => {
     usePotStore.getState().resetPots()
     usePotStore.getState().seedUtPots()
     const state = usePotStore.getState()
-    expect(state.pots).toHaveLength(4)
+    expect(state.pots).toHaveLength(3)
     for (const pot of state.pots) {
       expect(pot.members).toHaveLength(4)
       expect(pot.members.some((m) => m.id === "user-1")).toBe(true)
@@ -42,11 +40,11 @@ describe("seedUtPots", () => {
 })
 
 describe("resetPots", () => {
-  it("시드 이후에도 기본 팟만 남은 초기 상태로 되돌린다 (계정 삭제)", () => {
+  it("시드 이후에도 팟 없는 초기 상태로 되돌린다 (계정 삭제)", () => {
     usePotStore.getState().seedUtPots()
     usePotStore.getState().resetPots()
     const state = usePotStore.getState()
-    expect(state.pots).toHaveLength(1)
-    expect(state.currentPotId).toBe(state.pots[0].id)
+    expect(state.pots).toHaveLength(0)
+    expect(state.currentPotId).toBe("")
   })
 })

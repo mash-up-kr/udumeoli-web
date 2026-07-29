@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { AppHeader } from "@/widgets/app-header"
@@ -13,7 +14,14 @@ import { useDecorateStore } from "@/features/region-decorate"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
 
-export function MapGooglePage() {
+function MapGooglePageContent() {
+  const router = useRouter()
+  // 참여 중인 팟이 하나도 없으면(신규 유저) 지도 대신 여행팟 시작 온보딩으로 보낸다
+  const hasPot = usePotStore((s) => s.pots.length > 0)
+  React.useEffect(() => {
+    if (!hasPot) router.navigate({ to: "/pot-start" })
+  }, [hasPot, router])
+
   const decorating = useDecorateStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
 
@@ -38,28 +46,36 @@ export function MapGooglePage() {
     })
   }
 
+  if (!hasPot) return null
+
+  return (
+    <MobileLayout className="flex h-dvh flex-col">
+      <main className="relative flex-1">
+        <TravelMapGoogle
+          className="absolute inset-0"
+          onRegionDetailChange={setDetailRegion}
+        />
+
+        {!decorating && detailRegion === null ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
+            {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
+                빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
+            <AppHeader
+              potSelector={<PotSelector />}
+              onRecapClick={() => void loadUtData()}
+              onProfileClick={() => openMyPageModal()}
+            />
+          </div>
+        ) : null}
+      </main>
+    </MobileLayout>
+  )
+}
+
+export function MapGooglePage() {
   return (
     <RequireAuth>
-      <MobileLayout className="flex h-dvh flex-col">
-        <main className="relative flex-1">
-          <TravelMapGoogle
-            className="absolute inset-0"
-            onRegionDetailChange={setDetailRegion}
-          />
-
-          {!decorating && detailRegion === null ? (
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
-              {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
-                  빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
-              <AppHeader
-                potSelector={<PotSelector />}
-                onRecapClick={() => void loadUtData()}
-                onProfileClick={() => openMyPageModal()}
-              />
-            </div>
-          ) : null}
-        </main>
-      </MobileLayout>
+      <MapGooglePageContent />
     </RequireAuth>
   )
 }
