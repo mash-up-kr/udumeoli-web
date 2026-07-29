@@ -103,8 +103,10 @@ export function PotCreatePage() {
     code: string
   } | null>(null)
 
-  // 완료 화면의 닫기·홈으로는 진입 지점(팟 목록 드롭다운/여행팟 시작 온보딩)과 무관하게 항상 지도로 이동
-  const goToMap = () => router.navigate({ to: "/map-google" })
+  // 완료 화면의 닫기·홈으로는 진입 지점(팟 목록 드롭다운/여행팟 시작 온보딩)과 무관하게 항상 지도로 이동.
+  // replace — 팟 생성 플로우(이름 입력~완료) 전체를 히스토리에서 걷어내 뒤로가기가
+  // 이 화면들로 되돌아가지 않고 바로 이전 맥락(로그인 유저와 동일)으로 향하게 한다
+  const goToMap = () => router.navigate({ to: "/map-google", replace: true })
   // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용
   const goBack = () => router.history.back()
 

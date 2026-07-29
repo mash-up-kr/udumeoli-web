@@ -1,3 +1,7 @@
 export type { TravelPot, PotMember, JoinPreviewResult } from "./model/types"
-export { usePotStore, selectCurrentPotMembers } from "./model/pot.store"
+export {
+  usePotStore,
+  usePotsHydrated,
+  selectCurrentPotMembers,
+} from "./model/pot.store"
 export { MOCK_POTS } from "./api/pot.mock"

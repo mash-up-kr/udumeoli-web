@@ -1,10 +1,13 @@
+import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { openOnboardingOverlay } from "@/features/onboarding"
 import { openPotJoinModal } from "@/features/pot-join"
+import { usePotStore } from "@/entities/travel-pot"
 
 function StartOptionRow({
   title,
@@ -34,12 +37,22 @@ function StartOptionRow({
 /** 여행팟 시작 온보딩 페이지 — 새 팟 만들기 / 초대코드로 참여하기. (Figma 1893-11882) */
 export function PotStartPage() {
   const router = useRouter()
-  const goToMap = () => router.navigate({ to: "/map-google" })
+  const hasPot = usePotStore((s) => s.pots.length > 0)
+  // 초대코드로 참여해 팟이 생기면(팟 생성은 pot-create가 자체 처리) 곧장 지도로 —
+  // replace로 이동해 이 화면이 히스토리에 남아 뒤로가기 시 다시 나타나지 않게 한다
+  React.useEffect(() => {
+    if (hasPot) router.navigate({ to: "/map-google", replace: true })
+  }, [hasPot, router])
+
+  // 이 화면은 항상 팟이 없는 신규 유저가 지도 진입 시 강제 리다이렉트된 것이라
+  // "/"·"/map-google" 둘 다 다시 이리로 튕겨와 history.back()으로는 빠져나갈 곳이 없다.
+  // 대신 직전에 보고 온 첫 진입 온보딩을 다시 띄운다.
+  const goBack = () => openOnboardingOverlay({ force: true })
 
   return (
     <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
-        <ButtonIcon aria-label="뒤로 가기" onClick={goToMap}>
+        <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
         </ButtonIcon>
       </div>
@@ -58,7 +71,9 @@ export function PotStartPage() {
           <StartOptionRow
             title="새 팟 만들기"
             description="우리만의 여행팟을 새로 시작해요."
-            onClick={() => router.navigate({ to: "/pot-create" })}
+            onClick={() =>
+              router.navigate({ to: "/pot-create", replace: true })
+            }
           />
           <StartOptionRow
             title="초대코드로 참여하기"

@@ -204,11 +204,12 @@ export function SignupPage() {
     openPermissionFlow()
   }, [])
 
-  // 가입 완료 → /map-google로 이동한 뒤 완료 팝업 표시 (OverlayProvider가 __root에 있어 라우트 이동 후에도 열 수 있음)
-  const handleSubmit = async () => {
+  // 가입 완료 팝업·온보딩은 /signup에 머문 채로 표시 — 먼저 /map-google로 이동해두면
+  // 지도의 "팟 없음" 가드가 온보딩보다 먼저 끼어들어(둘 다 useEffect라 순서 보장 안 됨)
+  // 팝업·온보딩이 통째로 스킵되는 경합이 생긴다. 온보딩이 끝난 뒤에야 이동한다.
+  const handleSubmit = () => {
     const name = nickname.trim()
     login({ ...MOCK_USER, nickname: name, profileImageUrl: profileImage })
-    await router.navigate({ to: "/map-google" })
     openModal(
       ({ close }) => (
         <SignupCompleteContent
@@ -217,7 +218,12 @@ export function SignupPage() {
           onConfirm={() => {
             // 확인 → 첫 진입 간단 온보딩 시작 (1회만 노출)
             close()
-            openOnboardingOverlay()
+            openOnboardingOverlay({
+              onComplete: () => {
+                // replace — 가입 폼은 완료 후 뒤로가기로 되돌아갈 대상이 아니다
+                void router.navigate({ to: "/map-google", replace: true })
+              },
+            })
           }}
         />
       ),

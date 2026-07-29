@@ -258,11 +258,27 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
  * 첫 진입 온보딩 (Figma 1951-14617 → 1946-12642 → 1946-12687) —
  * 회원가입 완료 팝업의 확인 클릭 시 1회만 노출되는 3단계 풀스크린 안내.
  * 다음/시작하기로 진행, 스텝 2·3에선 뒤로가기 가능.
+ *
+ * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
+ * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
+ * `onComplete`는 "시작하기"로 정상 종료됐을 때만 호출 — 가입 직후 흐름에서
+ * 온보딩이 끝난 뒤에야 /map-google로 이동시켜, 지도의 "팟 없음" 가드가
+ * 온보딩보다 먼저 끼어들어 팝업·온보딩이 스킵되는 경합을 막는다.
  */
-export function openOnboardingOverlay(): void {
+export function openOnboardingOverlay(options?: {
+  force?: boolean
+  onComplete?: () => void
+}): void {
   // 한 번이라도 노출되면 확인한 것으로 처리 — 재접속 시 다시 노출되지 않음
-  if (localStorage.getItem(SEEN_KEY) !== null) return
+  if (!options?.force && localStorage.getItem(SEEN_KEY) !== null) return
   localStorage.setItem(SEEN_KEY, "true")
 
-  overlay.open(({ unmount }) => <OnboardingOverlay unmount={unmount} />)
+  overlay.open(({ unmount }) => (
+    <OnboardingOverlay
+      unmount={() => {
+        unmount()
+        options?.onComplete?.()
+      }}
+    />
+  ))
 }

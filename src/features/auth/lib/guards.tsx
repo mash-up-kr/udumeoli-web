@@ -46,7 +46,10 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const hydrated = useSessionHydrated()
   const router = useRouter()
   React.useEffect(() => {
-    if (hydrated && isAuthenticated) router.navigate({ to: "/map-google" })
+    // replace — push하면 "/"가 히스토리에 남아 지도에서 뒤로가기 시 "/"로 갔다가
+    // 다시 인증됨→지도로 튕기는 왕복이 반복돼 뒤로가기가 아무 일도 안 하는 것처럼 느껴진다
+    if (hydrated && isAuthenticated)
+      router.navigate({ to: "/map-google", replace: true })
   }, [hydrated, isAuthenticated, router])
   if (!hydrated || isAuthenticated) return null
   return <>{children}</>

@@ -1,4 +1,6 @@
+import * as React from "react"
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 import {
   JOIN_ERROR_CODES,
@@ -28,45 +30,69 @@ const EMPTY_MEMBERS: Array<PotMember> = []
 export const selectCurrentPotMembers = (s: PotState): Array<PotMember> =>
   s.pots.find((p) => p.id === s.currentPotId)?.members ?? EMPTY_MEMBERS
 
-// 러프 단계 in-memory 목 스토어. 추후 entities/travel-pot/api로 GraphQL 교체.
-export const usePotStore = create<PotState>((set, get) => ({
-  // 팟 없음이 기본 상태 — 신규 유저는 /pot-start에서 직접 만들거나 참여해야 한다
-  pots: [],
-  currentPotId: "",
-  // UT용 팟 3개 주입 — 사용자가 직접 만든 팟은 유지하고 UT 팟을 추가, 첫 팟(딸깍) 선택
-  seedUtPots: () =>
-    set((s) => ({
-      pots: [
-        ...s.pots,
-        ...UT_POTS.filter((u) => !s.pots.some((p) => p.id === u.id)),
-      ],
-      currentPotId: UT_POTS[0].id,
-    })),
-  selectPot: (id) => set({ currentPotId: id }),
-  // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
-  createPot: (name, creator) => {
-    const pot: TravelPot = {
-      id: `pot-${MOCK_POTS.length}-${name}`,
-      name,
-      inviteCode: makeInviteCode(),
-      members: [creator],
+// 러프 단계 목 스토어. localStorage에 persist — 안 하면 새로고침마다 팟이 사라져
+// 기존 팟 보유 유저까지 매번 /pot-start로 튕기는 문제가 생긴다. 추후 GraphQL 교체.
+export const usePotStore = create<PotState>()(
+  persist(
+    (set, get) => ({
+      // 팟 없음이 기본 상태 — 신규 유저는 /pot-start에서 직접 만들거나 참여해야 한다
+      pots: [],
+      currentPotId: "",
+      // UT용 팟 3개 주입 — 사용자가 직접 만든 팟은 유지하고 UT 팟을 추가, 첫 팟(딸깍) 선택
+      seedUtPots: () =>
+        set((s) => ({
+          pots: [
+            ...s.pots,
+            ...UT_POTS.filter((u) => !s.pots.some((p) => p.id === u.id)),
+          ],
+          currentPotId: UT_POTS[0].id,
+        })),
+      selectPot: (id) => set({ currentPotId: id }),
+      // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
+      createPot: (name, creator) => {
+        const pot: TravelPot = {
+          id: `pot-${MOCK_POTS.length}-${name}`,
+          name,
+          inviteCode: makeInviteCode(),
+          members: [creator],
+        }
+        set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
+        return pot
+      },
+      // 계정 삭제 시 로컬 팟 상태 초기화 — 재가입하면 신규 유저 기준 팟 없는 상태로 시작
+      resetPots: () => set({ pots: [], currentPotId: "" }),
+      previewJoin: (code) => {
+        if (get().pots.some((p) => p.inviteCode === code)) {
+          return { status: "already_joined" }
+        }
+        if (code === JOIN_ERROR_CODES.notFound) return { status: "not_found" }
+        if (code === JOIN_ERROR_CODES.full) return { status: "full" }
+        return { status: "ok", pot: { ...JOIN_PREVIEW, inviteCode: code } }
+      },
+      confirmJoin: (pot) =>
+        set((s) => ({
+          pots: s.pots.some((p) => p.id === pot.id) ? s.pots : [...s.pots, pot],
+          currentPotId: pot.id,
+        })),
+    }),
+    { name: "photato-pots" }
+  )
+)
+
+// persist 미들웨어가 localStorage에서 복원을 마치기 전엔 pots가 항상 빈 배열이라,
+// 그 순간에 "팟 없음"으로 오판해 기존 팟 보유 유저를 /pot-start로 잘못 리다이렉트할 수 있다.
+// 복원 완료 전까지는 판정을 보류한다 (features/auth의 useSessionHydrated와 동일 패턴).
+export function usePotsHydrated() {
+  const [hydrated, setHydrated] = React.useState(false)
+  React.useEffect(() => {
+    const persistApi = usePotStore.persist as
+      | typeof usePotStore.persist
+      | undefined
+    if (persistApi?.hasHydrated() ?? true) {
+      setHydrated(true)
+      return
     }
-    set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
-    return pot
-  },
-  // 계정 삭제 시 로컬 팟 상태 초기화 — 재가입하면 신규 유저 기준 팟 없는 상태로 시작
-  resetPots: () => set({ pots: [], currentPotId: "" }),
-  previewJoin: (code) => {
-    if (get().pots.some((p) => p.inviteCode === code)) {
-      return { status: "already_joined" }
-    }
-    if (code === JOIN_ERROR_CODES.notFound) return { status: "not_found" }
-    if (code === JOIN_ERROR_CODES.full) return { status: "full" }
-    return { status: "ok", pot: { ...JOIN_PREVIEW, inviteCode: code } }
-  },
-  confirmJoin: (pot) =>
-    set((s) => ({
-      pots: s.pots.some((p) => p.id === pot.id) ? s.pots : [...s.pots, pot],
-      currentPotId: pot.id,
-    })),
-}))
+    return persistApi?.onFinishHydration(() => setHydrated(true))
+  }, [])
+  return hydrated
+}
