@@ -11,4 +11,5 @@ export const REGION_CENTERS: Record<string, { lat: number; lng: number }> = {
   경주시: { lat: 35.8562, lng: 129.2247 },
   부산광역시: { lat: 35.1796, lng: 129.0756 },
   거제시: { lat: 34.8806, lng: 128.6211 },
+  창원시: { lat: 35.228, lng: 128.681 },
 }
