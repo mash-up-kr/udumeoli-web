@@ -836,7 +836,14 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
                       size={SLOT_SIZE_2X}
                       onClick={(e) => {
                         e.stopPropagation()
-                        openPhotoViewer(slotPhoto.thumbnailUrl)
+                        openPhotoViewer({
+                          photos: [
+                            {
+                              id: slotPhoto.thumbnailUrl,
+                              imageUrl: slotPhoto.thumbnailUrl,
+                            },
+                          ],
+                        })
                       }}
                     />
                   ) : (

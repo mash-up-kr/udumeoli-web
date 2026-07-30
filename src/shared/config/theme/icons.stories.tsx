@@ -8,6 +8,7 @@ import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
 import iconCheckSrc from "@/shared/assets/icon-check.svg"
 import iconCheckCircleSrc from "@/shared/assets/icon-check-circle.svg"
 import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
+import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
 import iconCloseBoldSrc from "@/shared/assets/icon-close-bold.svg"
@@ -40,6 +41,7 @@ const ICONS: Array<{ name: string; src: string }> = [
   { name: "icon-check", src: iconCheckSrc },
   { name: "icon-check-circle", src: iconCheckCircleSrc },
   { name: "icon-chevron-down", src: iconChevronDownSrc },
+  { name: "icon-chevron-down-ios", src: iconChevronDownIosSrc },
   { name: "icon-chevron-right", src: iconChevronRightSrc },
   { name: "icon-close", src: iconCloseSrc },
   { name: "icon-close-bold", src: iconCloseBoldSrc },

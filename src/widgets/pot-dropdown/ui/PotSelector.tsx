@@ -4,14 +4,15 @@ import { useRouter } from "@tanstack/react-router"
 import { usePotStore } from "@/entities/travel-pot"
 import { openPotJoinModal } from "@/features/pot-join"
 import iconCheckSrc from "@/shared/assets/icon-check.svg"
-import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
+import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
 
+// 시안 1893-19430: 반투명 흰색(60%) + blur 카드, 테두리 없음
 const cardCls =
-  "flex w-full flex-col gap-1 rounded-[24px] border border-stroke-neutral-inverse bg-bg-neutral-subtle px-2 py-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+  "flex w-full flex-col gap-2 rounded-[24px] bg-neutral-0/60 px-2 py-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)] backdrop-blur-[10px]"
 const rowCls =
   "flex w-full items-center gap-1 rounded-[12px] p-2 text-left transition-colors hover:bg-bg-neutral-solid active:bg-bg-neutral-solid"
-const labelCls = "min-w-0 flex-1 text-h8-1 text-fg-neutral-bold"
+const labelCls = "min-w-0 flex-1 truncate text-h8-1 text-fg-neutral-bold"
 
 // 메인 헤더의 여행팟 선택 트리거 + 드롭다운(팟 전환 / 생성·참여 진입)
 export function PotSelector() {
@@ -30,12 +31,14 @@ export function PotSelector() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+        // 시안 1893-19524: 반투명 흰색(60%) + blur 필
+        className="flex h-[42px] items-center justify-center gap-2 rounded-full bg-neutral-0/60 px-4 py-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] backdrop-blur-[2px]"
       >
-        <span className="max-w-40 truncate text-b5 text-fg-neutral-bold">
+        {/* 시안 글자색 #2d446c — 팔레트 부재로 최근접 토큰 blue-900(#2d4f69) 매핑 */}
+        <span className="max-w-40 truncate text-h6-1 text-blue-900">
           {current?.name ?? "여행팟 추가"}
         </span>
-        <img src={iconChevronDownSrc} alt="" className="size-6" />
+        <img src={iconChevronDownIosSrc} alt="" className="size-5" />
       </button>
 
       {open ? (
@@ -48,11 +51,12 @@ export function PotSelector() {
             onClick={() => setOpen(false)}
           />
 
-          {/* 트리거 위치를 덮는 카드 2개 (참여 중 여행팟 / 여행팟 추가) */}
-          <div className="absolute top-0 left-0 z-50 flex w-[220px] flex-col gap-1">
+          {/* 트리거 아래 8px에 카드 2개 (참여 중 여행팟 / 여행팟 추가) — 시안 1893-19429
+              트리거가 헤더 우측에 놓이므로 right-0 정렬 — left 정렬이면 화면 밖으로 넘친다 */}
+          <div className="absolute top-[calc(100%+8px)] right-0 z-50 flex w-[220px] flex-col gap-1">
             {pots.length > 0 ? (
               <div className={cardCls}>
-                <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">
+                <p className="w-full px-2 text-h9 text-fg-neutral-subtle">
                   여행팟
                 </p>
                 <div className="flex w-full flex-col">
@@ -70,16 +74,14 @@ export function PotSelector() {
                         <img
                           src={iconCheckSrc}
                           alt="현재 여행팟"
-                          className="size-6 shrink-0"
+                          className="size-5 shrink-0"
                         />
                       ) : null}
-                      <span className={`${labelCls} line-clamp-2`}>
-                        {pot.name}
-                      </span>
+                      <span className={labelCls}>{pot.name}</span>
                       <img
                         src={iconChevronRightSrc}
                         alt=""
-                        className="size-6 shrink-0"
+                        className="size-5 shrink-0"
                       />
                     </button>
                   ))}
@@ -88,7 +90,7 @@ export function PotSelector() {
             ) : null}
 
             <div className={cardCls}>
-              <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">
+              <p className="w-full px-2 text-h9 text-fg-neutral-subtle">
                 여행팟 추가
               </p>
               <div className="flex w-full flex-col">
@@ -100,11 +102,11 @@ export function PotSelector() {
                   }}
                   className={rowCls}
                 >
-                  <span className={labelCls}>여행팟 만들기</span>
+                  <span className={labelCls}>새 팟 만들기</span>
                   <img
                     src={iconChevronRightSrc}
                     alt=""
-                    className="size-6 shrink-0"
+                    className="size-5 shrink-0"
                   />
                 </button>
                 <button
@@ -115,11 +117,11 @@ export function PotSelector() {
                   }}
                   className={rowCls}
                 >
-                  <span className={labelCls}>여행팟 참여</span>
+                  <span className={labelCls}>초대코드로 참여하기</span>
                   <img
                     src={iconChevronRightSrc}
                     alt=""
-                    className="size-6 shrink-0"
+                    className="size-5 shrink-0"
                   />
                 </button>
               </div>

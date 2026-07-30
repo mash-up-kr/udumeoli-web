@@ -340,6 +340,84 @@ function isMemberOfPot(uploaderId: string, potSize: number): boolean {
   return Number.isInteger(idx) && idx + 2 <= potSize
 }
 
+// 여행 앨범 시드 — [날짜, 업로더(멤버 인덱스), 코멘트?] 튜플로 지역별 방문 기록을 정의.
+// 연속된 날짜가 방문 1회로 묶이므로(groupTrips) 창원 5회 / 대전 4회 / 강릉 2회가 된다.
+// 인덱스 0(나)이 창원·강릉의 최신 방문에 빠져 있어 카드 Alert와 '기록하기' CTA를 확인할 수 있다.
+type AlbumSeed = {
+  region: string
+  uploads: Array<[date: string, memberIdx: number, comment?: string]>
+}
+
+const ALBUM_SEEDS: Array<AlbumSeed> = [
+  {
+    region: "창원시",
+    uploads: [
+      ["2026-07-20", 1, "야르하게찍었쥬?ㅋㅋㅋㅋ"],
+      ["2026-07-21", 1],
+      ["2026-07-21", 2, "여기 다음에 또 오자"],
+      ["2026-05-02", 0, "벚꽃 만개!"],
+      ["2026-05-03", 1],
+      ["2026-05-03", 2],
+      ["2026-03-14", 0],
+      ["2025-11-21", 1, "겨울 바다도 좋네"],
+      ["2025-08-01", 0, "휴가 1일차"],
+      ["2025-08-02", 2],
+    ],
+  },
+  {
+    region: "대전광역시",
+    uploads: [
+      ["2026-06-19", 0, "성심당은 못 참지"],
+      ["2026-06-20", 1],
+      ["2026-04-10", 0],
+      ["2025-12-24", 0, "크리스마스 이브"],
+      ["2025-12-25", 2],
+      ["2025-09-05", 0],
+    ],
+  },
+  {
+    region: "강릉시",
+    uploads: [
+      ["2026-02-27", 1, "혼자 다녀옴 ㅎㅎ"],
+      ["2026-02-28", 1],
+      ["2025-07-18", 0, "바다!!"],
+      ["2025-07-19", 1],
+    ],
+  },
+]
+
+// pot.mock의 지도용 좌표 컨벤션과 동일하게 지역 대표 좌표 부근으로 시드
+const ALBUM_REGION_CENTERS: Record<string, { lat: number; lng: number }> = {
+  창원시: { lat: 35.228, lng: 128.681 },
+  대전광역시: { lat: 36.3504, lng: 127.3845 },
+  강릉시: { lat: 37.752, lng: 128.876 },
+}
+
+/**
+ * 여행 앨범 목 사진 생성 — 현재 팟 기준으로 창원/대전/강릉 방문 기록을 만든다.
+ * memberIds는 팟 멤버 id 순서(0번째 = 나)이며, 인원이 적으면 순환해 채운다.
+ */
+export function makeAlbumPhotos(
+  potId: string,
+  memberIds: Array<string>
+): Array<Photo> {
+  if (memberIds.length === 0) return []
+  return ALBUM_SEEDS.flatMap((seed) => {
+    const center = ALBUM_REGION_CENTERS[seed.region]
+    return seed.uploads.map(([date, memberIdx, comment], i) => ({
+      id: `album-${potId}-${seed.region}-${i}`,
+      potId,
+      region: seed.region,
+      lat: center.lat + i * 0.004,
+      lng: center.lng + i * 0.004,
+      date,
+      uploaderId: memberIds[memberIdx % memberIds.length],
+      thumbnailUrl: `https://picsum.photos/seed/album-${seed.region}-${i}/400/400`,
+      comment,
+    }))
+  })
+}
+
 // 팟별로 사진을 분리 — 각 팟(pot-1~pot-6)에는 그 팟 멤버가 올린 사진만 존재.
 // 썸네일 시드도 팟별로 달리해 팟마다 다른 사진처럼 보이게 한다.
 export const MOCK_PHOTOS: Array<Photo> = Array.from(
