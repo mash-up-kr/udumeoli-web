@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react"
 
 import { cn } from "@/shared/lib/utils"
-import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
+import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
 import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
 
 /**
@@ -32,10 +32,11 @@ function AppHeader({
       ) : (
         <button
           type="button"
-          className="pointer-events-auto flex items-center justify-center gap-1 rounded-full bg-bg-neutral-subtle py-2 pr-3 pl-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          // 시안 1893-19524: 반투명 흰색(60%) + blur 필 (글자색 #2d446c → 최근접 토큰 blue-900)
+          className="pointer-events-auto flex h-[42px] items-center justify-center gap-2 rounded-full bg-neutral-0/60 px-4 py-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] backdrop-blur-[2px]"
         >
-          <span className="text-b5 text-fg-neutral-bold">정민이와나</span>
-          <img src={iconChevronDownSrc} alt="" className="size-6" />
+          <span className="text-h6-1 text-blue-900">정민이와나</span>
+          <img src={iconChevronDownIosSrc} alt="" className="size-5" />
         </button>
       )}
     </header>
