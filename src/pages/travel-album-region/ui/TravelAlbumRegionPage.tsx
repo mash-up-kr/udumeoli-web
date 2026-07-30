@@ -1,0 +1,139 @@
+import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
+
+import { TripAccordionCard } from "./TripAccordionCard"
+import type { MemberRecord } from "./TripAccordionCard"
+import type { Trip } from "@/entities/photo"
+import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { ButtonIcon } from "@/shared/ui/button-icon"
+import { showToast } from "@/shared/ui/toast"
+import { USE_MOCK } from "@/shared/api/client"
+import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
+import { RequireAuth } from "@/features/auth"
+import { openPhotoViewer } from "@/features/photo-gallery"
+import { pickImageFile } from "@/features/photo-upload"
+import {
+  REGION_CENTERS,
+  formatTripRange,
+  groupTrips,
+  makeAlbumPhotos,
+  useAllPhotos,
+  usePhotoUploadStore,
+} from "@/entities/photo"
+import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
+import { formatRegionName } from "@/entities/region"
+
+function TravelAlbumRegionContent({ region }: { region: string }) {
+  const router = useRouter()
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const potName = usePotStore(
+    (s) => s.pots.find((p) => p.id === s.currentPotId)?.name ?? ""
+  )
+  const members = usePotStore(selectCurrentPotMembers)
+  const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const myId = currentUser?.id ?? null
+
+  const allPhotos = useAllPhotos(currentPotId)
+  const trips = React.useMemo(() => {
+    const seed = USE_MOCK
+      ? makeAlbumPhotos(
+          currentPotId,
+          members.map((m) => m.id)
+        )
+      : []
+    return groupTrips(
+      [...seed, ...allPhotos].filter((p) => p.region === region)
+    )
+  }, [currentPotId, members, allPhotos, region])
+
+  // 멤버 행 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로
+  const orderedMembers = React.useMemo(
+    () => [
+      ...members.filter((m) => m.id === myId),
+      ...members.filter((m) => m.id !== myId),
+    ],
+    [members, myId]
+  )
+
+  const toRecords = (trip: Trip): Array<MemberRecord> =>
+    orderedMembers.map((member) => {
+      const isMe = member.id === myId
+      return {
+        memberId: member.id,
+        // 내 행은 목 멤버 정보 대신 세션 닉네임·프로필 노출 (갤러리와 동일 규칙)
+        nickname: isMe
+          ? (currentUser?.nickname ?? member.nickname)
+          : member.nickname,
+        profileImageUrl: isMe
+          ? (currentUser?.profileImageUrl ?? member.profileImageUrl)
+          : member.profileImageUrl,
+        isMe,
+        // 같은 방문 기간에 여러 장이면 마지막 등록분 노출
+        photo:
+          trip.photos.filter((p) => p.uploaderId === member.id).at(-1) ?? null,
+      }
+    })
+
+  // '기록하기' — 해당 방문 기간의 업로드 플로우(이미지 선택 → 등록) 진입
+  const recordTrip = (trip: Trip) => {
+    if (!myId) return
+    pickImageFile((url) => {
+      const center = REGION_CENTERS[region] ?? { lat: 36.2, lng: 127.8 }
+      addPhoto({
+        id: `up-${region}-${trip.startDate}-${Date.now()}`,
+        region,
+        date: trip.startDate,
+        lat: center.lat,
+        lng: center.lng,
+        thumbnailUrl: url,
+        uploaderId: myId,
+        potId: currentPotId,
+      })
+      showToast({ message: "업로드가 완료됐어요", icon: "check" })
+    })
+  }
+
+  return (
+    <MobileLayout className="bg-bg-neutral-subtle pb-8">
+      <div className="pt-[env(safe-area-inset-top)]">
+        <header className="relative flex h-[76px] items-center px-4">
+          <ButtonIcon
+            aria-label="뒤로 가기"
+            onClick={() => router.history.back()}
+            className="relative z-10"
+          >
+            <img src={iconArrowLeftSrc} alt="" className="size-6" />
+          </ButtonIcon>
+          <h1 className="pointer-events-none absolute inset-x-0 text-center text-h4 text-fg-neutral-bold">
+            {formatRegionName(region)}
+          </h1>
+        </header>
+      </div>
+
+      {/* 방문(여행) 리스트 — 최신순, 첫 카드만 펼침이 디폴트 */}
+      <main className="flex flex-col gap-3 px-4 pt-1">
+        {trips.map((trip, i) => (
+          <TripAccordionCard
+            key={`${currentPotId}-${trip.startDate}`}
+            potName={potName}
+            dateRange={formatTripRange(trip)}
+            records={toRecords(trip)}
+            defaultOpen={i === 0}
+            onRecord={() => recordTrip(trip)}
+            onPhotoClick={(photo) => openPhotoViewer(photo.thumbnailUrl)}
+          />
+        ))}
+      </main>
+    </MobileLayout>
+  )
+}
+
+export function TravelAlbumRegionPage({ region }: { region: string }) {
+  return (
+    <RequireAuth>
+      <TravelAlbumRegionContent region={region} />
+    </RequireAuth>
+  )
+}
