@@ -3,11 +3,11 @@ import { useRouter } from "@tanstack/react-router"
 
 import { TripAccordionCard } from "./TripAccordionCard"
 import type { MemberRecord } from "./TripAccordionCard"
-import type { Trip } from "@/entities/photo"
+import type { Photo, Trip } from "@/entities/photo"
+import type { PhotoViewerUploader } from "@/features/photo-gallery"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
-import { USE_MOCK } from "@/shared/api/client"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { RequireAuth } from "@/features/auth"
 import { openPhotoViewer } from "@/features/photo-gallery"
@@ -16,9 +16,9 @@ import {
   REGION_CENTERS,
   formatTripRange,
   groupTrips,
-  makeAlbumPhotos,
-  useAllPhotos,
+  useDeletePhoto,
   usePhotoUploadStore,
+  useRegionAlbumPhotos,
 } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -35,18 +35,10 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
-  const allPhotos = useAllPhotos(currentPotId)
-  const trips = React.useMemo(() => {
-    const seed = USE_MOCK
-      ? makeAlbumPhotos(
-          currentPotId,
-          members.map((m) => m.id)
-        )
-      : []
-    return groupTrips(
-      [...seed, ...allPhotos].filter((p) => p.region === region)
-    )
-  }, [currentPotId, members, allPhotos, region])
+  const memberIds = React.useMemo(() => members.map((m) => m.id), [members])
+  const regionPhotos = useRegionAlbumPhotos(currentPotId, region, memberIds)
+  const trips = React.useMemo(() => groupTrips(regionPhotos), [regionPhotos])
+  const deletePhotoMutation = useDeletePhoto()
 
   // 멤버 행 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로
   const orderedMembers = React.useMemo(
@@ -95,6 +87,46 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     })
   }
 
+  // 사진 업로더 표시 정보 — 내 사진은 세션 닉네임·프로필, 멤버 탈퇴 등으로 못 찾으면 뱃지 숨김
+  const uploaderOf = (photo: Photo): PhotoViewerUploader | undefined => {
+    const isMe = photo.uploaderId === myId
+    const member = members.find((m) => m.id === photo.uploaderId)
+    if (isMe) {
+      return {
+        nickname: currentUser?.nickname ?? member?.nickname ?? "",
+        profileImageUrl:
+          currentUser?.profileImageUrl ?? member?.profileImageUrl ?? null,
+        isMe: true,
+      }
+    }
+    if (!member) return undefined
+    return {
+      nickname: member.nickname,
+      profileImageUrl: member.profileImageUrl,
+      isMe: false,
+    }
+  }
+
+  // 사진 클릭 — 이미지 상세 보기 (동일 지역 사진끼리 날짜순으로 좌우 스와이프)
+  const viewPhoto = (photo: Photo) => {
+    const ordered = [...regionPhotos].sort((a, b) => (a.date < b.date ? -1 : 1))
+    openPhotoViewer({
+      photos: ordered.map((p) => {
+        const uploader = uploaderOf(p)
+        return {
+          id: p.id,
+          imageUrl: p.thumbnailUrl,
+          ...(p.comment != null ? { comment: p.comment } : {}),
+          ...(uploader ? { uploader } : {}),
+        }
+      }),
+      initialId: photo.id,
+      onDelete: async (target) => {
+        await deletePhotoMutation.mutateAsync(target.id)
+      },
+    })
+  }
+
   return (
     <MobileLayout className="bg-bg-neutral-subtle pb-8">
       <div className="pt-[env(safe-area-inset-top)]">
@@ -122,7 +154,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
             records={toRecords(trip)}
             defaultOpen={i === 0}
             onRecord={() => recordTrip(trip)}
-            onPhotoClick={(photo) => openPhotoViewer(photo.thumbnailUrl)}
+            onPhotoClick={viewPhoto}
           />
         ))}
       </main>

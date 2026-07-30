@@ -228,7 +228,9 @@ export function GalleryPanel({
               dateISO={date}
               slots={toSlots(date)}
               onAddPhoto={() => uploadForDate(date)}
-              onPhotoClick={openPhotoViewer}
+              onPhotoClick={(url) =>
+                openPhotoViewer({ photos: [{ id: url, imageUrl: url }] })
+              }
               poppedMemberId={poppedDate === date ? currentUserId : null}
             />
           ))
