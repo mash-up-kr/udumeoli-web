@@ -48,8 +48,9 @@ export function PotSelector() {
             onClick={() => setOpen(false)}
           />
 
-          {/* 트리거 위치를 덮는 카드 2개 (참여 중 여행팟 / 여행팟 추가) */}
-          <div className="absolute top-0 left-0 z-50 flex w-[220px] flex-col gap-1">
+          {/* 트리거 위치를 덮는 카드 2개 (참여 중 여행팟 / 여행팟 추가)
+              트리거가 헤더 우측에 놓이므로 right-0 정렬 — left 정렬이면 화면 밖으로 넘친다 */}
+          <div className="absolute top-0 right-0 z-50 flex w-[220px] flex-col gap-1">
             {pots.length > 0 ? (
               <div className={cardCls}>
                 <p className="w-full px-2 text-h8-1 text-fg-neutral-subtle">

@@ -10,7 +10,7 @@ const meta: Meta<typeof AppHeader> = {
     docs: {
       description: {
         component:
-          "브랜드/홈 헤더 (시안 #21). 배경 투명, 2줄(로고·액션 / 드롭다운). 로고·유저명은 예시 placeholder — 추후 실제 에셋·데이터로 교체.",
+          "브랜드/홈 헤더 (시안 1745-38063). 배경 투명, 1줄(로고 · 여행팟 선택). 유저명은 예시 placeholder — 추후 실제 데이터로 교체.",
       },
     },
   },
