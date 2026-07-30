@@ -8,77 +8,117 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './app/routes/__root'
-import { Route as SignupRouteImport } from './app/routes/signup'
-import { Route as MapGoogleRouteImport } from './app/routes/map-google'
-import { Route as IndexRouteImport } from './app/routes/index'
+import { Route as rootRouteImport } from "./app/routes/__root"
+import { Route as SignupRouteImport } from "./app/routes/signup"
+import { Route as PotStartRouteImport } from "./app/routes/pot-start"
+import { Route as PotCreateRouteImport } from "./app/routes/pot-create"
+import { Route as MapGoogleRouteImport } from "./app/routes/map-google"
+import { Route as IndexRouteImport } from "./app/routes/index"
 
 const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+  id: "/signup",
+  path: "/signup",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PotStartRoute = PotStartRouteImport.update({
+  id: "/pot-start",
+  path: "/pot-start",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PotCreateRoute = PotCreateRouteImport.update({
+  id: "/pot-create",
+  path: "/pot-create",
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapGoogleRoute = MapGoogleRouteImport.update({
-  id: '/map-google',
-  path: '/map-google',
+  id: "/map-google",
+  path: "/map-google",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/map-google': typeof MapGoogleRoute
-  '/signup': typeof SignupRoute
+  "/": typeof IndexRoute
+  "/map-google": typeof MapGoogleRoute
+  "/pot-create": typeof PotCreateRoute
+  "/pot-start": typeof PotStartRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/map-google': typeof MapGoogleRoute
-  '/signup': typeof SignupRoute
+  "/": typeof IndexRoute
+  "/map-google": typeof MapGoogleRoute
+  "/pot-create": typeof PotCreateRoute
+  "/pot-start": typeof PotStartRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/map-google': typeof MapGoogleRoute
-  '/signup': typeof SignupRoute
+  "/": typeof IndexRoute
+  "/map-google": typeof MapGoogleRoute
+  "/pot-create": typeof PotCreateRoute
+  "/pot-start": typeof PotStartRoute
+  "/signup": typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map-google' | '/signup'
+  fullPaths: "/" | "/map-google" | "/pot-create" | "/pot-start" | "/signup"
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map-google' | '/signup'
-  id: '__root__' | '/' | '/map-google' | '/signup'
+  to: "/" | "/map-google" | "/pot-create" | "/pot-start" | "/signup"
+  id:
+    | "__root__"
+    | "/"
+    | "/map-google"
+    | "/pot-create"
+    | "/pot-start"
+    | "/signup"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapGoogleRoute: typeof MapGoogleRoute
+  PotCreateRoute: typeof PotCreateRoute
+  PotStartRoute: typeof PotStartRoute
   SignupRoute: typeof SignupRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
+    "/signup": {
+      id: "/signup"
+      path: "/signup"
+      fullPath: "/signup"
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/map-google': {
-      id: '/map-google'
-      path: '/map-google'
-      fullPath: '/map-google'
+    "/pot-start": {
+      id: "/pot-start"
+      path: "/pot-start"
+      fullPath: "/pot-start"
+      preLoaderRoute: typeof PotStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/pot-create": {
+      id: "/pot-create"
+      path: "/pot-create"
+      fullPath: "/pot-create"
+      preLoaderRoute: typeof PotCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/map-google": {
+      id: "/map-google"
+      path: "/map-google"
+      fullPath: "/map-google"
       preLoaderRoute: typeof MapGoogleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -88,15 +128,17 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapGoogleRoute: MapGoogleRoute,
+  PotCreateRoute: PotCreateRoute,
+  PotStartRoute: PotStartRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './app/router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./app/router.tsx"
+import type { createStart } from "@tanstack/react-start"
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
