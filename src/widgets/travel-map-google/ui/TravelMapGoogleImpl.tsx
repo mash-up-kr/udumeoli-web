@@ -35,7 +35,7 @@ import type {
   CollaborationRecordSeed,
   DecoratePreview,
 } from "@/features/travel-record"
-import { REGION_CENTERS, findKeyword, useAllPhotos } from "@/entities/photo"
+import { findKeyword, useAllPhotos } from "@/entities/photo"
 import {
   POPULAR_REGIONS,
   formatRegionName,
@@ -51,7 +51,6 @@ import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 import { cn } from "@/shared/lib/utils"
 import { ButtonCta } from "@/shared/ui/button-cta"
-import { RegionCardCarousel } from "@/shared/ui/region-card-carousel"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { openModal } from "@/shared/ui/modal"
 
@@ -744,33 +743,6 @@ function TravelMapGoogleInner({
     []
   )
 
-  const flyToRegion = React.useCallback(
-    (c: Centroid) => {
-      runCameraMove(
-        {
-          lat: c.lat,
-          lng: c.lng,
-          zoom: PARTY_ZOOM,
-        },
-        350
-      )
-    },
-    [runCameraMove]
-  )
-
-  const handleCarouselSelect = React.useCallback(
-    (region: string) => {
-      const center =
-        centroidMap.get(region) ??
-        (Object.hasOwn(REGION_CENTERS, region)
-          ? REGION_CENTERS[region]
-          : undefined)
-      if (!center) return
-      flyToRegion({ name: region, lng: center.lng, lat: center.lat })
-    },
-    [centroidMap, flyToRegion]
-  )
-
   const startCollaborationRecord = React.useCallback(
     (trip: CollaborationTrip) => {
       if (!currentUserId) return
@@ -1095,12 +1067,6 @@ function TravelMapGoogleInner({
             </AdvancedMarker>
           ))}
       </GoogleMap>
-
-      <RegionCardCarousel
-        photos={photos}
-        visible={zoomStage === 0 && !decorating}
-        onSelectRegion={handleCarouselSelect}
-      />
 
       {visibleEncouragementTrip ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-[130px] z-10 flex justify-center px-4">
