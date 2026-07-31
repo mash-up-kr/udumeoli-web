@@ -1,4 +1,6 @@
 export type { Photo } from "./model/types"
+export type { TravelKeyword, TravelKeywordId } from "./model/keywords"
+export { TRAVEL_KEYWORDS, findKeyword } from "./model/keywords"
 export type { Trip } from "./lib/trips"
 export { groupTrips, formatTripRange } from "./lib/trips"
 export { makeAlbumPhotos } from "./api/photo.mock"
