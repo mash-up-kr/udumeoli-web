@@ -1,9 +1,11 @@
 import { usePhotoEditStore } from "../model/edit.store"
+import { ALBUM_PHOTOS } from "./photo.mock"
 import { UT_PHOTOS } from "./photo.ut"
 import type { Photo } from "../model/types"
 import { USE_MOCK, mockResponse } from "@/shared/api/client"
 
-// 신규 유저 기준 빈 상태로 시작 — UT 사진은 시드 트리거로만 주입 (새로고침 시 초기화)
+// UT 사진은 시드 트리거로만 주입 (새로고침 시 초기화). 앨범 목 사진은 항상 포함 —
+// ALBUM_POT_ID 팟 전용이라 신규 유저(팟 없음)의 빈 상태에는 영향이 없다.
 let utSeeded = false
 let removedSeedUploaderIds = new Set<string>()
 
@@ -25,11 +27,9 @@ export function removeSeedPhotosByUploader(uploaderId: string) {
 
 export function fetchPhotos(): Promise<Array<Photo>> {
   if (USE_MOCK) {
-    const photos = utSeeded
-      ? UT_PHOTOS.filter(
-          (photo) => !removedSeedUploaderIds.has(photo.uploaderId)
-        )
-      : []
+    const photos = [...ALBUM_PHOTOS, ...(utSeeded ? UT_PHOTOS : [])].filter(
+      (photo) => !removedSeedUploaderIds.has(photo.uploaderId)
+    )
     return mockResponse<Array<Photo>>(photos)
   }
   // TODO(graphql): return gqlClient.request(PHOTOS_QUERY).then((dto) => dto.photos.map(toPhoto))
