@@ -22,9 +22,10 @@ import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 
 import type { RegionFill } from "@/entities/region"
-import type { DecoratePreview } from "@/features/region-decorate"
+import type { DecoratePreview } from "@/features/travel-record"
 import {
   REGION_CENTERS,
+  findKeyword,
   useAllPhotos,
   usePhotoUploadStore,
 } from "@/entities/photo"
@@ -38,12 +39,13 @@ import { useSessionStore } from "@/entities/user"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
 import { GalleryPanel, openPhotoViewer } from "@/features/photo-gallery"
+import { hasSeenMapTips } from "@/features/onboarding"
 import { pickImageFile } from "@/features/photo-upload"
 import {
-  RegionDecorateFlow,
+  TravelRecordFlow,
   partySlotOffset,
-  useDecorateStore,
-} from "@/features/region-decorate"
+  useRecordStore,
+} from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
@@ -59,6 +61,10 @@ const GOOGLE_MAP_ID =
 
 // 중심을 북서쪽에 둬서 화면상 대한민국이 우측·하단에 놓이게 한다
 const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 6.7 }
+
+// 기록 시작 기본 위치 — 여름 휴가 데이터가 몰리는 강원도 (Figma 1836-15911 #2).
+// ponytail: 초기값 고정, 실제 방문 데이터가 쌓이면 최다 방문 권역으로 교체
+const GANGWON_VIEW = { lat: 37.6, lng: 128.5, zoom: 8.6 }
 
 // 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
 // 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
@@ -553,9 +559,13 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   )
   const [galleryExpanded, setGalleryExpanded] = React.useState(false)
 
-  const decorating = useDecorateStore((s) => s.region)
-  const decoratePreview = useDecorateStore((s) => s.preview)
-  const startDecorate = useDecorateStore((s) => s.start)
+  const decorating = useRecordStore((s) => s.region)
+  const decoratePreview = useRecordStore((s) => s.preview)
+  const startDecorate = useRecordStore((s) => s.start)
+
+  // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
+  const [seenTips, setSeenTips] = React.useState(false)
+  React.useEffect(() => setSeenTips(hasSeenMapTips()), [])
 
   const centroidMap = React.useMemo(
     () => new Map(centroids.map((c) => [c.name, c])),
@@ -569,6 +579,10 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
 
   const detailRegion =
     !decorating && zoomStage === 3 && selectedRegion ? selectedRegion : null
+
+  // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰일 때만 진입점을 노출
+  const showRecordTip =
+    seenTips && photos.length === 0 && !decorating && zoomStage === 0
 
   React.useEffect(() => {
     onRegionDetailChange?.(detailRegion)
@@ -798,17 +812,39 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
               anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
               clickable
             >
-              <PhotoTile
-                label={formatRegionName(p.region)}
-                imageUrl={p.thumbnailUrl}
-                size={PHOTO_PIN_SIZE}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSelectedRegion(p.region)
-                  const c = centroidMap.get(p.region)
-                  if (c) flyToRegion(c)
-                }}
-              />
+              {/* 기록 플로우로 키워드를 고른 지역은 사진 대신 키워드 스티커를 붙인다
+                  (Figma 1836-14957) — 키워드 없는 기존 사진은 그대로 썸네일 핀 */}
+              {findKeyword(p.keyword) ? (
+                <button
+                  type="button"
+                  aria-label={`${formatRegionName(p.region)} 여행 기록 보기`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedRegion(p.region)
+                    const c = centroidMap.get(p.region)
+                    if (c) flyToRegion(c)
+                  }}
+                  className="transition-transform hover:scale-110 active:scale-95"
+                >
+                  <img
+                    src={findKeyword(p.keyword)!.emojiSrc}
+                    alt=""
+                    className="size-12"
+                  />
+                </button>
+              ) : (
+                <PhotoTile
+                  label={formatRegionName(p.region)}
+                  imageUrl={p.thumbnailUrl}
+                  size={PHOTO_PIN_SIZE}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedRegion(p.region)
+                    const c = centroidMap.get(p.region)
+                    if (c) flyToRegion(c)
+                  }}
+                />
+              )}
             </AdvancedMarker>
           ))}
 
@@ -937,8 +973,25 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
         onSelectRegion={handleCarouselSelect}
       />
 
+      {/* 안내를 봤지만 아직 아무것도 기록하지 않은 유저에게 진입점을 다시 노출 (Figma 1836-15911 #1-1).
+          하단 내비(약 75px) 위에 띄우고, 누르면 기본 위치(강원도)로 줌인해 지역을 고르게 한다 */}
+      {showRecordTip ? (
+        <button
+          type="button"
+          onClick={() => runCameraMove(GANGWON_VIEW, 600)}
+          className="absolute bottom-[130px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+        >
+          <span className="text-b6 text-fg-neutral-inverse">
+            최근 여행을 기록해볼까요?
+          </span>
+          <span className="text-h8 text-fg-neutral-inverse underline">
+            기록하기
+          </span>
+        </button>
+      ) : null}
+
       {decorating && centroidMap.get(decorating) ? (
-        <RegionDecorateFlow
+        <TravelRecordFlow
           region={decorating}
           center={{
             lat: centroidMap.get(decorating)!.lat,
