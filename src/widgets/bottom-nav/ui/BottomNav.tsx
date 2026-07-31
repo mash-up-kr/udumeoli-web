@@ -15,6 +15,7 @@ function BottomNav({
   onAlbumClick,
   onMyPageClick,
   onGlobeClick,
+  albumDisabled = false,
   ...props
 }: ComponentProps<"nav"> & {
   /** 현재 화면 탭 — 앨범 페이지(시안 1846-3645)에선 여행 앨범 활성(흰색) */
@@ -23,6 +24,8 @@ function BottomNav({
   onMyPageClick?: () => void
   /** 중앙 지구본 클릭 — 지정 시 버튼으로 렌더 (앨범 → 지도 이동) */
   onGlobeClick?: () => void
+  /** 여행 기록이 하나도 없으면 지도에서 앨범 진입 불가 */
+  albumDisabled?: boolean
 }) {
   return (
     <nav
@@ -36,9 +39,11 @@ function BottomNav({
         <button
           type="button"
           onClick={onAlbumClick}
+          disabled={albumDisabled}
           className={cn(
             "flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px]",
-            active === "album" ? "text-white" : "text-white/30"
+            active === "album" ? "text-white" : "text-white/30",
+            albumDisabled && "cursor-default"
           )}
           aria-current={active === "album" ? "page" : undefined}
         >

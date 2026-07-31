@@ -1,4 +1,5 @@
 import { formatRecordRange } from "../lib/format"
+import type { CSSProperties } from "react"
 
 import type { TravelKeyword } from "@/entities/photo"
 import { ButtonCta } from "@/shared/ui/button-cta"
@@ -6,13 +7,123 @@ import { ButtonIcon } from "@/shared/ui/button-icon"
 import { Profile } from "@/shared/ui/profile"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 
-// 배경 장식 스티커 — 시안(1836-15652) 좌표 근사: 좌측 세로 산개 3개 + 우상단 1개(회전)
-const CONFETTI = [
-  "top-[119px] left-[30px] size-[53px] rotate-6",
-  "top-[172px] right-[19px] size-[62px] rotate-[79deg]",
-  "top-[246px] left-[67px] size-[53px] -rotate-3",
-  "top-[380px] left-[7px] size-[53px] rotate-3",
+type PreviewMotionStyle = CSSProperties &
+  Partial<Record<`--record-preview-${string}`, string>>
+
+const DECORATIVE_STICKERS = [
+  {
+    id: "top-left",
+    frameClassName: "top-[119px] left-[30px] size-[53px]",
+    imageClassName: "size-full",
+    rotate: "0deg",
+    delay: "70ms",
+    startX: "136px",
+    startY: "168px",
+  },
+  {
+    id: "title-right",
+    frameClassName: "top-[172px] left-[294px] size-[62px]",
+    imageClassName: "size-[53px]",
+    rotate: "79deg",
+    delay: "150ms",
+    startX: "-116px",
+    startY: "106px",
+  },
+  {
+    id: "mid-left",
+    frameClassName: "top-[246px] left-[67px] size-[53px]",
+    imageClassName: "size-full",
+    rotate: "0deg",
+    delay: "115ms",
+    startX: "102px",
+    startY: "44px",
+  },
+  {
+    id: "photo-left",
+    frameClassName: "top-[380px] left-[7px] size-[53px]",
+    imageClassName: "size-full",
+    rotate: "0deg",
+    delay: "210ms",
+    startX: "158px",
+    startY: "-74px",
+  },
 ]
+
+const FANFARE_PARTICLES = [
+  {
+    id: "p1",
+    className: "size-[13px]",
+    x: "-126px",
+    y: "-174px",
+    rotate: "-54deg",
+    delay: "0ms",
+  },
+  {
+    id: "p2",
+    className: "size-[10px]",
+    x: "112px",
+    y: "-116px",
+    rotate: "82deg",
+    delay: "35ms",
+  },
+  {
+    id: "p3",
+    className: "size-[16px]",
+    x: "-94px",
+    y: "-28px",
+    rotate: "-26deg",
+    delay: "55ms",
+  },
+  {
+    id: "p4",
+    className: "size-[12px]",
+    x: "144px",
+    y: "36px",
+    rotate: "116deg",
+    delay: "75ms",
+  },
+  {
+    id: "p5",
+    className: "size-[9px]",
+    x: "-160px",
+    y: "94px",
+    rotate: "-88deg",
+    delay: "95ms",
+  },
+  {
+    id: "p6",
+    className: "size-[11px]",
+    x: "74px",
+    y: "154px",
+    rotate: "42deg",
+    delay: "120ms",
+  },
+]
+
+function previewMotionStyle({
+  rotate,
+  delay,
+  startX,
+  startY,
+  burstX,
+  burstY,
+}: {
+  rotate?: string
+  delay?: string
+  startX?: string
+  startY?: string
+  burstX?: string
+  burstY?: string
+}): PreviewMotionStyle {
+  return {
+    ...(rotate ? { "--record-preview-rotate": rotate } : {}),
+    ...(delay ? { "--record-preview-delay": delay } : {}),
+    ...(startX ? { "--record-preview-start-x": startX } : {}),
+    ...(startY ? { "--record-preview-start-y": startY } : {}),
+    ...(burstX ? { "--record-preview-burst-x": burstX } : {}),
+    ...(burstY ? { "--record-preview-burst-y": burstY } : {}),
+  }
+}
 
 /**
  * 기록 최종 확인 (Figma 1836-15652) — 지도 위 blur 오버레이로 미리보기.
@@ -29,7 +140,7 @@ export function PreviewStep({
   onBack,
   onConfirm,
 }: {
-  keyword: TravelKeyword
+  keyword: TravelKeyword | null
   startDate: string
   endDate?: string
   photoUrl: string
@@ -40,20 +151,50 @@ export function PreviewStep({
   onConfirm: () => void
 }) {
   return (
-    <div className="pointer-events-auto absolute inset-0 z-30 flex flex-col overflow-y-auto">
+    <div className="pointer-events-auto absolute inset-0 z-30 flex flex-col overflow-x-hidden overflow-y-auto">
       {/* 지도가 비치는 프로스티드 글라스 — 키워드 색 미리보기(지역 폴리곤)가 아래 깔린다 */}
       <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
 
       {/* 장식 스티커 — 콘텐츠보다 아래, 배경보다 위 */}
-      {CONFETTI.map((pos) => (
-        <img
-          key={pos}
-          src={keyword.emojiSrc}
-          alt=""
-          aria-hidden
-          className={`pointer-events-none absolute z-10 ${pos}`}
-        />
-      ))}
+      {keyword
+        ? DECORATIVE_STICKERS.map((sticker) => (
+            <span
+              key={sticker.id}
+              aria-hidden
+              className={`pointer-events-none absolute z-10 flex animate-record-preview-sticker-pop items-center justify-center ${sticker.frameClassName}`}
+              style={previewMotionStyle({
+                rotate: sticker.rotate,
+                delay: sticker.delay,
+                startX: sticker.startX,
+                startY: sticker.startY,
+              })}
+            >
+              <img
+                src={keyword.emojiSrc}
+                alt=""
+                className={`record-preview-sticker-img ${sticker.imageClassName}`}
+              />
+            </span>
+          ))
+        : null}
+
+      {keyword
+        ? FANFARE_PARTICLES.map((particle) => (
+            <img
+              key={particle.id}
+              src={keyword.emojiSrc}
+              alt=""
+              aria-hidden
+              className={`record-preview-sticker-img pointer-events-none absolute top-[310px] left-1/2 z-30 animate-record-preview-particle ${particle.className}`}
+              style={previewMotionStyle({
+                rotate: particle.rotate,
+                delay: particle.delay,
+                burstX: particle.x,
+                burstY: particle.y,
+              })}
+            />
+          ))
+        : null}
 
       <div className="relative z-20 flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
         <ButtonIcon aria-label="뒤로 가기" onClick={onBack}>
@@ -66,17 +207,23 @@ export function PreviewStep({
         {/* 날짜 칩 — 키워드 stroke색 배경 (Figma Chip · H9) */}
         <span
           className="rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"
-          style={{ backgroundColor: keyword.stroke }}
+          style={{ backgroundColor: keyword?.stroke ?? "#232936" }}
         >
           {formatRecordRange(startDate, endDate)}
         </span>
 
-        <h2 className="mt-2 text-center text-h3 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-          우리의 여행은
-          <br />
-          <span className="underline" style={{ color: keyword.stroke }}>
-            {keyword.label}!투어
-          </span>
+        <h2 className="mt-2 text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+          {keyword ? (
+            <>
+              우리의 여행은
+              <br />
+              <span className="underline" style={{ color: keyword.stroke }}>
+                {keyword.label}!투어
+              </span>
+            </>
+          ) : (
+            "우리의 여행 기록을\n지도에 남길게요"
+          )}
         </h2>
 
         {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침 */}
@@ -84,17 +231,27 @@ export function PreviewStep({
           <img
             src={photoUrl}
             alt=""
-            className="aspect-square w-full rounded-[40px] object-cover shadow-[0px_0px_34px_0px_white]"
+            className="aspect-square w-full animate-record-preview-photo-in rounded-[40px] object-cover shadow-[0px_0px_34px_0px_white]"
           />
           {/* 사진 우상단에 걸치는 대형 키워드 스티커 (시안 134px, -68°) — 진입 시 "빵!" 팝 (Figma #12) */}
-          <div className="pointer-events-none absolute -top-8 -right-3 size-[134px] rotate-[-68deg]">
-            <img
-              src={keyword.emojiSrc}
-              alt=""
-              aria-hidden
-              className="size-full animate-photo-pop"
-            />
-          </div>
+          {keyword ? (
+            <div
+              className="pointer-events-none absolute top-[5px] left-[231px] z-30 flex size-[174px] animate-record-preview-sticker-pop items-center justify-center"
+              style={previewMotionStyle({
+                rotate: "-68deg",
+                delay: "170ms",
+                startX: "-104px",
+                startY: "60px",
+              })}
+            >
+              <img
+                src={keyword.emojiSrc}
+                alt=""
+                aria-hidden
+                className="record-preview-sticker-img size-[134px]"
+              />
+            </div>
+          ) : null}
           {/* 닉네임 칩 — 그래픽 스케일 24px 텍스트 (타이포 토큰에 없는 아트워크 크기라 값 고정) */}
           <span className="absolute -top-5 left-1/2 z-10 flex max-w-[70%] -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 py-2">
             <Profile

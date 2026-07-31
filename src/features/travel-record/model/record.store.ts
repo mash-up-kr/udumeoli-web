@@ -11,7 +11,7 @@ interface RecordState {
   region: string | null
   step: RecordStep
   preview: DecoratePreview | null
-  start: (region: string) => void
+  start: (region: string, step?: RecordStep) => void
   setStep: (step: RecordStep) => void
   setPreview: (preview: DecoratePreview | null) => void
   close: () => void
@@ -22,7 +22,7 @@ export const useRecordStore = create<RecordState>((set) => ({
   region: null,
   step: "date",
   preview: null,
-  start: (region) => set({ region, step: "date", preview: null }),
+  start: (region, step = "date") => set({ region, step, preview: null }),
   setStep: (step) => set({ step }),
   setPreview: (preview) => set({ preview }),
   close: () => set({ region: null, step: "date", preview: null }),

@@ -32,13 +32,35 @@ type TravelRecordFlowProps = {
   region: string
   /** 사진 등록 좌표 (지역 centroid) */
   center: { lat: number; lng: number }
+  /** 팟원이 먼저 만든 여행에 합류할 때는 날짜/키워드를 고정하고 사진 단계부터 시작한다. */
+  collaborationTrip?: CollaborationRecordSeed | null
+  onClose?: () => void
+  onComplete?: () => void
+}
+
+export type CollaborationRecordSeed = {
+  startDate: string
+  endDate: string
+  keyword?: TravelKeywordId
+}
+
+function parseISODate(iso: string): Date | undefined {
+  const [year, month, day] = iso.split("-").map(Number)
+  if (!year || !month || !day) return undefined
+  return new Date(year, month - 1, day)
 }
 
 /**
  * 여행 기록 플로우 (기간 → 키워드 → 사진·코멘트 → 확인) — Figma 1836-15911.
  * 지도 위 풀스크린 오버레이. 지도 조작은 TravelMapGoogleImpl이 잠금/점선 처리한다.
  */
-export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
+export function TravelRecordFlow({
+  region,
+  center,
+  collaborationTrip,
+  onClose,
+  onComplete,
+}: TravelRecordFlowProps) {
   const currentPotId = usePotStore((s) => s.currentPotId)
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
@@ -48,16 +70,42 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
   const step = useRecordStore((s) => s.step)
   const goStep = useRecordStore((s) => s.setStep)
   const setPreview = useRecordStore((s) => s.setPreview)
-  const onClose = useRecordStore((s) => s.close)
+  const closeStore = useRecordStore((s) => s.close)
 
-  const [range, setRange] = React.useState<DateRange | undefined>()
-  const [keywordId, setKeywordId] = React.useState<TravelKeywordId | null>(null)
+  const isCollaboration = Boolean(collaborationTrip)
+  const fixedRange = React.useMemo<DateRange | undefined>(() => {
+    if (!collaborationTrip) return undefined
+    const from = parseISODate(collaborationTrip.startDate)
+    const to = parseISODate(collaborationTrip.endDate)
+    if (!from) return undefined
+    return { from, ...(to ? { to } : {}) }
+  }, [collaborationTrip])
+
+  const [range, setRange] = React.useState<DateRange | undefined>(
+    () => fixedRange
+  )
+  const [keywordId, setKeywordId] = React.useState<TravelKeywordId | null>(
+    () => collaborationTrip?.keyword ?? null
+  )
   const [photoUrl, setPhotoUrl] = React.useState<string | null>(null)
   const [comment, setComment] = React.useState("")
   const photoInputRef = React.useRef<HTMLInputElement>(null)
 
   const keyword = findKeyword(keywordId ?? undefined)
   const regionName = formatRegionName(region)
+
+  React.useEffect(() => {
+    if (!collaborationTrip) return
+    setRange(fixedRange)
+    setKeywordId(collaborationTrip.keyword ?? null)
+    setPhotoUrl(null)
+    setComment("")
+  }, [collaborationTrip, fixedRange])
+
+  const closeFlow = React.useCallback(() => {
+    closeStore()
+    onClose?.()
+  }, [closeStore, onClose])
 
   // 이번 기록이 이 지역의 몇 번째 방문인지 — 기존 방문 수 + 1 (Figma #3·#5)
   const nth = React.useMemo(() => {
@@ -66,7 +114,8 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
   }, [photos, region])
 
   const handleBack = () => {
-    if (step === "date") onClose()
+    if (isCollaboration && step === "photo") closeFlow()
+    else if (step === "date") closeFlow()
     else if (step === "keyword") goStep("date")
     else if (step === "photo") goStep("keyword")
     else goStep("photo")
@@ -90,10 +139,10 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
 
   // 최종 커밋 — 지역 색상(키워드 기준) + 사진 등록 후 지도로 복귀
   const handleCommit = () => {
-    if (!keyword || !photoUrl || !currentUserId || !range?.from) return
+    if (!photoUrl || !currentUserId || !range?.from) return
     const startDate = toISODate(range.from)
     const endDate = range.to ? toISODate(range.to) : undefined
-    setColor(currentPotId, region, keyword.fill)
+    if (keyword) setColor(currentPotId, region, keyword.fill)
     addPhoto({
       id: `up-${region}-${Date.now()}`,
       region,
@@ -104,13 +153,16 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
       thumbnailUrl: photoUrl,
       uploaderId: currentUserId,
       potId: currentPotId,
-      keyword: keyword.id,
+      ...(keyword ? { keyword: keyword.id } : {}),
       ...(comment.trim() ? { comment: comment.trim() } : {}),
     })
-    onClose()
+    closeFlow()
+    onComplete?.()
     // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게 (Figma 1836-14957 #16)
     showToast({
-      message: `'${regionName}' 여행 Pinned 완료!`,
+      message: isCollaboration
+        ? "업로드가 완료됐어요"
+        : `'${regionName}' 여행 Pinned 완료!`,
       icon: "check",
       className: "bottom-[256px]",
     })
@@ -121,12 +173,12 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
     (step === "keyword" && keywordId === null) ||
     (step === "photo" && photoUrl === null)
 
-  if (step === "preview" && keyword && photoUrl && range?.from) {
+  if (step === "preview" && photoUrl && range?.from) {
     const startDate = toISODate(range.from)
     const endDate = range.to ? toISODate(range.to) : undefined
     return (
       <PreviewStep
-        keyword={keyword}
+        keyword={keyword ?? null}
         startDate={startDate}
         {...(endDate ? { endDate } : {})}
         photoUrl={photoUrl}
@@ -172,6 +224,9 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
               {" 대표 사진 1장을\n업로드 해주세요"}
             </>
           ) : null}
+          {step === "photo" && !keyword
+            ? "대표 사진 1장을\n업로드 해주세요"
+            : null}
         </h2>
         {step === "keyword" ? (
           <p className="text-h8-1 text-fg-neutral-solid [text-shadow:0_0_32px_white]">
@@ -192,7 +247,7 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
             step === "photo" && "min-h-0 flex-1"
           )}
         >
-          {step === "date" ? (
+          {step === "date" && !isCollaboration ? (
             <DateStep
               range={range}
               onRangeChange={setRange}
@@ -200,7 +255,7 @@ export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
             />
           ) : null}
 
-          {step === "keyword" ? (
+          {step === "keyword" && !isCollaboration ? (
             <KeywordStep
               selected={keywordId}
               onSelect={(id) => {

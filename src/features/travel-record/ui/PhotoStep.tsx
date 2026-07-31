@@ -15,7 +15,7 @@ export function PhotoStep({
   comment,
   onCommentChange,
 }: {
-  keyword: TravelKeyword
+  keyword: TravelKeyword | null
   photoUrl: string | null
   onPickPhoto: () => void
   comment: string
@@ -41,10 +41,14 @@ export function PhotoStep({
         </button>
 
         {/* 키워드 스티커 — 사진 좌상단에 걸쳐 배치 */}
-        <span className="pointer-events-none absolute -top-3 left-2 flex items-center gap-1 rounded-full bg-bg-neutral-weak px-3 py-1.5 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-          <img src={keyword.emojiSrc} alt="" className="size-8 shrink-0" />
-          <span className="text-h5 text-fg-neutral-bold">{keyword.label}</span>
-        </span>
+        {keyword ? (
+          <span className="pointer-events-none absolute -top-3 left-2 flex items-center gap-1 rounded-full bg-bg-neutral-weak px-3 py-1.5 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+            <img src={keyword.emojiSrc} alt="" className="size-8 shrink-0" />
+            <span className="text-h5 text-fg-neutral-bold">
+              {keyword.label}
+            </span>
+          </span>
+        ) : null}
       </div>
 
       <Input
