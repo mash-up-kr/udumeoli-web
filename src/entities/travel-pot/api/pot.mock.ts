@@ -30,6 +30,7 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
     name: `${i + 1}명 팟`,
     inviteCode: `26061${i}`,
     members: [ME, ...OTHERS.slice(0, i)],
+    joinedAt: `2026-06-${String(i + 1).padStart(2, "0")}`,
   })
 )
 
@@ -41,18 +42,21 @@ export const UT_POTS: Array<TravelPot> = [
     name: "딸깍",
     inviteCode: "260611",
     members: [ME, ...members(["축구왕 준표", "존잘 창우", "사진작가 정우"])],
+    joinedAt: "2026-08",
   },
   {
     id: "pot-ut-2",
     name: "해피하우스",
     inviteCode: "260612",
     members: [ME, ...members(["권예인", "김나희", "이원영"])],
+    joinedAt: "2026-07",
   },
   {
     id: "pot-ut-3",
     name: "팀장은 연경이",
     inviteCode: "260613",
     members: [ME, ...members(["김수연", "장서휘", "전계원"])],
+    joinedAt: "2025",
   },
 ]
 
