@@ -114,3 +114,11 @@ export function openMapTipsOverlay(): void {
 
   overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
 }
+
+/**
+ * 지도 사용 안내를 이미 본 적 있는지 — 안내를 본 뒤 아무것도 기록하지 않고
+ * 이탈했다가 재진입한 유저에게 '기록하기' 툴팁을 띄우는 조건 (Figma 1836-15911 #1-1).
+ */
+export function hasSeenMapTips(): boolean {
+  return localStorage.getItem(SEEN_KEY) !== null
+}

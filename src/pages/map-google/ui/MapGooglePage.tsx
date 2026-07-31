@@ -9,7 +9,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
 import { openMyPageModal } from "@/features/my-page"
 import { openMapTipsOverlay } from "@/features/onboarding"
-import { useDecorateStore } from "@/features/region-decorate"
+import { useRecordStore } from "@/features/travel-record"
 import { usePotStore, usePotsHydrated } from "@/entities/travel-pot"
 
 function MapGooglePageContent() {
@@ -26,7 +26,7 @@ function MapGooglePageContent() {
       router.navigate({ to: "/pot-start", replace: true })
   }, [hydrated, hasPot, router])
 
-  const decorating = useDecorateStore((s) => s.region !== null)
+  const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
