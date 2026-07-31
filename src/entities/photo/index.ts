@@ -20,4 +20,5 @@ export {
   deletePhoto,
   seedUtPhotos,
   resetUtPhotos,
+  removeSeedPhotosByUploader,
 } from "./api/photo.api"
