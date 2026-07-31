@@ -12,6 +12,7 @@ export type RegionVisualState = {
   hasColor: boolean
   color?: string
   hasPhoto: boolean
+  incomplete: boolean
   active: boolean
   /** 첫 여행 등록 플로우 진행 중인 지역이면 강조 테두리 색 (점선 대신 굵은 실선으로 근사) */
   decorateColor?: string
@@ -35,9 +36,13 @@ function computeStyle(
   const fillColor =
     state.previewColor ?? (state.hasColor && state.color ? state.color : accent)
 
-  let strokeColor = state.active ? accent : "#aaaaaa"
-  let strokeWeight = state.active ? 2.5 : 0.9
-  let strokeOpacity = state.active ? 1 : 0.65
+  let strokeColor = state.incomplete
+    ? "#232936"
+    : state.active
+      ? accent
+      : "#aaaaaa"
+  let strokeWeight = state.active ? 2.5 : state.incomplete ? 1.4 : 0.9
+  let strokeOpacity = state.active || state.incomplete ? 1 : 0.65
 
   if (state.decorateColor) {
     // Data API는 폴리곤 stroke에 dash pattern을 지원하지 않아 굵은 실선으로 근사
@@ -68,6 +73,7 @@ export type RegionDataLayer = {
       Record<string, { type: "color"; value: string } | { type: "image" }>
     >
     hasPhotoRegions?: Set<string>
+    incompleteRegions?: Set<string>
     activeRegion?: string | null
     decorateRegion?: string | null
     decorateColor?: string
@@ -98,7 +104,12 @@ export function createRegionDataLayer(
 
   const states = new Map<string, RegionVisualState>()
   for (const name of nameToFeature.keys()) {
-    states.set(name, { hasColor: false, hasPhoto: false, active: false })
+    states.set(name, {
+      hasColor: false,
+      hasPhoto: false,
+      incomplete: false,
+      active: false,
+    })
   }
 
   let zoom = opts.initialZoom
@@ -121,6 +132,7 @@ export function createRegionDataLayer(
   // 전체 ~250개 지역을 매번 순회하는 비용을 피한다
   let prevFillNames = new Set<string>()
   let prevPhotoNames = new Set<string>()
+  let prevIncompleteNames = new Set<string>()
   let prevActiveName: string | null = null
   let prevDecorateName: string | null = null
 
@@ -182,6 +194,21 @@ export function createRegionDataLayer(
           if (state) state.hasPhoto = next.has(name)
         }
         prevPhotoNames = new Set(next)
+      }
+      if (patch.incompleteRegions) {
+        const next = patch.incompleteRegions
+        for (const name of next) dirty.add(name)
+        for (const name of prevIncompleteNames) dirty.add(name)
+        for (const name of next) {
+          const state = states.get(name)
+          if (state) state.incomplete = true
+        }
+        for (const name of prevIncompleteNames) {
+          if (next.has(name)) continue
+          const state = states.get(name)
+          if (state) state.incomplete = false
+        }
+        prevIncompleteNames = new Set(next)
       }
       if (patch.activeRegion !== undefined) {
         if (prevActiveName) dirty.add(prevActiveName)

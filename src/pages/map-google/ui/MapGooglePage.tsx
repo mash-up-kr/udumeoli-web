@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 
 import { AppHeader } from "@/widgets/app-header"
@@ -10,10 +11,15 @@ import { RequireAuth } from "@/features/auth"
 import { openMyPageModal } from "@/features/my-page"
 import { openMapTipsOverlay } from "@/features/onboarding"
 import { useRecordStore } from "@/features/travel-record"
+import { photoKeys, seedUtPhotos } from "@/entities/photo"
 import { usePotStore, usePotsHydrated } from "@/entities/travel-pot"
 
 function MapGooglePageContent() {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const isUtPreview =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("ut") === "1"
   // pots가 localStorage에서 복원되기 전엔 항상 빈 배열이라, 복원 전 순간을 "팟 없음"으로
   // 오판해 기존 팟 보유 유저까지 잘못 리다이렉트하지 않도록 복원 완료를 기다린다
   const hydrated = usePotsHydrated()
@@ -21,13 +27,24 @@ function MapGooglePageContent() {
   // replace로 이동 — push하면 히스토리에 /map-google이 남아, pot-start에서 뒤로가기 시
   // 다시 이 페이지로 왔다가 팟이 여전히 없어 즉시 pot-start로 튕기는 무한 루프가 생긴다
   const hasPot = usePotStore((s) => s.pots.length > 0)
+  const seedUtPots = usePotStore((s) => s.seedUtPots)
+  const seededUtPreviewRef = React.useRef(false)
   React.useEffect(() => {
-    if (hydrated && !hasPot)
+    if (!hydrated || !isUtPreview || seededUtPreviewRef.current) return
+    seededUtPreviewRef.current = true
+    seedUtPots()
+    seedUtPhotos()
+    void queryClient.invalidateQueries({ queryKey: photoKeys.all })
+  }, [hydrated, isUtPreview, queryClient, seedUtPots])
+
+  React.useEffect(() => {
+    if (hydrated && !hasPot && !isUtPreview)
       router.navigate({ to: "/pot-start", replace: true })
-  }, [hydrated, hasPot, router])
+  }, [hydrated, hasPot, isUtPreview, router])
 
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
+  const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
 
@@ -43,6 +60,7 @@ function MapGooglePageContent() {
       <main className="relative flex-1">
         <TravelMapGoogle
           className="absolute inset-0"
+          onAlbumAvailabilityChange={setCanOpenAlbum}
           onRegionDetailChange={setDetailRegion}
         />
 
@@ -58,6 +76,7 @@ function MapGooglePageContent() {
             <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
               <BottomNav
                 className="pointer-events-auto"
+                albumDisabled={!canOpenAlbum}
                 onAlbumClick={openAlbum}
                 onMyPageClick={() => openMyPageModal()}
               />

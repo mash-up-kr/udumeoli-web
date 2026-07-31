@@ -7,6 +7,7 @@
  * - AdvancedMarker는 mapId(Cloud Console 발급 또는 DEMO_MAP_ID)가 필요
  */
 import * as React from "react"
+import { useRouter } from "@tanstack/react-router"
 import {
   APIProvider,
   AdvancedMarker,
@@ -14,21 +15,27 @@ import {
   Map as GoogleMap,
   useMap,
 } from "@vis.gl/react-google-maps"
-import { Plus } from "lucide-react"
+import { ArrowRight, Check, PenLine, UserRound, X } from "lucide-react"
 
+import {
+  buildCollaborationTrips,
+  findLatestCompletedTrip,
+  findLatestMissingMineTrip,
+  latestTripByRegion,
+  visibleStickerTrips,
+} from "../lib/collaboration"
 import { createRegionDataLayer } from "../lib/regionDataLayer"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
+import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 
 import type { RegionFill } from "@/entities/region"
-import type { DecoratePreview } from "@/features/travel-record"
-import {
-  REGION_CENTERS,
-  findKeyword,
-  useAllPhotos,
-  usePhotoUploadStore,
-} from "@/entities/photo"
+import type {
+  CollaborationRecordSeed,
+  DecoratePreview,
+} from "@/features/travel-record"
+import { REGION_CENTERS, findKeyword, useAllPhotos } from "@/entities/photo"
 import {
   POPULAR_REGIONS,
   formatRegionName,
@@ -36,22 +43,17 @@ import {
 } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
-import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
-import { GalleryPanel, openPhotoViewer } from "@/features/photo-gallery"
 import { hasSeenMapTips } from "@/features/onboarding"
-import { pickImageFile } from "@/features/photo-upload"
-import {
-  TravelRecordFlow,
-  partySlotOffset,
-  useRecordStore,
-} from "@/features/travel-record"
+import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
-import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
-import { PhotoTile } from "@/shared/ui/photo-tile"
+import { cn } from "@/shared/lib/utils"
+import { ButtonCta } from "@/shared/ui/button-cta"
 import { RegionCardCarousel } from "@/shared/ui/region-card-carousel"
+import { DialogTitle } from "@/shared/ui/dialog"
+import { openModal } from "@/shared/ui/modal"
 
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 // mapId 미발급 시 Google이 제공하는 프로토타이핑용 데모 ID로 대체 (AdvancedMarker는 mapId 필수)
@@ -72,7 +74,6 @@ type CameraSnapshot = {
   lat: number
   lng: number
   zoom: number
-  selectedRegion: string | null
 }
 let lastCameraSnapshot: CameraSnapshot | null = null
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
@@ -83,23 +84,155 @@ const PARTY_ZOOM = 9.5
 // 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
 const PARTY_ZOOM_EPSILON = 0.01
 const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
-// 지역 상세 갤러리 패널의 지도 뷰 노출 높이 — GalleryPanel PEEK_VISIBLE와 동일 값
-const GALLERY_PEEK = 244
-// 사진 핀 기본 크기 — 줌 레벨과 무관하게 항상 고정 (Figma 1319-13186 #1)
-const PHOTO_PIN_SIZE = 60
+const COMPLETION_TIP_STORAGE_KEY = "photato-map-completion-tooltips"
+const COMPLETION_TIP_MAX_SHOW = 3
+const COLLABORATION_TOAST_MS = 4000
+const INCOMPLETE_REGION_FILL = "#9eb8ac"
+const STICKER_OFFSETS = [
+  { x: -18, y: -12, rotate: -17 },
+  { x: 18, y: 12, rotate: 9 },
+]
 
 type Centroid = { name: string; lng: number; lat: number }
 
-type PartySlot = {
-  region: string
-  lat: number
-  lng: number
-  memberId: string
-  nickname: string
-  photo: { thumbnailUrl: string } | null
-  isMe: boolean
-  slotIndex: number
-  totalSlots: number
+type CollaborationRecordDraft = CollaborationRecordSeed &
+  Pick<CollaborationTrip, "key" | "region">
+
+type CompletionTipState = Partial<
+  Record<string, { count: number; seen?: boolean }>
+>
+
+function readCompletionTipState(): CompletionTipState {
+  if (typeof window === "undefined") return {}
+  try {
+    return JSON.parse(
+      window.localStorage.getItem(COMPLETION_TIP_STORAGE_KEY) ?? "{}"
+    ) as CompletionTipState
+  } catch {
+    return {}
+  }
+}
+
+function writeCompletionTipState(state: CompletionTipState) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(COMPLETION_TIP_STORAGE_KEY, JSON.stringify(state))
+}
+
+function markCompletionTipShown(key: string): number {
+  const state = readCompletionTipState()
+  const prev = state[key] ?? { count: 0 }
+  const next = { ...prev, count: prev.count + 1 }
+  writeCompletionTipState({ ...state, [key]: next })
+  return next.count
+}
+
+function markCompletionTipSeen(key: string) {
+  const state = readCompletionTipState()
+  const prev = state[key] ?? { count: 0 }
+  writeCompletionTipState({ ...state, [key]: { ...prev, seen: true } })
+}
+
+function canShowCompletionTip(key: string): boolean {
+  const state = readCompletionTipState()[key]
+  return !state?.seen && (state?.count ?? 0) < COMPLETION_TIP_MAX_SHOW
+}
+
+function formatShortTripRange(startDate: string, endDate: string): string {
+  const [startYear, startMonth, startDay] = startDate.split("-")
+  const [, endMonth, endDay] = endDate.split("-")
+  if (!startYear || !startMonth || !startDay) return startDate
+  const yy = startYear.slice(2)
+  if (startDate === endDate || !endMonth || !endDay) {
+    return `${yy}.${startMonth}.${startDay}`
+  }
+  if (startMonth === endMonth) {
+    return `${yy}.${startMonth}.${startDay}~${endDay}`
+  }
+  return `${yy}.${startMonth}.${startDay}~${endMonth}.${endDay}`
+}
+
+function MapPillTooltip({
+  children,
+  className,
+  onClick,
+}: {
+  children: React.ReactNode
+  className?: string
+  onClick?: () => void
+}) {
+  const content = (
+    <>
+      <span className="min-w-0 truncate text-b6 text-fg-neutral-inverse">
+        {children}
+      </span>
+      {onClick ? (
+        <span className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-x-[8px] border-t-[8px] border-x-transparent border-t-bg-neutral-inverse" />
+      ) : null}
+    </>
+  )
+  const baseClassName = cn(
+    "relative flex h-8 max-w-[343px] items-center justify-center rounded-full bg-bg-neutral-inverse px-4 py-1 shadow-[0px_0px_10px_rgba(142,150,169,0.12)]",
+    onClick && "transition-transform active:scale-95",
+    className
+  )
+
+  if (!onClick) {
+    return <div className={baseClassName}>{content}</div>
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      className={baseClassName}
+    >
+      {content}
+    </button>
+  )
+}
+
+function RecordTripConfirmContent({
+  trip,
+  regionName,
+  onClose,
+  onConfirm,
+}: {
+  trip: CollaborationTrip
+  regionName: string
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="닫기"
+        className="absolute top-4 right-4 flex size-7 items-center justify-center text-fg-neutral-subtle"
+        onClick={onClose}
+      >
+        <X className="size-5" />
+      </button>
+      <div className="flex flex-col items-center gap-4 pt-3 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
+          <Check className="size-6 text-fg-neutral-bold" />
+        </span>
+        <div className="flex flex-col gap-2 py-2">
+          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+            {formatShortTripRange(trip.startDate, trip.endDate)}
+            <br />
+            해당 날짜에 {regionName}을 다녀온게 맞나요?
+          </DialogTitle>
+          <p className="text-b6 text-fg-neutral-subtle">
+            맞다면, 여행 기록을 시작할게요
+          </p>
+        </div>
+      </div>
+      <ButtonCta onClick={onConfirm}>맞아요</ButtonCta>
+    </>
+  )
 }
 
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
@@ -107,26 +240,6 @@ function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
   if (zoom >= ZOOM_COLOR) return 2
   if (zoom >= BOUNDARY_ZOOM) return 1
   return 0
-}
-
-// 지도 center를 화면 아래쪽 dyPx만큼 이동했을 때의 위도 — 지역이 dyPx만큼 위로 보이게 함.
-// panBy는 호출 시점 줌의 투영을 쓰므로 setZoom과 함께 쓰면 어긋남 → 목표 줌 기준으로 직접 계산
-function offsetLatByPixels(lat: number, dyPx: number, zoom: number): number {
-  const worldY =
-    (0.5 -
-      Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI)) *
-    256
-  const newWorldY = worldY + dyPx / 2 ** zoom
-  return (
-    ((2 * Math.atan(Math.exp((0.5 - newWorldY / 256) * 2 * Math.PI)) -
-      Math.PI / 2) *
-      180) /
-    Math.PI
-  )
-}
-
-function toISODate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 // ease-out은 초반에 확 움직여 짧은 duration에선 튀는 느낌 — 완만하게 출발·도착
@@ -164,10 +277,9 @@ function animateCamera(
   rafRef.current = requestAnimationFrame(step)
 }
 
-const SLOT_SIZE_2X = 80
-
 export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
+  onAlbumAvailabilityChange?: (available: boolean) => void
 }
 
 export function TravelMapGoogleImpl(props: TravelMapImplProps) {
@@ -198,13 +310,9 @@ function MapController({
   fills,
   fillsRef,
   photoRegionSet,
-  selectedRegion,
-  setSelectedRegion,
+  incompleteRegionSet,
   decorating,
   decoratePreview,
-  startDecorate,
-  flyToRegion,
-  flyingRef,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
@@ -219,14 +327,9 @@ function MapController({
   /** 오버레이 draw()가 항상 최신 fills를 읽도록 ref 경유 (클로저 고정 방지) */
   fillsRef: React.MutableRefObject<Record<string, RegionFill>>
   photoRegionSet: Set<string>
-  selectedRegion: string | null
-  setSelectedRegion: (name: string | null) => void
+  incompleteRegionSet: Set<string>
   decorating: string | null
   decoratePreview: DecoratePreview | null
-  startDecorate: (region: string) => void
-  flyToRegion: (c: Centroid) => void
-  /** flyToRegion으로 프로그래밍 이동 중엔 idle의 "최근접 지역 자동 선택"을 건너뛴다 */
-  flyingRef: React.MutableRefObject<boolean>
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: (c: Array<Centroid>) => void
@@ -234,15 +337,12 @@ function MapController({
   onFeatureClick: (name: string) => void
 }) {
   const map = useMap()
-  const featureClickedRef = React.useRef(false)
   const decoratingRef = React.useRef<string | null>(decorating)
   decoratingRef.current = decorating
-  // idle 리스너가 등록 시점 클로저가 아닌 최신 선택 상태로 판정하도록 ref 경유
-  const selectedRegionRef = React.useRef<string | null>(selectedRegion)
-  selectedRegionRef.current = selectedRegion
   const photoRegionSetRef = React.useRef(photoRegionSet)
   photoRegionSetRef.current = photoRegionSet
-  const prevDecoratingRef = React.useRef<string | null>(null)
+  const incompleteRegionSetRef = React.useRef(incompleteRegionSet)
+  incompleteRegionSetRef.current = incompleteRegionSet
 
   // 지도 인스턴스별 초기화 — StrictMode 이중 마운트나 리마운트로 vis.gl이 지도를
   // 재생성하면 새 인스턴스에 레이어/리스너를 다시 붙여야 하므로 "1회 가드" 대신
@@ -256,7 +356,6 @@ function MapController({
 
     let cancelled = false
     const listeners: Array<google.maps.MapsEventListener> = []
-    const domCleanups: Array<() => void> = []
     let dataLayer: RegionDataLayer | null = null
     let overlay: ImageFillOverlay | null = null
 
@@ -269,18 +368,9 @@ function MapController({
           accent: ACCENT,
           initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
           onFeatureClick: (name) => {
-            featureClickedRef.current = true
             if (decoratingRef.current) return
             // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
             if ((map.getZoom() ?? 0) < BOUNDARY_ZOOM) return
-            // 안 가본 지역(색칠·사진 없음)은 줌인 대신 첫 여행 등록 플로우로 진입
-            if (
-              !Object.hasOwn(fillsRef.current, name) &&
-              !photoRegionSetRef.current.has(name)
-            ) {
-              startDecorate(name)
-              return
-            }
             onFeatureClick(name)
           },
         })
@@ -306,32 +396,7 @@ function MapController({
         dataLayer.sync({
           fills: fillsRef.current,
           hasPhotoRegions: photoRegionSetRef.current,
-        })
-
-        // 배경(지역 밖) 클릭 시 선택 해제 — Data feature 클릭과 겹치면 스킵
-        listeners.push(
-          map.addListener("click", () => {
-            if (featureClickedRef.current) {
-              featureClickedRef.current = false
-              return
-            }
-            if (decoratingRef.current) return
-            // 핀 클릭으로 비행 중일 땐 지연 도착한 맵 클릭이 방금 선택을 지우지 않게
-            if (flyingRef.current) return
-            if ((map.getZoom() ?? 0) < PARTY_ENTER) setSelectedRegion(null)
-          })
-        )
-
-        // 사용자 제스처가 시작되면 비행 잠금 해제 — 이후 idle부터 자동 선택 재개
-        const mapDiv = map.getDiv()
-        const unlockFlight = () => {
-          flyingRef.current = false
-        }
-        mapDiv.addEventListener("pointerdown", unlockFlight)
-        mapDiv.addEventListener("wheel", unlockFlight)
-        domCleanups.push(() => {
-          mapDiv.removeEventListener("pointerdown", unlockFlight)
-          mapDiv.removeEventListener("wheel", unlockFlight)
+          incompleteRegions: incompleteRegionSetRef.current,
         })
 
         const syncViewport = () => {
@@ -355,43 +420,6 @@ function MapController({
           map.addListener("idle", () => {
             syncViewport()
             overlay?.draw()
-
-            // 최대 줌에서 화면 중앙과 가장 가까운 지역을 자동 선택 (MapLibre onMove 포팅)
-            // Google은 move 이벤트가 idle에서만 안정되므로 제스처 종료 시점에 판정한다.
-            // flyToRegion으로 방금 이동한 직후의 idle이면 건너뛴다 — 안 그러면 우리가
-            // 방금 선택한 지역을 이 재계산이 즉시 덮어써 파티 UI가 깜빡이며 사라진다
-            if (decoratingRef.current || flyingRef.current) return
-            const zoom = map.getZoom() ?? 0
-            const center = map.getCenter()
-            if (
-              zoom >= PARTY_ENTER &&
-              center &&
-              centroidsRef.current.length > 0
-            ) {
-              const lng = center.lng()
-              const lat = center.lat()
-              let nearest = centroidsRef.current[0]
-              let minDist = Infinity
-              for (const c of centroidsRef.current) {
-                const d = (c.lng - lng) ** 2 + (c.lat - lat) ** 2
-                if (d < minDist) {
-                  minDist = d
-                  nearest = c
-                }
-              }
-              if (nearest.name !== selectedRegionRef.current) {
-                // 안 가본 지역(색칠·사진 없음)은 상세 진입 대신 "+" 버튼 노출 유지
-                const visited =
-                  Object.hasOwn(fillsRef.current, nearest.name) ||
-                  photoRegionSetRef.current.has(nearest.name)
-                setSelectedRegion(visited ? nearest.name : null)
-              }
-            } else if (
-              zoom < PARTY_ENTER &&
-              selectedRegionRef.current !== null
-            ) {
-              setSelectedRegion(null)
-            }
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
@@ -403,7 +431,6 @@ function MapController({
     return () => {
       cancelled = true
       for (const l of listeners) l.remove()
-      for (const c of domCleanups) c()
       dataLayer?.destroy()
       overlay?.setMap(null)
       if (dataLayerRef.current === dataLayer) dataLayerRef.current = null
@@ -416,7 +443,6 @@ function MapController({
           lat: center.lat(),
           lng: center.lng(),
           zoom: map.getZoom() ?? KOREA_VIEW.zoom,
-          selectedRegion: selectedRegionRef.current,
         }
       }
 
@@ -431,9 +457,7 @@ function MapController({
     centroidsRef,
     fillsRef,
     onFeatureClick,
-    startDecorate,
     setCentroids,
-    setSelectedRegion,
     setViewportCentroids,
     setZoomStage,
   ])
@@ -443,15 +467,14 @@ function MapController({
     const dataLayer = dataLayerRef.current
     const overlay = overlayRef.current
     if (!dataLayer) return
-    dataLayer.sync({ fills, hasPhotoRegions: photoRegionSet })
+    dataLayer.sync({
+      fills,
+      hasPhotoRegions: photoRegionSet,
+      incompleteRegions: incompleteRegionSet,
+    })
     overlay?.loadPendingImages(() => overlay.draw())
     overlay?.draw()
-  }, [fills, photoRegionSet, dataLayerRef, overlayRef])
-
-  // active(선택 지역) 동기화
-  React.useEffect(() => {
-    dataLayerRef.current?.sync({ activeRegion: selectedRegion })
-  }, [selectedRegion, dataLayerRef])
+  }, [fills, photoRegionSet, incompleteRegionSet, dataLayerRef, overlayRef])
 
   // 강조선·색상 미리보기 — 스와치 탭마다 fitBounds가 재실행되지 않도록 진입/이탈과 분리
   React.useEffect(() => {
@@ -465,8 +488,6 @@ function MapController({
 
   // 등록 플로우 진입/이탈 — 제스처 잠금 + fitBounds
   React.useEffect(() => {
-    const prevDecorating = prevDecoratingRef.current
-    prevDecoratingRef.current = decorating
     if (!map) return
     if (decorating) {
       map.setOptions({ gestureHandling: "none" })
@@ -489,23 +510,8 @@ function MapController({
     } else {
       map.setOptions({ gestureHandling: "greedy" })
       dataLayerRef.current?.sync({ decorateRegion: null })
-
-      // 업로드 커밋으로 플로우가 끝났다면(사진 생김) 지역 상세로 복귀 (Figma 1340-18364)
-      if (prevDecorating && photoRegionSetRef.current.has(prevDecorating)) {
-        setSelectedRegion(prevDecorating)
-        const c = centroidsRef.current.find((x) => x.name === prevDecorating)
-        if (c) flyToRegion(c)
-      }
     }
-  }, [
-    decorating,
-    map,
-    dataLayerRef,
-    geojsonRef,
-    centroidsRef,
-    setSelectedRegion,
-    flyToRegion,
-  ])
+  }, [decorating, map, dataLayerRef, geojsonRef])
 
   return null
 }
@@ -513,8 +519,15 @@ function MapController({
 // 아직 꾸미기 이력이 없는 팟의 안정 참조 — 셀렉터가 매번 새 객체를 만들지 않도록
 const EMPTY_FILLS: Record<string, RegionFill> = {}
 
-function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
+function TravelMapGoogleInner({
+  onAlbumAvailabilityChange,
+  onRegionDetailChange,
+}: TravelMapImplProps) {
+  const router = useRouter()
   const currentPotId = usePotStore((s) => s.currentPotId)
+  const currentPotName = usePotStore(
+    (s) => s.pots.find((pot) => pot.id === s.currentPotId)?.name ?? "우리 팟"
+  )
   const photos = useAllPhotos(currentPotId)
   const fills = useRegionColorStore(
     (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
@@ -522,18 +535,12 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
   const partyMembers = usePotStore(selectCurrentPotMembers)
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
-  const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
 
   const mapRef = React.useRef<google.maps.Map | null>(null)
   const geojsonRef = React.useRef<GeoJSON.FeatureCollection | null>(null)
   const dataLayerRef = React.useRef<RegionDataLayer | null>(null)
   const overlayRef = React.useRef<ImageFillOverlay | null>(null)
   const centroidsRef = React.useRef<Array<Centroid>>([])
-  // flyToRegion 등 프로그래밍 이동 후 idle의 "최근접 지역 자동 선택"과 배경 클릭
-  // 해제가 방금 선택을 덮어쓰지 않도록 잠금. 도착(idle)·타임아웃 시점에 풀면
-  // 도착 직후 늦게 오는 idle/지연 클릭이 선택을 풀어버려 상세 진입이 튕긴다 —
-  // 사용자 제스처(pointerdown/wheel) 시점에만 해제한다
-  const flyingRef = React.useRef(false)
   const cameraRafRef = React.useRef<number | null>(null)
   React.useEffect(() => {
     return () => {
@@ -541,27 +548,81 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
         cancelAnimationFrame(cameraRafRef.current)
     }
   }, [])
-  // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
-  const fillsRef = React.useRef(fills)
-  React.useEffect(() => {
-    fillsRef.current = fills
-  }, [fills])
-
   const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
     getZoomStage(lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom)
   )
+  const zoomStageRef = React.useRef(zoomStage)
+  React.useEffect(() => {
+    zoomStageRef.current = zoomStage
+  }, [zoomStage])
   const [centroids, setCentroids] = React.useState<Array<Centroid>>([])
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
   >([])
-  const [selectedRegion, setSelectedRegion] = React.useState<string | null>(
-    () => lastCameraSnapshot?.selectedRegion ?? null
-  )
-  const [galleryExpanded, setGalleryExpanded] = React.useState(false)
+  const [collaborationRecordDraft, setCollaborationRecordDraft] =
+    React.useState<CollaborationRecordDraft | null>(null)
 
   const decorating = useRecordStore((s) => s.region)
   const decoratePreview = useRecordStore((s) => s.preview)
   const startDecorate = useRecordStore((s) => s.start)
+
+  const collaborationTrips = React.useMemo(
+    () =>
+      buildCollaborationTrips({
+        photos,
+        members: partyMembers,
+        currentUserId,
+      }),
+    [photos, partyMembers, currentUserId]
+  )
+  const latestMissingMineTrip = React.useMemo(
+    () => findLatestMissingMineTrip(collaborationTrips),
+    [collaborationTrips]
+  )
+  const latestIncompleteTrip = React.useMemo(
+    () => collaborationTrips.find((trip) => !trip.isComplete) ?? null,
+    [collaborationTrips]
+  )
+  const latestCompletedTrip = React.useMemo(
+    () => findLatestCompletedTrip(collaborationTrips),
+    [collaborationTrips]
+  )
+  const latestTripsByRegion = React.useMemo(
+    () => latestTripByRegion(collaborationTrips),
+    [collaborationTrips]
+  )
+  const incompleteRegionSet = React.useMemo(
+    () =>
+      new Set(
+        collaborationTrips
+          .filter((trip) => !trip.isComplete)
+          .map((trip) => trip.region)
+      ),
+    [collaborationTrips]
+  )
+  const mapFills = React.useMemo<Record<string, RegionFill>>(() => {
+    const next: Record<string, RegionFill> = { ...fills }
+    for (const trip of latestTripsByRegion.values()) {
+      if (
+        Object.hasOwn(next, trip.region) &&
+        next[trip.region].type === "image"
+      )
+        continue
+      const keyword = findKeyword(trip.keyword)
+      if (keyword && (trip.hasMine || trip.isComplete)) {
+        next[trip.region] ??= { type: "color", value: keyword.fill }
+      } else if (!trip.isComplete) {
+        next[trip.region] ??= { type: "color", value: INCOMPLETE_REGION_FILL }
+      }
+    }
+    return next
+  }, [fills, latestTripsByRegion])
+
+  // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
+  const fillsRef = React.useRef(mapFills)
+  React.useEffect(() => {
+    fillsRef.current = mapFills
+  }, [mapFills])
 
   // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
   const [seenTips, setSeenTips] = React.useState(false)
@@ -577,28 +638,107 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
     [photos]
   )
 
-  const detailRegion =
-    !decorating && zoomStage === 3 && selectedRegion ? selectedRegion : null
+  React.useEffect(() => {
+    onAlbumAvailabilityChange?.(photos.length > 0)
+  }, [onAlbumAvailabilityChange, photos.length])
 
   // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰일 때만 진입점을 노출
   const showRecordTip =
     seenTips && photos.length === 0 && !decorating && zoomStage === 0
+  const [dismissedRecordTipKey, setDismissedRecordTipKey] = React.useState<
+    string | null
+  >(null)
+  const [encouragementKey, setEncouragementKey] = React.useState<string | null>(
+    null
+  )
+  const [completionTipKey, setCompletionTipKey] = React.useState<string | null>(
+    null
+  )
+  const countedCompletionTipKeyRef = React.useRef<string | null>(null)
+  const encouragementTrip = latestMissingMineTrip ?? latestIncompleteTrip
+  const encouragementTripKey = encouragementTrip?.key ?? null
+  const latestMissingMineTripKey = latestMissingMineTrip?.key ?? null
+  const latestCompletedTripKey = latestCompletedTrip?.key ?? null
+
+  const showEncouragementTip =
+    encouragementKey === encouragementTripKey && !decorating
+
+  const showCompletionTip =
+    !!latestCompletedTrip &&
+    completionTipKey === `${currentPotId}|${latestCompletedTripKey}` &&
+    !decorating &&
+    zoomStage === 0
+  const encouragementRecorderName = encouragementTrip
+    ? (partyMembers.find(
+        (member) =>
+          member.id === encouragementTrip.representativePhoto.uploaderId
+      )?.nickname ?? "팟원")
+    : "팟원"
+  const encouragementMessage = encouragementTrip
+    ? encouragementTrip.representativePhoto.uploaderId === currentUserId
+      ? `${formatRegionName(encouragementTrip.region)} 여행 기록이 진행 중이에요!`
+      : `‘${encouragementRecorderName}’ 님이 ${formatRegionName(encouragementTrip.region)} 여행 기록을 시작했어요!`
+    : ""
+  const visibleRecordTip =
+    latestMissingMineTrip &&
+    dismissedRecordTipKey !== latestMissingMineTrip.key &&
+    !decorating
+      ? {
+          trip: latestMissingMineTrip,
+          center: centroidMap.get(latestMissingMineTrip.region),
+        }
+      : null
+  const visibleEncouragementTrip = showEncouragementTip
+    ? encouragementTrip
+    : null
+  const visibleCompletionTrip = showCompletionTip ? latestCompletedTrip : null
 
   React.useEffect(() => {
-    onRegionDetailChange?.(detailRegion)
-  }, [detailRegion, onRegionDetailChange])
+    setDismissedRecordTipKey(null)
+  }, [latestMissingMineTripKey])
 
   React.useEffect(() => {
-    setGalleryExpanded(false)
-  }, [detailRegion])
+    if (!encouragementTripKey || decorating) {
+      setEncouragementKey(null)
+      return
+    }
 
-  // flyToRegion/handleBackToHome 공용 — 잠금 세팅 + 이동 애니메이션.
-  // 잠금 해제는 사용자 제스처(MapController의 pointerdown/wheel 리스너)에서만 한다
+    setEncouragementKey(encouragementTripKey)
+    const timer = window.setTimeout(
+      () => setEncouragementKey(null),
+      COLLABORATION_TOAST_MS
+    )
+    return () => window.clearTimeout(timer)
+  }, [decorating, encouragementTripKey])
+
+  React.useEffect(() => {
+    if (!latestCompletedTripKey || decorating) {
+      setCompletionTipKey(null)
+      return
+    }
+
+    const key = `${currentPotId}|${latestCompletedTripKey}`
+    if (zoomStage !== 0 || !canShowCompletionTip(key)) {
+      setCompletionTipKey(null)
+      return
+    }
+
+    setCompletionTipKey(key)
+    if (countedCompletionTipKeyRef.current !== key) {
+      markCompletionTipShown(key)
+      countedCompletionTipKeyRef.current = key
+    }
+  }, [currentPotId, decorating, latestCompletedTripKey, zoomStage])
+
+  React.useEffect(() => {
+    onRegionDetailChange?.(null)
+  }, [onRegionDetailChange])
+
+  // Google panTo/setZoom에는 duration이 없어 moveCamera를 rAF로 보간한다.
   const runCameraMove = React.useCallback(
     (target: { lat: number; lng: number; zoom: number }, duration: number) => {
       const map = mapRef.current
       if (!map) return
-      flyingRef.current = true
       animateCamera(map, target, duration, cameraRafRef)
     },
     []
@@ -606,11 +746,9 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
 
   const flyToRegion = React.useCallback(
     (c: Centroid) => {
-      // panBy는 호출 시점(줌 애니메이션 전) 투영 기준이라 오프셋이 어긋남 —
-      // 목표 줌의 mercator 좌표에서 직접 보정한 center로 이동 (MapLibre flyTo duration 350ms와 동일)
       runCameraMove(
         {
-          lat: offsetLatByPixels(c.lat, GALLERY_PEEK / 2, PARTY_ZOOM),
+          lat: c.lat,
           lng: c.lng,
           zoom: PARTY_ZOOM,
         },
@@ -620,15 +758,6 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
     [runCameraMove]
   )
 
-  const handleBackToHome = React.useCallback(() => {
-    setSelectedRegion(null)
-    // MapLibre handleBackToHome duration 600ms와 동일
-    runCameraMove(
-      { lat: KOREA_VIEW.lat, lng: KOREA_VIEW.lng, zoom: KOREA_VIEW.zoom },
-      600
-    )
-  }, [runCameraMove])
-
   const handleCarouselSelect = React.useCallback(
     (region: string) => {
       const center =
@@ -637,79 +766,149 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
           ? REGION_CENTERS[region]
           : undefined)
       if (!center) return
-      setSelectedRegion(region)
       flyToRegion({ name: region, lng: center.lng, lat: center.lat })
     },
     [centroidMap, flyToRegion]
   )
 
-  const handleFeatureClick = React.useCallback(
-    (name: string) => {
-      setSelectedRegion(name)
-      const c = centroidsRef.current.find((x) => x.name === name)
-      if (c) flyToRegion(c)
+  const startCollaborationRecord = React.useCallback(
+    (trip: CollaborationTrip) => {
+      if (!currentUserId) return
+      setCollaborationRecordDraft({
+        key: trip.key,
+        region: trip.region,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        ...(trip.keyword ? { keyword: trip.keyword } : {}),
+      })
+      startDecorate(trip.region, "photo")
     },
-    [flyToRegion]
+    [currentUserId, startDecorate]
   )
 
-  // 지역당 최신 사진 1개, centroid 위치 고정 — 사진 개수·크기는 줌 레벨과 무관
-  const visiblePins = React.useMemo(() => {
-    const byRegion = new Map<string, (typeof photos)[number]>()
-    for (const p of photos) {
-      const existing = byRegion.get(p.region)
-      if (!existing || p.date > existing.date) byRegion.set(p.region, p)
-    }
-    return [...byRegion.values()].map((p) => {
-      const c = centroidMap.get(p.region)
-      return { ...p, pinLat: c?.lat ?? p.lat, pinLng: c?.lng ?? p.lng }
-    })
-  }, [photos, centroidMap])
+  const openCollaborationConfirm = React.useCallback(
+    (trip: CollaborationTrip) => {
+      openModal(
+        ({ close }) => (
+          <RecordTripConfirmContent
+            trip={trip}
+            regionName={formatRegionName(trip.region)}
+            onClose={() => {
+              setDismissedRecordTipKey(null)
+              close()
+            }}
+            onConfirm={() => {
+              setDismissedRecordTipKey(null)
+              close()
+              startCollaborationRecord(trip)
+            }}
+          />
+        ),
+        {
+          showCloseButton: false,
+          className:
+            "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+        }
+      )
+    },
+    [startCollaborationRecord]
+  )
 
-  const partySlots = React.useMemo<Array<PartySlot>>(() => {
-    if (!selectedRegion || partyMembers.length === 0) return []
-    const c = centroidMap.get(selectedRegion)
-    if (!c) return []
-    // 갤러리 최신 날짜 행과 동일 기준 — 가장 최근 여행 일자에 올린 사진만 슬롯에 매칭
-    const regionPhotos = photos.filter((p) => p.region === selectedRegion)
-    const latestDate = regionPhotos.reduce<string | null>(
-      (acc, p) => (acc === null || p.date > acc ? p.date : acc),
-      null
-    )
-    const photoByUser = new Map<string, (typeof photos)[number]>()
-    for (const p of regionPhotos) {
-      if (p.date === latestDate) photoByUser.set(p.uploaderId, p)
+  const latestTripsByRegionRef = React.useRef(latestTripsByRegion)
+  React.useEffect(() => {
+    latestTripsByRegionRef.current = latestTripsByRegion
+  }, [latestTripsByRegion])
+
+  const openCollaborationConfirmRef = React.useRef(openCollaborationConfirm)
+  React.useEffect(() => {
+    openCollaborationConfirmRef.current = openCollaborationConfirm
+  }, [openCollaborationConfirm])
+
+  const startDecorateRef = React.useRef(startDecorate)
+  React.useEffect(() => {
+    startDecorateRef.current = startDecorate
+  }, [startDecorate])
+
+  const handleFeatureClick = React.useCallback((name: string) => {
+    const latestTrip = latestTripsByRegionRef.current.get(name)
+    if (!latestTrip) {
+      setCollaborationRecordDraft(null)
+      startDecorateRef.current(name)
+      return
     }
-    // 내 슬롯이 배치의 마지막 자리(우하단)에 오도록 정렬
-    const ordered = [...partyMembers].sort(
-      (a, b) => Number(a.id === currentUserId) - Number(b.id === currentUserId)
-    )
-    const total = ordered.length
-    return ordered.map((member, i) => {
-      const photo = photoByUser.get(member.id) ?? null
-      const isMe = member.id === currentUserId
-      return {
-        region: selectedRegion,
-        lat: c.lat,
-        lng: c.lng,
-        memberId: member.id,
-        // 내 슬롯은 목 멤버 닉네임 대신 로그인한 세션 닉네임 노출
-        nickname: isMe
-          ? (currentUser?.nickname ?? member.nickname)
-          : member.nickname,
-        photo: photo ? { thumbnailUrl: photo.thumbnailUrl } : null,
-        isMe,
-        slotIndex: i,
-        totalSlots: total,
-      }
+
+    const stage = zoomStageRef.current
+    if (!latestTrip.isComplete && stage < 3) return
+
+    if (!latestTrip.hasMine) {
+      openCollaborationConfirmRef.current(latestTrip)
+      return
+    }
+
+    if (!latestTrip.isComplete) {
+      showToast({
+        message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
+        icon: "alert",
+        className: "bottom-[106px]",
+      })
+      return
+    }
+
+    setCollaborationRecordDraft(null)
+    startDecorateRef.current(name)
+  }, [])
+
+  const visiblePins = React.useMemo(() => {
+    const trips = visibleStickerTrips(collaborationTrips)
+    const regionCounts = new Map<string, number>()
+    return trips.flatMap((trip) => {
+      const keyword = findKeyword(trip.keyword)
+      if (!keyword) return []
+      const representative = trip.representativePhoto
+      const c = centroidMap.get(trip.region)
+      const offsetIndex = regionCounts.get(trip.region) ?? 0
+      regionCounts.set(trip.region, offsetIndex + 1)
+      return [
+        {
+          trip,
+          keyword,
+          pinLat: c?.lat ?? representative.lat,
+          pinLng: c?.lng ?? representative.lng,
+          offset: STICKER_OFFSETS[offsetIndex] ?? { x: 0, y: 0, rotate: 0 },
+        },
+      ]
     })
-  }, [
-    selectedRegion,
-    partyMembers,
-    photos,
-    centroidMap,
-    currentUser,
-    currentUserId,
-  ])
+  }, [collaborationTrips, centroidMap])
+
+  const handleTripMarkerClick = React.useCallback(
+    (trip: CollaborationTrip) => {
+      if (!trip.isComplete) {
+        showToast({
+          message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
+          icon: "alert",
+          className: "bottom-[106px]",
+        })
+        return
+      }
+
+      setCollaborationRecordDraft(null)
+      startDecorate(trip.region)
+    },
+    [startDecorate]
+  )
+
+  const collaborationMarkers = React.useMemo(
+    () =>
+      viewportCentroids
+        .map((centroid) => {
+          const trip = latestTripsByRegion.get(centroid.name)
+          return trip && !trip.isComplete ? { ...centroid, trip } : null
+        })
+        .filter((item): item is Centroid & { trip: CollaborationTrip } =>
+          Boolean(item)
+        ),
+    [latestTripsByRegion, viewportCentroids]
+  )
 
   return (
     <div className="relative size-full">
@@ -731,16 +930,12 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
           geojsonRef={geojsonRef}
           dataLayerRef={dataLayerRef}
           overlayRef={overlayRef}
-          fills={fills}
+          fills={mapFills}
           fillsRef={fillsRef}
           photoRegionSet={photoRegionSet}
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
+          incompleteRegionSet={incompleteRegionSet}
           decorating={decorating}
           decoratePreview={decoratePreview}
-          startDecorate={startDecorate}
-          flyToRegion={flyToRegion}
-          flyingRef={flyingRef}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
@@ -749,13 +944,12 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
         />
 
         {zoomStage >= 1 &&
-          !selectedRegion &&
           !decorating &&
           viewportCentroids
             // 줌 2단계(zoomStage 1)는 관광지 상위 30%만, 줌 3단계(zoomStage 2+)는 전부 노출
             .filter(
               ({ name }) =>
-                !Object.hasOwn(fills, name) &&
+                !Object.hasOwn(mapFills, name) &&
                 !photoRegionSet.has(name) &&
                 (zoomStage >= 2 || POPULAR_REGIONS.has(name))
             )
@@ -786,6 +980,81 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
               </AdvancedMarker>
             ))}
 
+        {zoomStage >= 3 &&
+          !decorating &&
+          collaborationMarkers.map(({ name, lng, lat, trip }) => (
+            <AdvancedMarker
+              key={`collaboration-${trip.key}`}
+              position={{ lat, lng }}
+              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+              clickable
+            >
+              <button
+                type="button"
+                aria-label={`${formatRegionName(name)} 여행 기록`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleFeatureClick(name)
+                }}
+                className="flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
+              >
+                <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+                  {trip.hasMine ? (
+                    <PenLine className="size-4 text-fg-neutral-bold" />
+                  ) : (
+                    <img src={iconAddSrc} alt="" className="size-5" />
+                  )}
+                </span>
+                <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+                  {formatRegionName(name)}
+                </span>
+                {trip.hasMine ? (
+                  <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
+                    <UserRound className="size-3.5 text-fg-neutral-solid" />
+                    <span className="text-fg-neutral-bold">
+                      {trip.uploadedCount}
+                    </span>
+                    <span className="text-fg-neutral-solid">
+                      /{trip.totalMembers}
+                    </span>
+                  </span>
+                ) : null}
+              </button>
+            </AdvancedMarker>
+          ))}
+
+        {visibleRecordTip?.center ? (
+          <AdvancedMarker
+            position={{
+              lat: visibleRecordTip.center.lat,
+              lng: visibleRecordTip.center.lng,
+            }}
+            anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+            clickable
+          >
+            <div className="-translate-y-8">
+              <MapPillTooltip
+                className="gap-1"
+                onClick={() => {
+                  setDismissedRecordTipKey(visibleRecordTip.trip.key)
+                  openCollaborationConfirm(visibleRecordTip.trip)
+                }}
+              >
+                {zoomStage >= 3 ? (
+                  "탭해서 기록하기"
+                ) : (
+                  <span className="flex items-center gap-1">
+                    ‘{formatRegionName(visibleRecordTip.trip.region)}’ 기록하기
+                    <span className="flex size-4 items-center justify-center rounded-full bg-bg-neutral-weak text-fg-neutral-bold">
+                      <ArrowRight className="size-3" />
+                    </span>
+                  </span>
+                )}
+              </MapPillTooltip>
+            </div>
+          </AdvancedMarker>
+        ) : null}
+
         {decorating && centroidMap.get(decorating) ? (
           <AdvancedMarker
             position={{
@@ -801,177 +1070,62 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
           </AdvancedMarker>
         ) : null}
 
-        {/* selectedRegion이 아니라 detailRegion 기준 — 핀 클릭 직후 카메라 비행 중에도
-            핀을 유지해 빈 지도가 보이지 않게 하고, 도착 시점에 슬롯과 교체한다 */}
-        {!detailRegion &&
-          !decorating &&
+        {!decorating &&
           visiblePins.map((p) => (
             <AdvancedMarker
-              key={`photo-${p.id}`}
+              key={`trip-${p.trip.key}`}
               position={{ lat: p.pinLat, lng: p.pinLng }}
-              anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
               clickable
             >
-              {/* 기록 플로우로 키워드를 고른 지역은 사진 대신 키워드 스티커를 붙인다
-                  (Figma 1836-14957) — 키워드 없는 기존 사진은 그대로 썸네일 핀 */}
-              {findKeyword(p.keyword) ? (
-                <button
-                  type="button"
-                  aria-label={`${formatRegionName(p.region)} 여행 기록 보기`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedRegion(p.region)
-                    const c = centroidMap.get(p.region)
-                    if (c) flyToRegion(c)
-                  }}
-                  className="transition-transform hover:scale-110 active:scale-95"
-                >
-                  <img
-                    src={findKeyword(p.keyword)!.emojiSrc}
-                    alt=""
-                    className="size-12"
-                  />
-                </button>
-              ) : (
-                <PhotoTile
-                  label={formatRegionName(p.region)}
-                  imageUrl={p.thumbnailUrl}
-                  size={PHOTO_PIN_SIZE}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedRegion(p.region)
-                    const c = centroidMap.get(p.region)
-                    if (c) flyToRegion(c)
-                  }}
-                />
-              )}
+              <button
+                type="button"
+                aria-label={`${formatRegionName(p.trip.region)} 여행 기록하기`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleTripMarkerClick(p.trip)
+                }}
+                className="transition-transform hover:scale-110 active:scale-95"
+                style={{
+                  transform: `translate(${p.offset.x}px, ${p.offset.y}px) rotate(${p.offset.rotate}deg)`,
+                }}
+              >
+                <img src={p.keyword.emojiSrc} alt="" className="size-10" />
+              </button>
             </AdvancedMarker>
           ))}
-
-        {/* 비행 도중 미리 뜨지 않도록 도착(지역 상세) 시점에 갤러리 패널과 함께 등장 */}
-        {detailRegion &&
-          partySlots.map((slot) => {
-            const offset = partySlotOffset(slot.totalSlots, slot.slotIndex)
-            const slotPhoto = slot.photo
-            return (
-              <AdvancedMarker
-                key={`slot-${slot.region}-${slot.memberId}`}
-                position={{ lat: slot.lat, lng: slot.lng }}
-                anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-                clickable
-              >
-                <div
-                  style={{
-                    transform: `translate(${offset[0]}px, ${offset[1]}px)`,
-                  }}
-                >
-                  {slotPhoto ? (
-                    <PhotoTile
-                      label={slot.nickname}
-                      imageUrl={slotPhoto.thumbnailUrl}
-                      size={SLOT_SIZE_2X}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openPhotoViewer({
-                          photos: [
-                            {
-                              id: slotPhoto.thumbnailUrl,
-                              imageUrl: slotPhoto.thumbnailUrl,
-                            },
-                          ],
-                        })
-                      }}
-                    />
-                  ) : (
-                    // 빈 슬롯도 PhotoTile과 동일한 닉네임 칩 노출 (칩 + 타일 세로 배치)
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="rounded-full bg-bg-neutral-weak px-3 py-1 text-h9 text-fg-neutral-bold shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
-                        {slot.nickname}
-                      </span>
-                      {slot.isMe ? (
-                        <button
-                          type="button"
-                          aria-label="내 사진 등록"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            pickImageFile((url) => {
-                              if (!currentUserId) return
-                              // 팟원들이 올린 이 지역 사진의 최신 날짜에 합류, 없으면 오늘
-                              const latestDate = photos
-                                .filter((p) => p.region === slot.region)
-                                .reduce<
-                                  string | null
-                                >((acc, p) => (acc === null || p.date > acc ? p.date : acc), null)
-                              addPhoto({
-                                id: `uploaded-${Date.now()}`,
-                                lat: slot.lat,
-                                lng: slot.lng,
-                                thumbnailUrl: url,
-                                date: latestDate ?? toISODate(new Date()),
-                                uploaderId: currentUserId,
-                                region: slot.region,
-                                potId: currentPotId,
-                              })
-                              // 갤러리 패널(하단 244px 노출) 위로 띄워 겹치지 않게
-                              showToast({
-                                message: "업로드가 완료됐어요",
-                                icon: "check",
-                                className: "bottom-[256px]",
-                              })
-                            })
-                          }}
-                          className="flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-white transition-colors hover:border-primary hover:bg-primary/5"
-                          style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                        >
-                          <Plus className="size-6 text-primary/60" />
-                        </button>
-                      ) : (
-                        <div
-                          className="flex items-center justify-center rounded-2xl border-2 border-dashed border-foreground/20 bg-white"
-                          style={{ width: SLOT_SIZE_2X, height: SLOT_SIZE_2X }}
-                        >
-                          <img
-                            src="/icon-zzz.svg"
-                            alt="사진 없음"
-                            className="size-9 opacity-70"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </AdvancedMarker>
-            )
-          })}
       </GoogleMap>
-
-      {detailRegion && !galleryExpanded ? (
-        <div className="absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
-          <div className="flex h-[76px] items-center justify-between px-4 py-2">
-            <ButtonIcon aria-label="뒤로 가기" onClick={handleBackToHome}>
-              <img src={iconArrowLeftSrc} alt="" className="size-6" />
-            </ButtonIcon>
-            <span className="text-h3 text-fg-neutral-bold">
-              {formatRegionName(detailRegion)}
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {detailRegion ? (
-        <GalleryPanel
-          key={detailRegion}
-          region={detailRegion}
-          expanded={galleryExpanded}
-          onExpandedChange={setGalleryExpanded}
-        />
-      ) : null}
 
       <RegionCardCarousel
         photos={photos}
         visible={zoomStage === 0 && !decorating}
         onSelectRegion={handleCarouselSelect}
       />
+
+      {visibleEncouragementTrip ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[130px] z-10 flex justify-center px-4">
+          <MapPillTooltip>{encouragementMessage}</MapPillTooltip>
+        </div>
+      ) : null}
+
+      {visibleCompletionTrip && completionTipKey ? (
+        <div className="absolute inset-x-0 bottom-[130px] z-10 flex justify-center px-4">
+          <MapPillTooltip
+            onClick={() => {
+              markCompletionTipSeen(completionTipKey)
+              setCompletionTipKey(null)
+              router.navigate({
+                to: "/travel-album/$region",
+                params: { region: visibleCompletionTrip.region },
+              })
+            }}
+          >
+            ‘{currentPotName}’ {formatRegionName(visibleCompletionTrip.region)}{" "}
+            여행 기록 완료 했어요!{" "}
+            <span className="underline underline-offset-2">보러가기</span>
+          </MapPillTooltip>
+        </div>
+      ) : null}
 
       {/* 안내를 봤지만 아직 아무것도 기록하지 않은 유저에게 진입점을 다시 노출 (Figma 1836-15911 #1-1).
           하단 내비(약 75px) 위에 띄우고, 누르면 기본 위치(강원도)로 줌인해 지역을 고르게 한다 */}
@@ -992,11 +1146,19 @@ function TravelMapGoogleInner({ onRegionDetailChange }: TravelMapImplProps) {
 
       {decorating && centroidMap.get(decorating) ? (
         <TravelRecordFlow
+          key={`${decorating}-${collaborationRecordDraft?.key ?? "new"}`}
           region={decorating}
           center={{
             lat: centroidMap.get(decorating)!.lat,
             lng: centroidMap.get(decorating)!.lng,
           }}
+          collaborationTrip={
+            collaborationRecordDraft?.region === decorating
+              ? collaborationRecordDraft
+              : null
+          }
+          onClose={() => setCollaborationRecordDraft(null)}
+          onComplete={() => setCollaborationRecordDraft(null)}
         />
       ) : null}
     </div>
