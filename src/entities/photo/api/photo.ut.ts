@@ -1,4 +1,5 @@
 import type { Photo } from "../model/types"
+import type { TravelKeywordId } from "../model/keywords"
 import utGeojeSrc from "@/shared/assets/ut-거제.jpg"
 import utGeoje2Src from "@/shared/assets/ut-거제-2.jpg"
 import utGeoje3Src from "@/shared/assets/ut-거제-3.jpg"
@@ -34,6 +35,7 @@ type UtRegionSeed = {
   thumbnailUrl: string
   altUrls: [string, string]
   dates: [string, string, string]
+  keyword: TravelKeywordId
 }
 
 const UT_REGIONS: Array<UtRegionSeed> = [
@@ -44,6 +46,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utSeoulSrc,
     altUrls: [utSeoul2Src, utSeoul3Src],
     dates: ["2026-06-05", "2026-06-06", "2026-06-07"],
+    keyword: "vibe",
   },
   {
     region: "양양군",
@@ -52,6 +55,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utYangyangSrc,
     altUrls: [utYangyang2Src, utYangyang3Src],
     dates: ["2026-07-03", "2026-07-04", "2026-07-05"],
+    keyword: "nature",
   },
   {
     region: "대전광역시",
@@ -60,6 +64,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utDaejeonSrc,
     altUrls: [utDaejeon2Src, utDaejeon3Src],
     dates: ["2026-06-19", "2026-06-20", "2026-06-21"],
+    keyword: "bread",
   },
   {
     region: "포항시",
@@ -68,6 +73,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utPohangSrc,
     altUrls: [utPohang2Src, utPohang3Src],
     dates: ["2026-05-15", "2026-05-16", "2026-05-17"],
+    keyword: "activity",
   },
   {
     region: "경주시",
@@ -76,6 +82,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGyeongjuSrc,
     altUrls: [utGyeongju2Src, utGyeongju3Src],
     dates: ["2026-04-17", "2026-04-18", "2026-04-19"],
+    keyword: "shopping",
   },
   {
     region: "부산광역시",
@@ -84,6 +91,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utBusanSrc,
     altUrls: [utBusan2Src, utBusan3Src],
     dates: ["2026-06-27", "2026-06-28", "2026-06-29"],
+    keyword: "activity",
   },
   {
     region: "거제시",
@@ -92,6 +100,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGeojeSrc,
     altUrls: [utGeoje2Src, utGeoje3Src],
     dates: ["2026-05-29", "2026-05-30", "2026-05-31"],
+    keyword: "nature",
   },
 ]
 
@@ -102,16 +111,23 @@ const UT_POT_OTHERS: Record<string, Array<string>> = {
   "pot-ut-3": ["m-김수연-0", "m-장서휘-1", "m-전계원-2"],
 }
 
+type UtUpload = {
+  date: string
+  uploaderId: string
+  url: string
+  endDate?: string
+}
+
 // 지역당 5장: 앞선 두 일자는 나·멤버 1명, 가장 최근 일자는 나를 제외한 전원 업로드
 // → 어느 지역이든 내가 마지막으로 업로드하는 시나리오(완료 애니메이션)를 테스트할 수 있다.
 // 최근 일자의 첫 장(others[0])만 대표 사진을 써 지도 핀·지역 카드 썸네일을 유지하고,
 // 나머지 멤버 사진은 같은 지역의 다른 여행 사진(altUrls)으로 채워 중복돼 보이지 않게 한다
-export const UT_PHOTOS: Array<Photo> = Object.entries(UT_POT_OTHERS).flatMap(
+const BASE_UT_PHOTOS: Array<Photo> = Object.entries(UT_POT_OTHERS).flatMap(
   ([potId, others]) =>
     UT_REGIONS.flatMap((r, ri) => {
       const [first, second, latest] = r.dates
       const [alt1, alt2] = r.altUrls
-      const uploads = [
+      const uploads: Array<UtUpload> = [
         { date: first, uploaderId: "user-1", url: alt2 },
         { date: second, uploaderId: others[ri % others.length], url: alt1 },
         { date: latest, uploaderId: others[0], url: r.thumbnailUrl },
@@ -126,8 +142,99 @@ export const UT_PHOTOS: Array<Photo> = Object.entries(UT_POT_OTHERS).flatMap(
         lat: r.lat + i * 0.006,
         lng: r.lng + i * 0.006,
         date: u.date,
+        ...(u.endDate ? { endDate: u.endDate } : {}),
         uploaderId: u.uploaderId,
         thumbnailUrl: u.url,
+        keyword: r.keyword,
       }))
     })
 )
+
+// Figma 1836 협업 상태 확인용 추가 seed.
+// 기본 선택 팟(pot-ut-1)에서 아래 상태를 바로 볼 수 있게 날짜를 기존 seed와
+// 하루 이상 띄워 별도 여행으로 분리한다.
+const UT_DESIGN_PREVIEW_PHOTOS: Array<Photo> = [
+  // 1836:14205 + 1864:11514 — 내가 아직 기록하지 않은 최신 강릉 여행.
+  ...[
+    {
+      uploaderId: "m-축구왕 준표-0",
+      url: utYangyangSrc,
+      latOffset: 0,
+      lngOffset: 0,
+    },
+    {
+      uploaderId: "m-존잘 창우-1",
+      url: utYangyang2Src,
+      latOffset: 0.006,
+      lngOffset: 0.006,
+    },
+    {
+      uploaderId: "m-사진작가 정우-2",
+      url: utYangyang3Src,
+      latOffset: -0.006,
+      lngOffset: -0.006,
+    },
+  ].map((u, i) => ({
+    id: `ut-design-pot-ut-1-gangneung-missing-${i}`,
+    potId: "pot-ut-1",
+    region: "강릉시",
+    lat: 37.752 + u.latOffset,
+    lng: 128.876 + u.lngOffset,
+    date: "2026-08-01",
+    endDate: "2026-08-02",
+    uploaderId: u.uploaderId,
+    thumbnailUrl: u.url,
+    keyword: "bread" as const,
+  })),
+
+  // 1836:14569 — 내가 기록했지만 팟원들이 아직 기록하지 않은 1/4 상태.
+  {
+    id: "ut-design-pot-ut-1-daejeon-mine-incomplete",
+    potId: "pot-ut-1",
+    region: "대전광역시",
+    lat: 36.3504,
+    lng: 127.3845,
+    date: "2026-08-03",
+    uploaderId: "user-1",
+    thumbnailUrl: utDaejeonSrc,
+    keyword: "bread",
+  },
+
+  // 1836:14270 — 팟원 전원이 완료한 최신 완료 여행.
+  ...[
+    { uploaderId: "user-1", url: utSeoulSrc, latOffset: 0, lngOffset: 0 },
+    {
+      uploaderId: "m-축구왕 준표-0",
+      url: utSeoul2Src,
+      latOffset: 0.006,
+      lngOffset: 0.006,
+    },
+    {
+      uploaderId: "m-존잘 창우-1",
+      url: utSeoul3Src,
+      latOffset: -0.006,
+      lngOffset: -0.006,
+    },
+    {
+      uploaderId: "m-사진작가 정우-2",
+      url: utSeoulSrc,
+      latOffset: 0.012,
+      lngOffset: -0.012,
+    },
+  ].map((u, i) => ({
+    id: `ut-design-pot-ut-1-seoul-complete-${i}`,
+    potId: "pot-ut-1",
+    region: "서울특별시",
+    lat: 37.5665 + u.latOffset,
+    lng: 126.978 + u.lngOffset,
+    date: "2026-07-28",
+    uploaderId: u.uploaderId,
+    thumbnailUrl: u.url,
+    keyword: "vibe" as const,
+  })),
+]
+
+export const UT_PHOTOS: Array<Photo> = [
+  ...BASE_UT_PHOTOS,
+  ...UT_DESIGN_PREVIEW_PHOTOS,
+]
