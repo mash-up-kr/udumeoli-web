@@ -76,6 +76,10 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
                 "bg-bg-brand-weak text-fg-brand-solid hover:bg-bg-brand-weak",
               modifiers.selected &&
                 "bg-bg-brand-solid text-fg-neutral-inverse hover:bg-bg-brand-solid",
+              // 기간(range) 선택 — 시작·끝은 solid, 사이 날짜는 weak.
+              // 셀 사이에 여백이 있어 막대로 잇지 않고 today와 같은 톤의 원형으로 표시한다
+              modifiers.range_middle &&
+                "bg-bg-brand-weak text-fg-brand-solid hover:bg-bg-brand-weak",
               modifiers.disabled && "opacity-40 hover:bg-transparent",
               cls
             )}

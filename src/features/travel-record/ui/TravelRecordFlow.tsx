@@ -1,85 +1,75 @@
 import * as React from "react"
-import { Plus } from "lucide-react"
 
-import { partySlotOffset } from "../lib/slot-layout"
-import { useDecorateStore } from "../model/decorate.store"
-import type { DecorateStep } from "../model/decorate.store"
+import { visitLabel } from "../lib/format"
+import { useRecordStore } from "../model/record.store"
+import { DateStep } from "./DateStep"
+import { KeywordStep } from "./KeywordStep"
+import { PhotoStep } from "./PhotoStep"
+import { PreviewStep } from "./PreviewStep"
+import type { DateRange } from "react-day-picker"
 
-import type { RegionFill } from "@/entities/region"
+import type { TravelKeywordId } from "@/entities/photo"
+import {
+  findKeyword,
+  groupTrips,
+  useAllPhotos,
+  usePhotoUploadStore,
+} from "@/entities/photo"
+import { formatRegionName, useRegionColorStore } from "@/entities/region"
+import { usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
+import { cn } from "@/shared/lib/utils"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
-import { Calendar } from "@/shared/ui/calendar"
-import { ColorSwatch } from "@/shared/ui/color-swatch"
-import { Profile } from "@/shared/ui/profile"
-import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
-import { usePhotoUploadStore } from "@/entities/photo"
-import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
-import { formatRegionName, useRegionColorStore } from "@/entities/region"
-import { useSessionStore } from "@/entities/user"
-
-// 피그마 Color Swatch 팔레트 — fill: primitive 100, stroke: primitive 500 토큰 값.
-// MapLibre feature-state/paint가 CSS 변수를 해석하지 못해 hex로 직접 저장한다.
-const PALETTE = [
-  { fill: "#ffc5bf", stroke: "#e8453a" }, // red
-  { fill: "#ffdab5", stroke: "#e3800f" }, // orange
-  { fill: "#fff0b1", stroke: "#dbb71f" }, // yellow
-  { fill: "#c8f0c0", stroke: "#7cb571" }, // green
-  { fill: "#d1eafd", stroke: "#6cbcf9" }, // blue
-  { fill: "#c4c8ff", stroke: "#7b7fbf" }, // indigo
-  { fill: "#e4bfff", stroke: "#b689d7" }, // violet
-]
-
-const STEP_TITLE: Record<DecorateStep, (region: string) => string> = {
-  color: (region) => `당신에게 ${region}은\n어떤 색상인가요?`,
-  date: () => "다녀온 날짜를\n선택해 주세요",
-  photo: () => "가장 기억에 남는\n사진 한 장을 올려 주세요",
-}
 
 function toISODate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-const SLOT_SIZE = 80
-
-type RegionDecorateFlowProps = {
+type TravelRecordFlowProps = {
   region: string
   /** 사진 등록 좌표 (지역 centroid) */
   center: { lat: number; lng: number }
 }
 
 /**
- * 첫 여행 등록 멀티스텝 플로우 (색상 → 날짜 → 사진).
- * 지도 위 풀스크린 오버레이 — 지도 조작은 TravelMapImpl이 잠금/점선 처리.
+ * 여행 기록 플로우 (기간 → 키워드 → 사진·코멘트 → 확인) — Figma 1836-15911.
+ * 지도 위 풀스크린 오버레이. 지도 조작은 TravelMapGoogleImpl이 잠금/점선 처리한다.
  */
-export function RegionDecorateFlow({
-  region,
-  center,
-}: RegionDecorateFlowProps) {
+export function TravelRecordFlow({ region, center }: TravelRecordFlowProps) {
   const currentPotId = usePotStore((s) => s.currentPotId)
-  const partyMembers = usePotStore(selectCurrentPotMembers)
-  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const currentUserId = currentUser?.id ?? null
   const setColor = useRegionColorStore((s) => s.setColor)
   const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
-  const step = useDecorateStore((s) => s.step)
-  const goStep = useDecorateStore((s) => s.setStep)
-  const setPreview = useDecorateStore((s) => s.setPreview)
-  const onClose = useDecorateStore((s) => s.close)
+  const photos = useAllPhotos(currentPotId)
+  const step = useRecordStore((s) => s.step)
+  const goStep = useRecordStore((s) => s.setStep)
+  const setPreview = useRecordStore((s) => s.setPreview)
+  const onClose = useRecordStore((s) => s.close)
 
-  const [fill, setFill] = React.useState<RegionFill | null>(null)
-  // 캘린더 진입 시 오늘 날짜 기본 선택 (Figma 1319-17083 #4)
-  const [date, setDate] = React.useState<Date>(() => new Date())
+  const [range, setRange] = React.useState<DateRange | undefined>()
+  const [keywordId, setKeywordId] = React.useState<TravelKeywordId | null>(null)
   const [photoUrl, setPhotoUrl] = React.useState<string | null>(null)
+  const [comment, setComment] = React.useState("")
   const photoInputRef = React.useRef<HTMLInputElement>(null)
 
+  const keyword = findKeyword(keywordId ?? undefined)
+  const regionName = formatRegionName(region)
+
+  // 이번 기록이 이 지역의 몇 번째 방문인지 — 기존 방문 수 + 1 (Figma #3·#5)
+  const nth = React.useMemo(() => {
+    const regionPhotos = photos.filter((p) => p.region === region)
+    return groupTrips(regionPhotos).length + 1
+  }, [photos, region])
+
   const handleBack = () => {
-    if (step === "color") onClose()
-    else if (step === "date") {
-      // 선택 중이던 날짜는 저장하지 않고 오늘로 초기화 (Figma 1319-17083 #1)
-      setDate(new Date())
-      goStep("color")
-    } else goStep("date")
+    if (step === "date") onClose()
+    else if (step === "keyword") goStep("date")
+    else if (step === "photo") goStep("keyword")
+    else goStep("photo")
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,188 +82,160 @@ export function RegionDecorateFlow({
     })
   }
 
-  const handleConfirm = () => {
-    if (step === "color") {
-      if (fill) goStep("date")
-      return
-    }
-    if (step === "date") {
-      goStep("photo")
-      return
-    }
-    // photo — 최종 커밋
-    if (fill?.type !== "color" || !photoUrl || !currentUserId) return
-    setColor(currentPotId, region, fill.value)
+  const handleNext = () => {
+    if (step === "date") goStep("keyword")
+    else if (step === "keyword") goStep("photo")
+    else if (step === "photo") goStep("preview")
+  }
+
+  // 최종 커밋 — 지역 색상(키워드 기준) + 사진 등록 후 지도로 복귀
+  const handleCommit = () => {
+    if (!keyword || !photoUrl || !currentUserId || !range?.from) return
+    const startDate = toISODate(range.from)
+    const endDate = range.to ? toISODate(range.to) : undefined
+    setColor(currentPotId, region, keyword.fill)
     addPhoto({
       id: `up-${region}-${Date.now()}`,
       region,
-      date: toISODate(date),
+      date: startDate,
+      ...(endDate && endDate !== startDate ? { endDate } : {}),
       lat: center.lat,
       lng: center.lng,
       thumbnailUrl: photoUrl,
       uploaderId: currentUserId,
       potId: currentPotId,
+      keyword: keyword.id,
+      ...(comment.trim() ? { comment: comment.trim() } : {}),
     })
     onClose()
-    // 지역 상세로 복귀하며 완료 토스트 3초 노출 — 갤러리 패널(하단 244px) 위 (Figma 1340-18364)
+    // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게 (Figma 1836-14957 #16)
     showToast({
-      message: "업로드가 완료됐어요",
+      message: `'${regionName}' 여행 Pinned 완료!`,
       icon: "check",
       className: "bottom-[256px]",
     })
   }
 
-  // date 스텝은 오늘이 기본 선택이라 확인이 항상 활성 (Figma 1319-17083 #6)
-  const confirmDisabled =
-    (step === "color" && fill === null) ||
+  const nextDisabled =
+    (step === "date" && !range?.from) ||
+    (step === "keyword" && keywordId === null) ||
     (step === "photo" && photoUrl === null)
 
-  // 내 슬롯이 배치의 마지막 자리(우하단 큰 슬롯)에 오도록 정렬
-  const orderedMembers = [...partyMembers].sort(
-    (a, b) => Number(a.id === currentUserId) - Number(b.id === currentUserId)
-  )
-
-  const selectedColor = fill?.type === "color" ? fill.value : null
-  const uploadedCount = photoUrl ? 1 : 0
+  if (step === "preview" && keyword && photoUrl && range?.from) {
+    const startDate = toISODate(range.from)
+    const endDate = range.to ? toISODate(range.to) : undefined
+    return (
+      <PreviewStep
+        keyword={keyword}
+        startDate={startDate}
+        {...(endDate ? { endDate } : {})}
+        photoUrl={photoUrl}
+        comment={comment}
+        nickname={currentUser?.nickname ?? "나"}
+        profileImageUrl={currentUser?.profileImageUrl ?? null}
+        onBack={handleBack}
+        onConfirm={handleCommit}
+      />
+    )
+  }
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20">
-      {/* 상/하단 화이트 그라디언트 */}
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-white/0" />
-      <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-white/0" />
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col">
+      {/* 지도를 흐리게 깔고 상·하단은 흰 그라디언트로 덮어 글자 가독성 확보 */}
+      <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
+      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-transparent" />
 
-      {/* 헤더 — 뒤로가기 + 스텝 타이틀 (Figma 1245-8962) */}
-      <div className="absolute inset-x-0 top-0 flex flex-col px-4 pt-[env(safe-area-inset-top)]">
-        <div className="flex h-[76px] items-center">
-          <ButtonIcon
-            aria-label="뒤로 가기"
-            onClick={handleBack}
-            className="pointer-events-auto"
-          >
-            <img src={iconArrowLeftSrc} alt="" className="size-6" />
-          </ButtonIcon>
-        </div>
-        <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-          {STEP_TITLE[step](formatRegionName(region))}
-        </h2>
+      <div className="relative flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
+        <ButtonIcon
+          aria-label="뒤로 가기"
+          onClick={handleBack}
+          className="pointer-events-auto"
+        >
+          <img src={iconArrowLeftSrc} alt="" className="size-6" />
+        </ButtonIcon>
       </div>
 
-      {/* Step 3 — 파티 슬롯 (지역이 화면 중앙에 맞춰진 상태 기준 인원수별 배치) */}
-      {step === "photo" ? (
-        <div className="absolute top-[44%] left-1/2">
-          {orderedMembers.map((member, i) => {
-            const [dx, dy] = partySlotOffset(orderedMembers.length, i)
-            const isMe = member.id === currentUserId
-            return (
-              <div
-                key={member.id}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
-                style={{ left: dx, top: dy }}
-              >
-                {isMe ? (
-                  <div className="relative flex flex-col items-center">
-                    <button
-                      type="button"
-                      aria-label="내 사진 올리기"
-                      onClick={() => photoInputRef.current?.click()}
-                      className="pointer-events-auto flex items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-stroke-neutral-bold bg-white/90 transition-transform active:scale-95"
-                      style={{ width: SLOT_SIZE, height: SLOT_SIZE }}
-                    >
-                      {photoUrl ? (
-                        <img
-                          src={photoUrl}
-                          alt=""
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <Plus className="size-8 text-fg-neutral-bold" />
-                      )}
-                    </button>
-                    {!photoUrl ? (
-                      <Tooltip className="absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2">
-                        내 사진 올리기
-                      </Tooltip>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div
-                    className="relative flex items-center justify-center rounded-3xl border-2 border-dashed border-stroke-neutral-weak bg-white/90"
-                    style={{ width: SLOT_SIZE, height: SLOT_SIZE }}
-                  >
-                    <img
-                      src="/icon-zzz.svg"
-                      alt="사진 없음"
-                      className="size-9 opacity-70"
-                    />
-                    <Profile
-                      size="sm"
-                      src={member.profileImageUrl ?? undefined}
-                      className="absolute top-[7px] left-[7px]"
-                    />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ) : null}
-
-      {/* 하단 패널 — 스텝별 콘텐츠 + 확인 */}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 flex flex-col items-center gap-[27px] px-4 pb-[34px]">
-        {step === "color" ? (
-          <div className="flex w-full [scrollbar-width:none] items-center gap-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
-            <ColorSwatch
-              variant="empty"
-              selected={fill === null}
-              aria-label="색상 없음"
-              onClick={() => {
-                setFill(null)
-                setPreview(null)
-              }}
-            />
-            <span className="h-8 w-px shrink-0 rounded-full bg-stroke-neutral-subtle" />
-            {PALETTE.map((color) => (
-              <ColorSwatch
-                key={color.fill}
-                variant="color"
-                color={color.fill}
-                selected={selectedColor === color.fill}
-                aria-label={`색상 ${color.fill}`}
-                onClick={() => {
-                  // 스와치 탭 즉시 지도 채움 미리보기 — 확인 전에 여러 색을 비교
-                  setFill({ type: "color", value: color.fill })
-                  setPreview(color)
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-
-        {step === "date" ? (
-          <Calendar
-            mode="single"
-            required
-            selected={date}
-            onSelect={setDate}
-            classNames={{ root: "w-full" }}
-          />
-        ) : null}
-
-        {step === "photo" ? (
-          <p className="rounded-full bg-bg-neutral-weak px-4 py-2 text-b6 text-fg-neutral-bold shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-            {partyMembers.length}명 중 {uploadedCount}명이 업로드했어요
+      {/* 회차 칩 + 스텝 타이틀 */}
+      <div className="relative flex shrink-0 flex-col items-center gap-2 px-4">
+        <span className="rounded-full bg-white/40 px-3 py-1 text-h9 text-fg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+          {visitLabel(nth, regionName)}
+        </span>
+        <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+          {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
+          {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
+          {step === "photo" && keyword ? (
+            <>
+              <span className="underline" style={{ color: keyword.stroke }}>
+                {keyword.label}!투어
+              </span>
+              {" 대표 사진 1장을\n업로드 해주세요"}
+            </>
+          ) : null}
+        </h2>
+        {step === "keyword" ? (
+          <p className="text-h8-1 text-fg-neutral-solid [text-shadow:0_0_32px_white]">
+            키워드 스티커를 지도 위에 붙일 수 있어요
           </p>
         ) : null}
+      </div>
 
-        <input
-          ref={photoInputRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={handlePhotoUpload}
-        />
+      {/* 스텝 콘텐츠 — date는 하단(캘린더), keyword는 중앙, photo는 남는 공간을 채움.
+          낮은 화면에서 캘린더가 타이틀을 덮지 않도록 넘치면 스크롤한다 (justify-end 대신
+          margin auto — justify-end + overflow 조합은 넘칠 때 위쪽이 잘려 접근 불가) */}
+      <div className="pointer-events-auto relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4">
+        <div
+          className={cn(
+            "flex flex-col gap-3",
+            step === "keyword" && "my-auto",
+            step === "date" && "mt-auto",
+            step === "photo" && "min-h-0 flex-1"
+          )}
+        >
+          {step === "date" ? (
+            <DateStep
+              range={range}
+              onRangeChange={setRange}
+              revisit={nth > 1}
+            />
+          ) : null}
 
-        <ButtonCta disabled={confirmDisabled} onClick={handleConfirm}>
+          {step === "keyword" ? (
+            <KeywordStep
+              selected={keywordId}
+              onSelect={(id) => {
+                setKeywordId(id)
+                // 선택 즉시 지도 지역에 색 미리보기 (확인 전에도 결과를 볼 수 있게)
+                const picked = findKeyword(id)
+                setPreview(
+                  picked ? { fill: picked.fill, stroke: picked.stroke } : null
+                )
+              }}
+            />
+          ) : null}
+
+          {step === "photo" && keyword ? (
+            <PhotoStep
+              keyword={keyword}
+              photoUrl={photoUrl}
+              onPickPhoto={() => photoInputRef.current?.click()}
+              comment={comment}
+              onCommentChange={setComment}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handlePhotoUpload}
+      />
+
+      <div className="pointer-events-auto relative shrink-0 px-4 pt-6 pb-[max(env(safe-area-inset-bottom),34px)]">
+        <ButtonCta disabled={nextDisabled} onClick={handleNext}>
           확인
         </ButtonCta>
       </div>
