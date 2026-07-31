@@ -99,7 +99,7 @@ export function openConfirm({
             </DialogDescription>
           ) : null}
         </DialogHeader>
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-3">
           <ButtonCta
             variant="secondary"
             className="w-25 shrink-0"
