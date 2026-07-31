@@ -34,6 +34,17 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
   })
 )
 
+// 여행 앨범 목데이터 전용 4인 팟 — photo.mock ALBUM_PHOTOS의 uploaderId
+// (user-1, m-유지-0, m-성아-1, m-가연-2)와 일치해야 앨범/지도 슬롯에 매칭된다.
+// 온보딩을 마친(팟 보유) 유저에게 pot.store가 자동 주입한다.
+export const ALBUM_POT: TravelPot = {
+  id: "pot-album-1",
+  name: "우두머리",
+  inviteCode: "260620",
+  members: [ME, ...members(["유지", "성아", "가연"])],
+  joinedAt: "2026-06-20",
+}
+
 // 1차 UT 시드용 팟 3개 — 각 팟은 나(user-1) 포함 4인.
 // 사진 시드(photo.ut)의 potId·uploaderId(UT_POT_OTHERS)와 일치해야 함
 export const UT_POTS: Array<TravelPot> = [
