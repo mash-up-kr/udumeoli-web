@@ -18,11 +18,13 @@ function TextField({
   className,
   maxLength,
   value,
+  inputClassName,
   ...props
 }: React.ComponentProps<typeof Input> & {
   label?: React.ReactNode
   error?: React.ReactNode
   description?: React.ReactNode
+  inputClassName?: string
 }) {
   const generatedId = React.useId()
   const inputId = id ?? generatedId
@@ -44,7 +46,7 @@ function TextField({
           maxLength={maxLength}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={cn(showCounter && "pr-16")}
+          className={cn(showCounter && "pr-16", inputClassName)}
           {...props}
         />
         {showCounter ? (

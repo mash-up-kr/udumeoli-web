@@ -74,7 +74,10 @@ function Profile({
         <button
           type="button"
           aria-label="프로필 사진 변경"
-          onClick={onImageClick}
+          onClick={(event) => {
+            event.stopPropagation()
+            onImageClick?.()
+          }}
           className={cn(
             "absolute right-0 bottom-0 flex items-center justify-center rounded-full bg-bg-neutral-inverse text-fg-neutral-inverse",
             size === "xl" ? "p-2" : "p-1"

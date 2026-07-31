@@ -5,7 +5,6 @@ import { persist } from "zustand/middleware"
 import {
   JOIN_ERROR_CODES,
   JOIN_PREVIEW,
-  MOCK_POTS,
   UT_POTS,
   makeInviteCode,
 } from "../api/pot.mock"
@@ -17,14 +16,43 @@ interface PotState {
   seedUtPots: () => void
   selectPot: (id: string) => void
   createPot: (name: string, creator: PotMember) => TravelPot
+  renamePot: (id: string, name: string) => void
+  deletePot: (id: string) => void
+  leavePot: (id: string, memberId: string) => void
+  leaveAllByMember: (memberId: string) => void
   resetPots: () => void
-  previewJoin: (code: string) => JoinPreviewResult
-  confirmJoin: (pot: TravelPot) => void
+  previewJoin: (code: string, memberId?: string | null) => JoinPreviewResult
+  confirmJoin: (pot: TravelPot, member?: PotMember) => void
 }
 
 // 팟 미선택/미존재 시에도 안정 참조를 반환하기 위한 상수 — 셀렉터가 매번
 // 새 배열을 만들면 useSyncExternalStore가 무한 리렌더에 빠진다
 const EMPTY_MEMBERS: Array<PotMember> = []
+const POT_CAPACITY = 6
+
+function todayStamp(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+function makePotId(): string {
+  return `pot-${globalThis.crypto.randomUUID()}`
+}
+
+export function potHasMember(
+  pot: TravelPot,
+  memberId: string | null | undefined
+): boolean {
+  return !!memberId && pot.members.some((member) => member.id === memberId)
+}
+
+export function getMemberPots(
+  pots: Array<TravelPot>,
+  memberId: string | null | undefined
+): Array<TravelPot> {
+  if (!memberId) return []
+  return pots.filter((pot) => potHasMember(pot, memberId))
+}
 
 /** 현재 선택된 팟의 멤버 목록 (팟이 없으면 안정된 빈 배열) */
 export const selectCurrentPotMembers = (s: PotState): Array<PotMember> =>
@@ -51,29 +79,127 @@ export const usePotStore = create<PotState>()(
       // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
       createPot: (name, creator) => {
         const pot: TravelPot = {
-          id: `pot-${MOCK_POTS.length}-${name}`,
+          id: makePotId(),
           name,
           inviteCode: makeInviteCode(),
           members: [creator],
+          joinedAt: todayStamp(),
         }
         set((s) => ({ pots: [...s.pots, pot], currentPotId: pot.id }))
         return pot
       },
+      renamePot: (id, name) =>
+        set((s) => ({
+          pots: s.pots.map((pot) =>
+            pot.id === id ? { ...pot, name: name.trim() } : pot
+          ),
+        })),
+      deletePot: (id) =>
+        set((s) => ({
+          pots: s.pots.filter((pot) => pot.id !== id),
+          currentPotId: s.currentPotId === id ? "" : s.currentPotId,
+        })),
+      leavePot: (id, memberId) =>
+        set((s) => {
+          const pots = s.pots.map((pot) => {
+            if (pot.id !== id) return pot
+
+            const members = pot.members.filter((m) => m.id !== memberId)
+            const removed = pot.members.length - members.length
+
+            return removed > 0
+              ? {
+                  ...pot,
+                  members,
+                  vacantSlots: (pot.vacantSlots ?? 0) + removed,
+                }
+              : pot
+          })
+
+          return {
+            pots,
+            currentPotId:
+              s.currentPotId === id
+                ? (getMemberPots(pots, memberId).at(0)?.id ?? "")
+                : s.currentPotId,
+          }
+        }),
+      // 계정 삭제/탈퇴 시 사용자를 모든 팟에서 제거한다. 팟은 유지하고 제거된 인원만
+      // vacantSlots로 남겨 백엔드의 "공석 전환" 동작과 같은 의미를 보존한다.
+      leaveAllByMember: (memberId) =>
+        set((s) => {
+          const pots = s.pots.map((pot) => {
+            const members = pot.members.filter((m) => m.id !== memberId)
+            const removed = pot.members.length - members.length
+            return removed > 0
+              ? {
+                  ...pot,
+                  members,
+                  vacantSlots: (pot.vacantSlots ?? 0) + removed,
+                }
+              : pot
+          })
+
+          return { pots, currentPotId: "" }
+        }),
       // 계정 삭제 시 로컬 팟 상태 초기화 — 재가입하면 신규 유저 기준 팟 없는 상태로 시작
       resetPots: () => set({ pots: [], currentPotId: "" }),
-      previewJoin: (code) => {
-        if (get().pots.some((p) => p.inviteCode === code)) {
-          return { status: "already_joined" }
+      previewJoin: (code, memberId) => {
+        const existingPot = get().pots.find((p) => p.inviteCode === code)
+        if (existingPot) {
+          if (!memberId || potHasMember(existingPot, memberId)) {
+            return { status: "already_joined" }
+          }
+          if (
+            existingPot.members.length >= POT_CAPACITY &&
+            (existingPot.vacantSlots ?? 0) <= 0
+          ) {
+            return { status: "full" }
+          }
+          return { status: "ok", pot: existingPot }
         }
         if (code === JOIN_ERROR_CODES.notFound) return { status: "not_found" }
         if (code === JOIN_ERROR_CODES.full) return { status: "full" }
         return { status: "ok", pot: { ...JOIN_PREVIEW, inviteCode: code } }
       },
-      confirmJoin: (pot) =>
-        set((s) => ({
-          pots: s.pots.some((p) => p.id === pot.id) ? s.pots : [...s.pots, pot],
-          currentPotId: pot.id,
-        })),
+      confirmJoin: (pot, member) =>
+        set((s) => {
+          const existingPot = s.pots.find((p) => p.id === pot.id)
+          if (existingPot) {
+            const pots = s.pots.map((p) => {
+              if (p.id !== pot.id) return p
+              if (!member || potHasMember(p, member.id)) return p
+              if (
+                p.members.length >= POT_CAPACITY &&
+                (p.vacantSlots ?? 0) <= 0
+              ) {
+                return p
+              }
+              return {
+                ...p,
+                members: [...p.members, member],
+                joinedAt: todayStamp(),
+                vacantSlots: Math.max(0, (p.vacantSlots ?? 0) - 1),
+              }
+            })
+            return { pots, currentPotId: pot.id }
+          }
+
+          return {
+            pots: [
+              ...s.pots,
+              {
+                ...pot,
+                members:
+                  member && !pot.members.some((m) => m.id === member.id)
+                    ? [...pot.members, member]
+                    : pot.members,
+                joinedAt: todayStamp(),
+              },
+            ],
+            currentPotId: pot.id,
+          }
+        }),
     }),
     { name: "photato-pots" }
   )

@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as SignupRouteImport } from './app/routes/signup'
 import { Route as PotStartRouteImport } from './app/routes/pot-start'
 import { Route as PotCreateRouteImport } from './app/routes/pot-create'
+import { Route as MyPageRouteImport } from './app/routes/my-page'
 import { Route as MapGoogleRouteImport } from './app/routes/map-google'
 import { Route as IndexRouteImport } from './app/routes/index'
 import { Route as TravelAlbumIndexRouteImport } from './app/routes/travel-album.index'
 import { Route as TravelAlbumRegionRouteImport } from './app/routes/travel-album.$region'
+import { Route as MyPageProfileEditRouteImport } from './app/routes/my-page.profile-edit'
+import { Route as MyPagePotPotIdRouteImport } from './app/routes/my-page.pot.$potId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -30,6 +33,11 @@ const PotStartRoute = PotStartRouteImport.update({
 const PotCreateRoute = PotCreateRouteImport.update({
   id: '/pot-create',
   path: '/pot-create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyPageRoute = MyPageRouteImport.update({
+  id: '/my-page',
+  path: '/my-page',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapGoogleRoute = MapGoogleRouteImport.update({
@@ -52,68 +60,97 @@ const TravelAlbumRegionRoute = TravelAlbumRegionRouteImport.update({
   path: '/travel-album/$region',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MyPageProfileEditRoute = MyPageProfileEditRouteImport.update({
+  id: '/profile-edit',
+  path: '/profile-edit',
+  getParentRoute: () => MyPageRoute,
+} as any)
+const MyPagePotPotIdRoute = MyPagePotPotIdRouteImport.update({
+  id: '/pot/$potId',
+  path: '/pot/$potId',
+  getParentRoute: () => MyPageRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/map-google': typeof MapGoogleRoute
+  '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album/': typeof TravelAlbumIndexRoute
+  '/my-page/pot/$potId': typeof MyPagePotPotIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/map-google': typeof MapGoogleRoute
+  '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album': typeof TravelAlbumIndexRoute
+  '/my-page/pot/$potId': typeof MyPagePotPotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/map-google': typeof MapGoogleRoute
+  '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album/': typeof TravelAlbumIndexRoute
+  '/my-page/pot/$potId': typeof MyPagePotPotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/map-google'
+    | '/my-page'
     | '/pot-create'
     | '/pot-start'
     | '/signup'
+    | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album/'
+    | '/my-page/pot/$potId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/map-google'
+    | '/my-page'
     | '/pot-create'
     | '/pot-start'
     | '/signup'
+    | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album'
+    | '/my-page/pot/$potId'
   id:
     | '__root__'
     | '/'
     | '/map-google'
+    | '/my-page'
     | '/pot-create'
     | '/pot-start'
     | '/signup'
+    | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album/'
+    | '/my-page/pot/$potId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapGoogleRoute: typeof MapGoogleRoute
+  MyPageRoute: typeof MyPageRouteWithChildren
   PotCreateRoute: typeof PotCreateRoute
   PotStartRoute: typeof PotStartRoute
   SignupRoute: typeof SignupRoute
@@ -144,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PotCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-page': {
+      id: '/my-page'
+      path: '/my-page'
+      fullPath: '/my-page'
+      preLoaderRoute: typeof MyPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/map-google': {
       id: '/map-google'
       path: '/map-google'
@@ -172,12 +216,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TravelAlbumRegionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-page/profile-edit': {
+      id: '/my-page/profile-edit'
+      path: '/profile-edit'
+      fullPath: '/my-page/profile-edit'
+      preLoaderRoute: typeof MyPageProfileEditRouteImport
+      parentRoute: typeof MyPageRoute
+    }
+    '/my-page/pot/$potId': {
+      id: '/my-page/pot/$potId'
+      path: '/pot/$potId'
+      fullPath: '/my-page/pot/$potId'
+      preLoaderRoute: typeof MyPagePotPotIdRouteImport
+      parentRoute: typeof MyPageRoute
+    }
   }
 }
+
+interface MyPageRouteChildren {
+  MyPageProfileEditRoute: typeof MyPageProfileEditRoute
+  MyPagePotPotIdRoute: typeof MyPagePotPotIdRoute
+}
+
+const MyPageRouteChildren: MyPageRouteChildren = {
+  MyPageProfileEditRoute: MyPageProfileEditRoute,
+  MyPagePotPotIdRoute: MyPagePotPotIdRoute,
+}
+
+const MyPageRouteWithChildren =
+  MyPageRoute._addFileChildren(MyPageRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapGoogleRoute: MapGoogleRoute,
+  MyPageRoute: MyPageRouteWithChildren,
   PotCreateRoute: PotCreateRoute,
   PotStartRoute: PotStartRoute,
   SignupRoute: SignupRoute,
