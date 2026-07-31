@@ -1,4 +1,5 @@
 export { TravelRecordFlow } from "./ui/TravelRecordFlow"
+export type { CollaborationRecordSeed } from "./ui/TravelRecordFlow"
 export { useRecordStore } from "./model/record.store"
 export type { RecordStep, DecoratePreview } from "./model/record.store"
 export { partySlotOffset } from "./lib/slot-layout"
