@@ -14,6 +14,7 @@ import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { useAllPhotos } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 import partySrc from "@/shared/assets/party.svg"
 
 const CODE_LENGTH = 6
@@ -93,12 +94,13 @@ function PotJoinSheet({ close }: { close: () => void }) {
   // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
   const currentPotId = usePotStore((s) => s.currentPotId)
   const hasRegionCards = useAllPhotos(currentPotId).length > 0
+  const currentUser = useSessionStore((s) => s.currentUser)
   const [code, setCode] = React.useState("")
   // 코드 검증 실패 시 에러 테두리 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)
 
   const handleDone = () => {
-    const result = previewJoin(code)
+    const result = previewJoin(code, currentUser?.id)
     if (result.status !== "ok") {
       setCodeError(true)
       showToast({
@@ -121,7 +123,11 @@ function PotJoinSheet({ close }: { close: () => void }) {
             closeConfirm()
           }}
           onYes={() => {
-            confirmJoin(pot)
+            confirmJoin(pot, {
+              id: currentUser?.id ?? "me",
+              nickname: currentUser?.nickname ?? "나",
+              profileImageUrl: currentUser?.profileImageUrl ?? null,
+            })
             closeConfirm()
             close()
             showToast({

@@ -23,7 +23,7 @@ function ProfileCard({
   return (
     <div
       className={cn(
-        "flex w-[343px] items-center gap-5 rounded-3xl border border-stroke-neutral-weak bg-bg-neutral-subtle px-3 py-4",
+        "flex w-[343px] items-center gap-5 rounded-[24px] border border-stroke-neutral-weak bg-bg-neutral-weak px-3 py-4",
         className
       )}
       {...props}

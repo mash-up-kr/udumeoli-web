@@ -1,7 +1,8 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { usePotStore } from "@/entities/travel-pot"
+import { getMemberPots, usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 import { openPotJoinModal } from "@/features/pot-join"
 import iconCheckSrc from "@/shared/assets/icon-check.svg"
 import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
@@ -20,10 +21,19 @@ export function PotSelector() {
   const pots = usePotStore((s) => s.pots)
   const currentPotId = usePotStore((s) => s.currentPotId)
   const selectPot = usePotStore((s) => s.selectPot)
+  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const [open, setOpen] = React.useState(false)
 
   // 팟이 하나도 없으면(신규 유저) 트리거에 안내 문구 노출 — 드롭다운엔 추가 카드만 남는다
-  const current = pots.find((p) => p.id === currentPotId) ?? pots.at(0)
+  const myPots = React.useMemo(
+    () => getMemberPots(pots, currentUserId),
+    [pots, currentUserId]
+  )
+  const current = myPots.find((p) => p.id === currentPotId) ?? myPots.at(0)
+
+  React.useEffect(() => {
+    if (current && current.id !== currentPotId) selectPot(current.id)
+  }, [current, currentPotId, selectPot])
 
   return (
     <div className="relative">
@@ -54,13 +64,13 @@ export function PotSelector() {
           {/* 트리거 아래 8px에 카드 2개 (참여 중 여행팟 / 여행팟 추가) — 시안 1893-19429
               트리거가 헤더 우측에 놓이므로 right-0 정렬 — left 정렬이면 화면 밖으로 넘친다 */}
           <div className="absolute top-[calc(100%+8px)] right-0 z-50 flex w-[220px] flex-col gap-1">
-            {pots.length > 0 ? (
+            {myPots.length > 0 ? (
               <div className={cardCls}>
                 <p className="w-full px-2 text-h9 text-fg-neutral-subtle">
                   여행팟
                 </p>
                 <div className="flex w-full flex-col">
-                  {pots.map((pot) => (
+                  {myPots.map((pot) => (
                     <button
                       key={pot.id}
                       type="button"
@@ -70,7 +80,7 @@ export function PotSelector() {
                       }}
                       className={rowCls}
                     >
-                      {pot.id === currentPotId ? (
+                      {pot.id === current?.id ? (
                         <img
                           src={iconCheckSrc}
                           alt="현재 여행팟"

@@ -1,5 +1,7 @@
 export type { TravelPot, PotMember, JoinPreviewResult } from "./model/types"
 export {
+  getMemberPots,
+  potHasMember,
   usePotStore,
   usePotsHydrated,
   selectCurrentPotMembers,

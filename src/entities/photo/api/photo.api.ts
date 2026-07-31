@@ -5,6 +5,7 @@ import { USE_MOCK, mockResponse } from "@/shared/api/client"
 
 // 신규 유저 기준 빈 상태로 시작 — UT 사진은 시드 트리거로만 주입 (새로고침 시 초기화)
 let utSeeded = false
+let removedSeedUploaderIds = new Set<string>()
 
 /** UT용 사진 활성화 — 호출 후 photoKeys.list() 쿼리를 invalidate해야 반영된다. */
 export function seedUtPhotos() {
@@ -14,10 +15,23 @@ export function seedUtPhotos() {
 /** UT 시드 해제(계정 삭제 등) — 신규 유저 기준 빈 사진 목록으로 되돌린다. */
 export function resetUtPhotos() {
   utSeeded = false
+  removedSeedUploaderIds = new Set()
+}
+
+/** UT 시드 사진 중 계정 삭제된 업로더의 사진만 목록에서 제외한다. */
+export function removeSeedPhotosByUploader(uploaderId: string) {
+  removedSeedUploaderIds.add(uploaderId)
 }
 
 export function fetchPhotos(): Promise<Array<Photo>> {
-  if (USE_MOCK) return mockResponse<Array<Photo>>(utSeeded ? UT_PHOTOS : [])
+  if (USE_MOCK) {
+    const photos = utSeeded
+      ? UT_PHOTOS.filter(
+          (photo) => !removedSeedUploaderIds.has(photo.uploaderId)
+        )
+      : []
+    return mockResponse<Array<Photo>>(photos)
+  }
   // TODO(graphql): return gqlClient.request(PHOTOS_QUERY).then((dto) => dto.photos.map(toPhoto))
   throw new Error("GraphQL photos query not wired yet")
 }

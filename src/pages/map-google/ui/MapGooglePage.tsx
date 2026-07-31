@@ -8,11 +8,15 @@ import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
-import { openMyPageModal } from "@/features/my-page"
 import { openMapTipsOverlay } from "@/features/onboarding"
 import { useRecordStore } from "@/features/travel-record"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
-import { usePotStore, usePotsHydrated } from "@/entities/travel-pot"
+import {
+  getMemberPots,
+  usePotStore,
+  usePotsHydrated,
+} from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 
 function MapGooglePageContent() {
   const router = useRouter()
@@ -26,9 +30,12 @@ function MapGooglePageContent() {
   // 참여 중인 팟이 하나도 없으면(신규 유저) 지도 대신 여행팟 시작 온보딩으로 보낸다.
   // replace로 이동 — push하면 히스토리에 /map-google이 남아, pot-start에서 뒤로가기 시
   // 다시 이 페이지로 왔다가 팟이 여전히 없어 즉시 pot-start로 튕기는 무한 루프가 생긴다
-  const hasPot = usePotStore((s) => s.pots.length > 0)
   const seedUtPots = usePotStore((s) => s.seedUtPots)
   const seededUtPreviewRef = React.useRef(false)
+  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const hasPot = usePotStore(
+    (s) => getMemberPots(s.pots, currentUserId).length > 0
+  )
   React.useEffect(() => {
     if (!hydrated || !isUtPreview || seededUtPreviewRef.current) return
     seededUtPreviewRef.current = true
@@ -78,7 +85,7 @@ function MapGooglePageContent() {
                 className="pointer-events-auto"
                 albumDisabled={!canOpenAlbum}
                 onAlbumClick={openAlbum}
-                onMyPageClick={() => openMyPageModal()}
+                onMyPageClick={() => router.navigate({ to: "/my-page" })}
               />
             </div>
           </>

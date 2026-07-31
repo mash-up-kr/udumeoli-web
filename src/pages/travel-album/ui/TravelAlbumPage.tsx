@@ -9,7 +9,6 @@ import { PotSelector } from "@/widgets/pot-dropdown"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
-import { openMyPageModal } from "@/features/my-page"
 import { groupTrips, makeAlbumPhotos, useAllPhotos } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -90,7 +89,7 @@ function TravelAlbumPageContent() {
           className="pointer-events-auto"
           active="album"
           onGlobeClick={() => router.navigate({ to: "/map-google" })}
-          onMyPageClick={() => openMyPageModal()}
+          onMyPageClick={() => router.navigate({ to: "/my-page" })}
         />
       </div>
     </MobileLayout>
