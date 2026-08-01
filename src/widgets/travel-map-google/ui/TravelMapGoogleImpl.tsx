@@ -295,7 +295,7 @@ function MapController({
   decoratePreview: DecoratePreview | null
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
-  setViewportCentroids: (c: Array<Centroid>) => void
+  setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
   onFeatureClick: (name: string) => void
 }) {
@@ -365,22 +365,29 @@ function MapController({
         const syncViewport = () => {
           const bounds = map.getBounds()
           if (!bounds) return
-          setViewportCentroids(
-            centroidsRef.current.filter(({ lng, lat }) =>
-              bounds.contains({ lat, lng })
-            )
+          const next = centroidsRef.current.filter(({ lng, lat }) =>
+            bounds.contains({ lat, lng })
+          )
+          // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
+          setViewportCentroids((prev) =>
+            prev.length === next.length && prev.every((c, i) => c === next[i])
+              ? prev
+              : next
           )
         }
 
         listeners.push(
           map.addListener("zoom_changed", () => {
-            const zoom = map.getZoom() ?? KOREA_VIEW.zoom
-            setZoomStage(getZoomStage(zoom))
-            dataLayer?.syncZoom(zoom)
+            // 제스처 중에는 경계선 minzoom 게이팅만 실시간 반영 (경계 통과 시에만 재계산)
+            dataLayer?.syncZoom(map.getZoom() ?? KOREA_VIEW.zoom)
           })
         )
         listeners.push(
           map.addListener("idle", () => {
+            // 줌 스테이지 갱신(마커 수십 개 mount/unmount)은 제스처가 끝난 뒤로 미룬다 —
+            // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
+            const zoom = map.getZoom() ?? KOREA_VIEW.zoom
+            setZoomStage(getZoomStage(zoom))
             syncViewport()
             overlay?.draw()
           })

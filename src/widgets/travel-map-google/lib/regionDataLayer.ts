@@ -61,6 +61,9 @@ function computeStyle(
     strokeWeight,
     strokeOpacity,
     clickable: true,
+    // 완전 투명 지역을 visible:false로 빼는 최적화는 하지 않는다 — 줌 제스처마다
+    // BOUNDARY_ZOOM(7.5) 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
+    // 히치가 생겨, 투명 렌더 비용 절감보다 체감 버벅임이 더 컸다
   }
 }
 
