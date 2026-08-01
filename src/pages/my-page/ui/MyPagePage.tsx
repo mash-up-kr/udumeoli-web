@@ -10,14 +10,15 @@ import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
+import { USE_MOCK } from "@/shared/api/client"
 import {
   photoKeys,
   removeSeedPhotosByUploader,
   usePhotoUploadStore,
 } from "@/entities/photo"
 import { useRegionColorStore } from "@/entities/region"
-import { getMemberPots, usePotStore } from "@/entities/travel-pot"
-import { useSessionStore } from "@/entities/user"
+import { useMyPots, usePotStore } from "@/entities/travel-pot"
+import { useMe, useSessionStore } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
 import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
 import { resetCompletionTips } from "@/widgets/travel-map-google"
@@ -62,16 +63,28 @@ function joinedAtTime(joinedAt: string | undefined): number {
 
 function MyPotRows({
   pots,
+  isLoading,
+  isError,
   onPotClick,
 }: {
   pots: Array<TravelPot>
+  isLoading: boolean
+  isError: boolean
   onPotClick: (pot: TravelPot) => void
 }) {
   return (
     <section className="flex w-full flex-col gap-2">
       <p className={sectionTitleCls}>내 팟</p>
       <div className="flex w-full flex-col gap-2">
-        {pots.length > 0 ? (
+        {isLoading ? (
+          <p className="rounded-[24px] border border-stroke-neutral-weak bg-bg-neutral-weak p-4 text-b6 text-fg-neutral-subtle">
+            팟을 불러오는 중이에요.
+          </p>
+        ) : isError ? (
+          <p className="rounded-[24px] border border-stroke-neutral-weak bg-bg-neutral-weak p-4 text-b6 text-fg-danger-solid">
+            팟 정보를 불러오지 못했어요.
+          </p>
+        ) : pots.length > 0 ? (
           pots.map((pot) => (
             <button
               key={pot.id}
@@ -142,22 +155,34 @@ function DeleteConfirmContent({
 function MyPageContent() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const user = useSessionStore((s) => s.currentUser)
+  const localUser = useSessionStore((s) => s.currentUser)
   const logout = useSessionStore((s) => s.logout)
-  const pots = usePotStore((s) => s.pots)
   const selectPot = usePotStore((s) => s.selectPot)
   const resetPots = usePotStore((s) => s.resetPots)
   const clearRegionFills = useRegionColorStore((s) => s.clearAll)
   const removePhotosByUploader = usePhotoUploadStore(
     (s) => s.removePhotosByUploader
   )
+  const meQuery = useMe({
+    enabled: !USE_MOCK,
+    refetchOnMount: "always",
+    retry: false,
+  })
+  const {
+    pots,
+    isPending: isPotsLoading,
+    isError: isPotsError,
+  } = useMyPots(localUser?.id ?? null, { refetchOnMount: "always" })
 
+  const user = USE_MOCK ? localUser : (meQuery.data ?? localUser)
+
+  // 최근 입장한 팟이 최상단 (Figma 1959-5326 #2)
   const myPots = React.useMemo(
     () =>
-      getMemberPots(pots, user?.id).sort(
+      [...pots].sort(
         (a, b) => joinedAtTime(b.joinedAt) - joinedAtTime(a.joinedAt)
       ),
-    [pots, user?.id]
+    [pots]
   )
 
   const handleLogout = async () => {
@@ -232,7 +257,12 @@ function MyPageContent() {
         />
 
         <div className="flex w-full flex-col gap-4">
-          <MyPotRows pots={myPots} onPotClick={handlePotClick} />
+          <MyPotRows
+            pots={myPots}
+            isLoading={isPotsLoading}
+            isError={isPotsError}
+            onPotClick={handlePotClick}
+          />
 
           <section className="flex w-full flex-col gap-1">
             <p className={sectionTitleCls}>내 정보</p>

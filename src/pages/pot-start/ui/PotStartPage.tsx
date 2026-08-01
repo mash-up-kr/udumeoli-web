@@ -7,7 +7,7 @@ import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { openOnboardingOverlay } from "@/features/onboarding"
 import { openPotJoinModal } from "@/features/pot-join"
-import { getMemberPots, usePotStore } from "@/entities/travel-pot"
+import { useMyPots } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
 function StartOptionRow({
@@ -39,9 +39,8 @@ function StartOptionRow({
 export function PotStartPage() {
   const router = useRouter()
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
-  const hasPot = usePotStore(
-    (s) => getMemberPots(s.pots, currentUserId).length > 0
-  )
+  const { hasPot } = useMyPots(currentUserId)
+
   // 초대코드로 참여해 팟이 생기면(팟 생성은 pot-create가 자체 처리) 곧장 지도로 —
   // replace로 이동해 이 화면이 히스토리에 남아 뒤로가기 시 다시 나타나지 않게 한다
   React.useEffect(() => {

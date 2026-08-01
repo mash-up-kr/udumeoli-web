@@ -16,6 +16,7 @@ interface PotState {
   pots: Array<TravelPot>
   currentPotId: string
   seedUtPots: () => void
+  replacePots: (pots: Array<TravelPot>) => void
   selectPot: (id: string) => void
   createPot: (name: string, creator: PotMember) => TravelPot
   renamePot: (id: string, name: string) => void
@@ -76,6 +77,13 @@ export const usePotStore = create<PotState>()(
             ...UT_POTS.filter((u) => !s.pots.some((p) => p.id === u.id)),
           ],
           currentPotId: UT_POTS[0].id,
+        })),
+      replacePots: (pots) =>
+        set((s) => ({
+          pots,
+          currentPotId: pots.some((pot) => pot.id === s.currentPotId)
+            ? s.currentPotId
+            : (pots.at(0)?.id ?? ""),
         })),
       selectPot: (id) => set({ currentPotId: id }),
       // 생성자(세션 유저)를 첫 멤버로 — id가 세션과 일치해야 내 슬롯으로 인식된다
