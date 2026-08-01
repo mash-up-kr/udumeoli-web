@@ -65,7 +65,8 @@ export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
     mergedCityFeatures.push({
       type: "Feature",
       geometry: merged,
-      properties: { name: cityName },
+      // code는 도 매핑용으로 유지 — kostat 코드 앞 2자리가 도 코드
+      properties: { name: cityName, code: geoms[0]?.properties.code },
     })
   }
 
@@ -89,12 +90,28 @@ export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
     METRO_CITIES.has(f.properties?.name as string)
   )
 
+  // 시군구 → 도 매핑 (kostat 코드 앞 2자리 = 도 코드, 광역시는 자기 자신이 도)
+  const codeToProvince = new Map<string, string>()
+  for (const f of provRaw.features) {
+    const code = f.properties?.code
+    const name = f.properties?.name
+    if (code != null && typeof name === "string") {
+      codeToProvince.set(String(code), name)
+    }
+  }
+
   const geojson: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
     features: [...cityFeatures, ...mergedCityFeatures, ...gunFeatures],
   }
   geojson.features.forEach((f, i) => {
     f.id = i
+    // 외부 데이터라 code가 없을 수 있다 — 그 경우 province 없이 두면
+    // 소비자(도 단위 집계)에서 해당 지역만 집계에서 빠진다
+    const code = f.properties?.code
+    const province =
+      code != null ? codeToProvince.get(String(code).slice(0, 2)) : undefined
+    if (province && f.properties) f.properties.province = province
     sanitizeRings(f)
   })
   return geojson
