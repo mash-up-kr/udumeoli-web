@@ -10,7 +10,9 @@ export { createParty, fetchMyParties, joinParty } from "./api/pot.api"
 export {
   travelPotKeys,
   useCreateParty,
+  useDeleteParty,
   useJoinParty,
+  useLeaveParty,
   useMyParties,
   useMyPots,
 } from "./api/queries"

@@ -2,7 +2,13 @@ import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { getMemberPots, usePotStore } from "../model/pot.store"
-import { createParty, fetchMyParties, joinParty } from "./pot.api"
+import {
+  createParty,
+  deleteParty,
+  fetchMyParties,
+  joinParty,
+  leaveParty,
+} from "./pot.api"
 import type { TravelPot } from "../model/types"
 import type { QueryOptions } from "@/shared/api/client"
 import { USE_MOCK } from "@/shared/api/client"
@@ -45,6 +51,42 @@ export function useCreateParty() {
 
 export function useJoinParty() {
   return useUpsertingMutation(joinParty)
+}
+
+/** 팟 나가기 — 성공 시 캐시에선 팟을 빼고, store에선 내 자리만 비운다(목 공석 규칙 유지). */
+export function useLeaveParty() {
+  const queryClient = useQueryClient()
+  const leavePot = usePotStore((s) => s.leavePot)
+  return useMutation({
+    mutationFn: async ({ potId }: { potId: string; memberId: string }) => {
+      if (!USE_MOCK) await leaveParty(potId)
+    },
+    onSuccess: (_, { potId, memberId }) => {
+      leavePot(potId, memberId)
+      queryClient.setQueryData<Array<TravelPot>>(
+        travelPotKeys.myParties(),
+        (pots) => pots?.filter((pot) => pot.id !== potId)
+      )
+    },
+  })
+}
+
+/** 팟 삭제 (owner 전용) — 성공 시 캐시·store에서 함께 제거. */
+export function useDeleteParty() {
+  const queryClient = useQueryClient()
+  const deletePot = usePotStore((s) => s.deletePot)
+  return useMutation({
+    mutationFn: async (potId: string) => {
+      if (!USE_MOCK) await deleteParty(potId)
+    },
+    onSuccess: (_, potId) => {
+      deletePot(potId)
+      queryClient.setQueryData<Array<TravelPot>>(
+        travelPotKeys.myParties(),
+        (pots) => pots?.filter((pot) => pot.id !== potId)
+      )
+    },
+  })
 }
 
 /**

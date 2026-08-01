@@ -3,8 +3,14 @@ import { useRouter } from "@tanstack/react-router"
 import { Copy } from "lucide-react"
 
 import type { PotMember } from "@/entities/travel-pot"
-import { usePotStore, usePotsHydrated } from "@/entities/travel-pot"
+import {
+  useDeleteParty,
+  useLeaveParty,
+  usePotStore,
+  usePotsHydrated,
+} from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
+import { getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import { cn } from "@/shared/lib/utils"
@@ -148,8 +154,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
   const potsHydrated = usePotsHydrated()
   const pot = usePotStore((s) => s.pots.find((p) => p.id === potId))
   const renamePot = usePotStore((s) => s.renamePot)
-  const deletePot = usePotStore((s) => s.deletePot)
-  const leavePot = usePotStore((s) => s.leavePot)
+  const deletePartyMutation = useDeleteParty()
+  const leavePartyMutation = useLeaveParty()
   const [name, setName] = React.useState(pot?.name ?? "")
 
   const leaderId = pot?.members[0]?.id
@@ -182,6 +188,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
 
   const handleSave = () => {
     if (!canSave) return
+    // TODO(graphql): 서버에 팟 이름 변경 뮤테이션이 없다 — 로컬만 변경되고
+    // 새로고침 시 서버 목록(myParties)의 이름으로 복원된다
     renamePot(pot.id, trimmedName)
   }
 
@@ -222,7 +230,18 @@ function MyPotEditContent({ potId }: { potId: string }) {
           onCancel={close}
           onConfirm={async () => {
             close()
-            deletePot(pot.id)
+            try {
+              await deletePartyMutation.mutateAsync(pot.id)
+            } catch (error) {
+              showToast({
+                message:
+                  getGraphQLErrorCode(error) === "PARTY_HAS_MEMBERS"
+                    ? "팟원이 남아 있어 삭제할 수 없어요"
+                    : "팟 삭제에 실패했어요",
+                icon: "alert",
+              })
+              return
+            }
             await goMyPage()
           }}
         />
@@ -243,7 +262,21 @@ function MyPotEditContent({ potId }: { potId: string }) {
           onCancel={close}
           onConfirm={async () => {
             close()
-            leavePot(pot.id, user.id)
+            try {
+              await leavePartyMutation.mutateAsync({
+                potId: pot.id,
+                memberId: user.id,
+              })
+            } catch (error) {
+              showToast({
+                message:
+                  getGraphQLErrorCode(error) === "OWNER_CANNOT_LEAVE"
+                    ? "팟장은 팟을 나갈 수 없어요"
+                    : "팟 나가기에 실패했어요",
+                icon: "alert",
+              })
+              return
+            }
             await goMyPage()
             showToast({ message: "팟에서 나갔습니다", icon: "check" })
           }}

@@ -1,4 +1,4 @@
-import { GraphQLClient } from "graphql-request"
+import { ClientError, GraphQLClient } from "graphql-request"
 
 // 목↔실서버 전환 단일 지점. 기본: 목 ON.
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false"
@@ -43,4 +43,13 @@ export interface UserDto {
 export function toProfileImageUrl(value: string | null): string | null {
   if (!value || value === "DEFAULT") return null
   return value
+}
+
+/** GraphQL 에러 응답의 extensions.code — 네트워크 오류 등 그 외 에러는 undefined. */
+export function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof ClientError)) return undefined
+  const extensions = error.response.errors?.[0]?.extensions as
+    | { code?: string }
+    | undefined
+  return extensions?.code
 }
