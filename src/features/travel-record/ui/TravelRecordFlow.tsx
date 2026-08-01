@@ -13,7 +13,7 @@ import {
   findKeyword,
   groupTrips,
   useAllPhotos,
-  usePhotoUploadStore,
+  useCreatePhoto,
 } from "@/entities/photo"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { usePotStore } from "@/entities/travel-pot"
@@ -65,7 +65,7 @@ export function TravelRecordFlow({
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
   const setColor = useRegionColorStore((s) => s.setColor)
-  const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
+  const createPhotoMutation = useCreatePhoto()
   const photos = useAllPhotos(currentPotId)
   const step = useRecordStore((s) => s.step)
   const goStep = useRecordStore((s) => s.setStep)
@@ -88,6 +88,7 @@ export function TravelRecordFlow({
     () => collaborationTrip?.keyword ?? null
   )
   const [photoUrl, setPhotoUrl] = React.useState<string | null>(null)
+  const [photoFile, setPhotoFile] = React.useState<File | null>(null)
   const [comment, setComment] = React.useState("")
   const photoInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -99,6 +100,7 @@ export function TravelRecordFlow({
     setRange(fixedRange)
     setKeywordId(collaborationTrip.keyword ?? null)
     setPhotoUrl(null)
+    setPhotoFile(null)
     setComment("")
   }, [collaborationTrip, fixedRange])
 
@@ -124,7 +126,8 @@ export function TravelRecordFlow({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // 재선택 시 이전 blob URL 회수 (최종 커밋된 URL은 addPhoto가 계속 사용하므로 그대로 둠)
+    setPhotoFile(file)
+    // 재선택 시 이전 blob URL 회수 (최종 커밋된 URL은 목 사진이 계속 사용하므로 그대로 둠)
     setPhotoUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev)
       return URL.createObjectURL(file)
@@ -137,25 +140,34 @@ export function TravelRecordFlow({
     else if (step === "photo") goStep("preview")
   }
 
-  // 최종 커밋 — 지역 색상(키워드 기준) + 사진 등록 후 지도로 복귀
-  const handleCommit = () => {
-    if (!photoUrl || !currentUserId || !range?.from) return
+  // 최종 커밋 — 사진(여행) 등록 성공 시 지역 색상(키워드 기준) 반영 후 지도로 복귀
+  const handleCommit = async () => {
+    if (!photoUrl || !photoFile || !currentUserId || !range?.from) return
+    if (createPhotoMutation.isPending) return
     const startDate = toISODate(range.from)
     const endDate = range.to ? toISODate(range.to) : undefined
+    try {
+      await createPhotoMutation.mutateAsync({
+        potId: currentPotId,
+        region,
+        date: startDate,
+        ...(endDate && endDate !== startDate ? { endDate } : {}),
+        ...(keyword ? { keyword: keyword.id } : {}),
+        ...(comment.trim() ? { comment: comment.trim() } : {}),
+        uploaderId: currentUserId,
+        file: photoFile,
+        previewUrl: photoUrl,
+        center,
+      })
+    } catch {
+      showToast({
+        message: "업로드에 실패했어요. 다시 시도해 주세요.",
+        icon: "alert",
+        className: "bottom-[106px]",
+      })
+      return
+    }
     if (keyword) setColor(currentPotId, region, keyword.fill)
-    addPhoto({
-      id: `up-${region}-${Date.now()}`,
-      region,
-      date: startDate,
-      ...(endDate && endDate !== startDate ? { endDate } : {}),
-      lat: center.lat,
-      lng: center.lng,
-      thumbnailUrl: photoUrl,
-      uploaderId: currentUserId,
-      potId: currentPotId,
-      ...(keyword ? { keyword: keyword.id } : {}),
-      ...(comment.trim() ? { comment: comment.trim() } : {}),
-    })
     closeFlow()
     onComplete?.()
     // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게 (Figma 1836-14957 #16)
