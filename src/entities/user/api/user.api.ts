@@ -1,10 +1,38 @@
 import { MOCK_USER } from "./user.mock"
 import type { User } from "../model/types"
-import { USE_MOCK, mockResponse } from "@/shared/api/client"
+import type { UserDto } from "@/shared/api/client"
+import {
+  USE_MOCK,
+  gqlClient,
+  mockResponse,
+  toProfileImageUrl,
+} from "@/shared/api/client"
 
+const ME_QUERY = /* GraphQL */ `
+  query Me {
+    me {
+      id
+      nickname
+      profileImageUrl
+    }
+  }
+`
 
-export function fetchMe(): Promise<User> {
+interface MeResponse {
+  me: UserDto
+}
+
+export function toUser(dto: UserDto): User {
+  return {
+    id: dto.id,
+    nickname: dto.nickname,
+    profileImageUrl: toProfileImageUrl(dto.profileImageUrl),
+  }
+}
+
+export async function fetchMe(): Promise<User> {
   if (USE_MOCK) return mockResponse(MOCK_USER)
-  // TODO(graphql): return gqlClient.request(ME_QUERY).then(dto => toUser(dto))
-  throw new Error("GraphQL ME query not wired yet")
+
+  const data = await gqlClient.request<MeResponse>(ME_QUERY)
+  return toUser(data.me)
 }

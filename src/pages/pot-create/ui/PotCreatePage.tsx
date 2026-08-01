@@ -10,7 +10,8 @@ import { NumberCode } from "@/shared/ui/number-code"
 import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
-import { usePotStore } from "@/entities/travel-pot"
+import { USE_MOCK } from "@/shared/api/client"
+import { useCreateParty, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import partySrc from "@/shared/assets/party.svg"
 
@@ -96,6 +97,7 @@ function CreatedStep({
 export function PotCreatePage() {
   const router = useRouter()
   const createPot = usePotStore((s) => s.createPot)
+  const createPartyMutation = useCreateParty()
   const currentUser = useSessionStore((s) => s.currentUser)
   const [name, setName] = React.useState("")
   const [created, setCreated] = React.useState<{
@@ -109,6 +111,28 @@ export function PotCreatePage() {
   const goToMap = () => router.navigate({ to: "/map-google", replace: true })
   // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용
   const goBack = () => router.history.back()
+
+  const isCreating = createPartyMutation.isPending
+
+  const handleCreate = async () => {
+    const trimmedName = name.trim()
+    if (!trimmedName || isCreating) return
+
+    try {
+      // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
+      const pot = USE_MOCK
+        ? createPot(trimmedName, {
+            id: currentUser?.id ?? "me",
+            nickname: currentUser?.nickname ?? "나",
+            profileImageUrl: currentUser?.profileImageUrl ?? null,
+          })
+        : await createPartyMutation.mutateAsync(trimmedName)
+
+      setCreated({ name: pot.name, code: pot.inviteCode })
+    } catch {
+      showToast({ message: "여행팟 생성에 실패했어요", icon: "alert" })
+    }
+  }
 
   if (created) {
     return (
@@ -127,14 +151,7 @@ export function PotCreatePage() {
         className="flex flex-1 flex-col"
         onSubmit={(e) => {
           e.preventDefault()
-          if (!name.trim()) return
-          // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
-          const pot = createPot(name.trim(), {
-            id: currentUser?.id ?? "me",
-            nickname: currentUser?.nickname ?? "나",
-            profileImageUrl: currentUser?.profileImageUrl ?? null,
-          })
-          setCreated({ name: pot.name, code: pot.inviteCode })
+          void handleCreate()
         }}
       >
         <main className="flex flex-1 flex-col gap-6 px-4">
@@ -151,8 +168,12 @@ export function PotCreatePage() {
           />
         </main>
         <div className="w-full px-4 pb-8">
-          <ButtonCta type="submit" disabled={!name.trim()}>
-            팟 만들기
+          <ButtonCta
+            type="button"
+            disabled={!name.trim() || isCreating}
+            onClick={() => void handleCreate()}
+          >
+            {isCreating ? "생성 중..." : "팟 만들기"}
           </ButtonCta>
         </div>
       </form>
