@@ -1,2 +1,9 @@
-export { openOnboardingOverlay } from "./ui/openOnboardingOverlay"
-export { openMapTipsOverlay, hasSeenMapTips } from "./ui/openMapTipsOverlay"
+export {
+  openOnboardingOverlay,
+  resetOnboardingSeen,
+} from "./ui/openOnboardingOverlay"
+export {
+  openMapTipsOverlay,
+  hasSeenMapTips,
+  resetMapTipsSeen,
+} from "./ui/openMapTipsOverlay"

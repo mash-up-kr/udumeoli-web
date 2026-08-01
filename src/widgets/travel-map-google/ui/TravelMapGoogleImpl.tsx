@@ -24,6 +24,11 @@ import {
   latestTripByRegion,
   visibleStickerTrips,
 } from "../lib/collaboration"
+import {
+  canShowCompletionTip,
+  markCompletionTipSeen,
+  markCompletionTipShown,
+} from "../lib/completionTips"
 import { createRegionDataLayer } from "../lib/regionDataLayer"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { CollaborationTrip } from "../lib/collaboration"
@@ -83,8 +88,6 @@ const PARTY_ZOOM = 9.5
 // 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
 const PARTY_ZOOM_EPSILON = 0.01
 const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
-const COMPLETION_TIP_STORAGE_KEY = "photato-map-completion-tooltips"
-const COMPLETION_TIP_MAX_SHOW = 3
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
 const STICKER_OFFSETS = [
@@ -96,45 +99,6 @@ type Centroid = { name: string; lng: number; lat: number }
 
 type CollaborationRecordDraft = CollaborationRecordSeed &
   Pick<CollaborationTrip, "key" | "region">
-
-type CompletionTipState = Partial<
-  Record<string, { count: number; seen?: boolean }>
->
-
-function readCompletionTipState(): CompletionTipState {
-  if (typeof window === "undefined") return {}
-  try {
-    return JSON.parse(
-      window.localStorage.getItem(COMPLETION_TIP_STORAGE_KEY) ?? "{}"
-    ) as CompletionTipState
-  } catch {
-    return {}
-  }
-}
-
-function writeCompletionTipState(state: CompletionTipState) {
-  if (typeof window === "undefined") return
-  window.localStorage.setItem(COMPLETION_TIP_STORAGE_KEY, JSON.stringify(state))
-}
-
-function markCompletionTipShown(key: string): number {
-  const state = readCompletionTipState()
-  const prev = state[key] ?? { count: 0 }
-  const next = { ...prev, count: prev.count + 1 }
-  writeCompletionTipState({ ...state, [key]: next })
-  return next.count
-}
-
-function markCompletionTipSeen(key: string) {
-  const state = readCompletionTipState()
-  const prev = state[key] ?? { count: 0 }
-  writeCompletionTipState({ ...state, [key]: { ...prev, seen: true } })
-}
-
-function canShowCompletionTip(key: string): boolean {
-  const state = readCompletionTipState()[key]
-  return !state?.seen && (state?.count ?? 0) < COMPLETION_TIP_MAX_SHOW
-}
 
 function formatShortTripRange(startDate: string, endDate: string): string {
   const [startYear, startMonth, startDay] = startDate.split("-")

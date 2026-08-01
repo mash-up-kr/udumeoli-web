@@ -122,3 +122,8 @@ export function openMapTipsOverlay(): void {
 export function hasSeenMapTips(): boolean {
   return localStorage.getItem(SEEN_KEY) !== null
 }
+
+/** 계정 삭제 시 노출 이력 초기화 — 재가입 유저에게 지도 안내를 다시 노출 */
+export function resetMapTipsSeen() {
+  localStorage.removeItem(SEEN_KEY)
+}

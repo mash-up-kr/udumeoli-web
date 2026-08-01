@@ -15,9 +15,12 @@ import {
   removeSeedPhotosByUploader,
   usePhotoUploadStore,
 } from "@/entities/photo"
+import { useRegionColorStore } from "@/entities/region"
 import { getMemberPots, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
+import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
+import { resetCompletionTips } from "@/widgets/travel-map-google"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
 
@@ -143,7 +146,8 @@ function MyPageContent() {
   const logout = useSessionStore((s) => s.logout)
   const pots = usePotStore((s) => s.pots)
   const selectPot = usePotStore((s) => s.selectPot)
-  const leaveAllByMember = usePotStore((s) => s.leaveAllByMember)
+  const resetPots = usePotStore((s) => s.resetPots)
+  const clearRegionFills = useRegionColorStore((s) => s.clearAll)
   const removePhotosByUploader = usePhotoUploadStore(
     (s) => s.removePhotosByUploader
   )
@@ -181,8 +185,15 @@ function MyPageContent() {
             if (user) {
               removePhotosByUploader(user.id)
               removeSeedPhotosByUploader(user.id)
-              leaveAllByMember(user.id)
             }
+            // 로컬(localStorage 포함) 계정 데이터 전체 초기화 — 남겨두면 재가입 시
+            // 온보딩이 "이미 봤음"으로 스킵돼 가입 완료 후 지도 이동이 멈추는 등
+            // 신규 유저 플로우가 이전 계정의 흔적에 걸려 깨진다
+            resetPots()
+            clearRegionFills()
+            resetOnboardingSeen()
+            resetMapTipsSeen()
+            resetCompletionTips()
             queryClient.removeQueries({ queryKey: photoKeys.all })
             logout()
             await router.navigate({ to: "/" })
