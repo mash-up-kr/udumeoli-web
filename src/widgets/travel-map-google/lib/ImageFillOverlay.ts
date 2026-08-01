@@ -5,6 +5,11 @@
 // 다만 Google은 오버레이 pane 자체가 지도 이동에 따라 CSS transform으로 움직이므로,
 // canvas를 뷰포트 크기로만 두고 매 draw()마다 위치·크기를 다시 계산해야 한다
 // (MapLibre처럼 canvas를 컨테이너에 고정해두고 좌표만 다시 계산하는 것보다 번거로움 — 포팅 시 가장 손이 많이 간 지점).
+//
+// draw()는 줌/팬 중 매 프레임 호출되므로 프레임당 비용을 최소화한다:
+// - 이미지 fill이 없으면(대부분의 상태) 캔버스 작업 전체를 건너뜀
+// - 캔버스 backing buffer는 크기가 실제로 바뀔 때만 재할당 (같은 값 대입도 버퍼를 새로 만든다)
+// - GeoJSON은 정적이므로 지역별 LatLng 경로·bounds를 한 번만 만들어 캐시
 
 type RegionFill =
   | { type: "color"; value: string }
@@ -18,9 +23,17 @@ export function createImageFillOverlay(
   getFills: () => Record<string, RegionFill>,
   getGeojson: () => GeoJSON.FeatureCollection | null
 ) {
+  type RegionGeom = {
+    /** 폴리곤 outer ring들의 LatLng 캐시 — 매 프레임 new LatLng 할당 방지 */
+    rings: Array<Array<google.maps.LatLng>>
+    bounds: google.maps.LatLngBounds
+  }
+
   class ImageFillOverlayImpl extends google.maps.OverlayView {
     private canvas = document.createElement("canvas")
     private imgCache = new Map<string, HTMLImageElement>()
+    private geomCache = new Map<string, RegionGeom | null>()
+    private hasDrawn = false
 
     constructor() {
       super()
@@ -60,7 +73,56 @@ export function createImageFillOverlay(
       ).then(onLoaded)
     }
 
+    private getRegionGeom(region: string): RegionGeom | null {
+      const cached = this.geomCache.get(region)
+      if (cached !== undefined) return cached
+      const geojson = getGeojson()
+      // GeoJSON 로드 전 — 캐시하지 않고 다음 draw에서 재시도
+      if (!geojson) return null
+
+      const feature = geojson.features.find(
+        (f) => f.properties?.name === region
+      )
+      const geometry = feature?.geometry
+      const polys =
+        geometry?.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry?.type === "MultiPolygon"
+            ? geometry.coordinates
+            : []
+      if (polys.length === 0) {
+        this.geomCache.set(region, null)
+        return null
+      }
+
+      const bounds = new google.maps.LatLngBounds()
+      const rings = polys.map((poly) =>
+        poly[0].map(([lng, lat]: Array<number>) => {
+          const latLng = new google.maps.LatLng(lat, lng)
+          bounds.extend(latLng)
+          return latLng
+        })
+      )
+      const geom = { rings, bounds }
+      this.geomCache.set(region, geom)
+      return geom
+    }
+
     override draw() {
+      const imageFills = Object.entries(getFills()).filter(
+        (entry): entry is [string, Extract<RegionFill, { type: "image" }>] =>
+          entry[1].type === "image"
+      )
+      if (imageFills.length === 0) {
+        if (this.hasDrawn) {
+          this.canvas
+            .getContext("2d")
+            ?.clearRect(0, 0, this.canvas.width, this.canvas.height)
+          this.hasDrawn = false
+        }
+        return
+      }
+
       // @types/google.maps는 getProjection()을 non-nullable로 선언하지만,
       // onAdd() 이전 시점엔 실제로 undefined일 수 있어 방어적으로 재단언한다.
       const projection = this.getProjection() as
@@ -89,37 +151,28 @@ export function createImageFillOverlay(
       this.canvas.style.top = `${topRight.y}px`
 
       const dpr = window.devicePixelRatio || 1
-      this.canvas.width = cssWidth * dpr
-      this.canvas.height = cssHeight * dpr
-      this.canvas.style.width = `${cssWidth}px`
-      this.canvas.style.height = `${cssHeight}px`
-
+      const bufWidth = Math.round(cssWidth * dpr)
+      const bufHeight = Math.round(cssHeight * dpr)
       const ctx = this.canvas.getContext("2d")
       if (!ctx) return
+      if (this.canvas.width !== bufWidth || this.canvas.height !== bufHeight) {
+        this.canvas.width = bufWidth
+        this.canvas.height = bufHeight
+        this.canvas.style.width = `${cssWidth}px`
+        this.canvas.style.height = `${cssHeight}px`
+      }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, cssWidth, cssHeight)
+      this.hasDrawn = true
 
-      const geojson = getGeojson()
-      if (!geojson) return
-
-      for (const [region, fill] of Object.entries(getFills())) {
-        if (fill.type !== "image") continue
+      for (const [region, fill] of imageFills) {
         const img = this.imgCache.get(fill.imageId)
         if (!img) continue
 
-        const feature = geojson.features.find(
-          (f) => f.properties?.name === region
-        )
-        if (!feature) continue
-
-        const geometry = feature.geometry
-        const polys =
-          geometry.type === "Polygon"
-            ? [geometry.coordinates]
-            : geometry.type === "MultiPolygon"
-              ? geometry.coordinates
-              : []
-        if (polys.length === 0) continue
+        const geom = this.getRegionGeom(region)
+        if (!geom) continue
+        // 뷰포트 밖 지역은 투영 자체를 건너뛴다
+        if (!bounds.intersects(geom.bounds)) continue
 
         let minX = Infinity
         let maxX = -Infinity
@@ -128,11 +181,9 @@ export function createImageFillOverlay(
 
         ctx.save()
         ctx.beginPath()
-        for (const poly of polys) {
-          poly[0].forEach(([lng, lat]: Array<number>, i: number) => {
-            const pt = projection.fromLatLngToDivPixel(
-              new google.maps.LatLng(lat, lng)
-            )
+        for (const ring of geom.rings) {
+          ring.forEach((latLng, i) => {
+            const pt = projection.fromLatLngToDivPixel(latLng)
             if (!pt) return
             const x = pt.x - bottomLeft.x
             const y = pt.y - topRight.y
