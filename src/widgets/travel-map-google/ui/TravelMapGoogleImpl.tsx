@@ -22,6 +22,7 @@ import {
   findLatestCompletedTrip,
   findLatestMissingMineTrip,
   latestTripByRegion,
+  mostPickedKeyword,
   visibleStickerTrips,
 } from "../lib/collaboration"
 import {
@@ -40,12 +41,9 @@ import type {
   CollaborationRecordSeed,
   DecoratePreview,
 } from "@/features/travel-record"
+import type { TravelKeyword } from "@/entities/photo"
 import { findKeyword, useAllPhotos } from "@/entities/photo"
-import {
-  POPULAR_REGIONS,
-  formatRegionName,
-  useRegionColorStore,
-} from "@/entities/region"
+import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { showToast } from "@/shared/ui/toast"
@@ -69,8 +67,9 @@ const GOOGLE_MAP_ID =
 const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 6.7 }
 
 // 기록 시작 기본 위치 — 여름 휴가 데이터가 몰리는 강원도 (Figma 1836-15911 #2).
+// zoom은 [+ 지역] 버튼이 보이는 3단계(PARTY_ZOOM)로 바로 진입해 지역을 고를 수 있게 한다.
 // ponytail: 초기값 고정, 실제 방문 데이터가 쌓이면 최다 방문 권역으로 교체
-const GANGWON_VIEW = { lat: 37.6, lng: 128.5, zoom: 8.6 }
+const GANGWON_VIEW = { lat: 37.6, lng: 128.5, zoom: 9.5 }
 
 // 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
 // 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
@@ -83,14 +82,15 @@ let lastCameraSnapshot: CameraSnapshot | null = null
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
-const ZOOM_COLOR = 8.5
 const PARTY_ZOOM = 9.5
 // 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
 const PARTY_ZOOM_EPSILON = 0.01
 const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
-// 스티커(이모지 핀) 노출 하한 줌 — 전국 뷰(KOREA_VIEW 6.7)에서는 보이고,
-// 한반도를 넘어 주변 지역까지 보일 정도로 더 줌아웃하면 숨긴다
-const STICKER_MIN_ZOOM = 6
+// 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(6.7)는 1단계에 들고,
+// 한반도를 넘어 주변 국가까지 보일 정도로 줌아웃하면 국가(0단계) 뷰가 된다
+const NATION_MIN_ZOOM = 6
+// 0단계(국가 뷰) 대표 스티커 위치 — 남한 내륙 중앙부 부근 고정
+const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
 const STICKER_OFFSETS = [
@@ -102,7 +102,23 @@ const STICKER_OFFSETS = [
 // 지역 밖으로 벗어난다 — 좌표 자체에 반영하면 지도와 함께 스케일된다
 const STICKER_DEG_PER_PX = 360 / (256 * 2 ** PARTY_ZOOM)
 
-type Centroid = { name: string; lng: number; lat: number }
+type Centroid = {
+  name: string
+  lng: number
+  lat: number
+  /** 소속 도(광역시 포함) — geojson province 속성. 없으면 도 단위 집계에서 제외 */
+  province?: string
+}
+
+/** 1단계(전국 뷰) 도 단위 집계 — Figma 줌인 기준(1959-6730) */
+type ProvinceAggregate = {
+  province: string
+  keyword: TravelKeyword
+  /** 도 소속 전체 지역명 — 1단계에서 도 전체를 색칠할 때 사용 */
+  regions: Array<string>
+  lat: number
+  lng: number
+}
 
 type CollaborationRecordDraft = CollaborationRecordSeed &
   Pick<CollaborationTrip, "key" | "region">
@@ -205,10 +221,12 @@ function RecordTripConfirmContent({
   )
 }
 
+// Figma 줌인 기준(1959-6730): 0 국가(대표 스티커 1개) / 1 전국(도 단위 집계) /
+// 2 시군구(다녀온 지역 색칠 + 스티커) / 3 상세(+지역명·추가 버튼·팟 진행 상태)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
   if (zoom >= PARTY_ENTER) return 3
-  if (zoom >= ZOOM_COLOR) return 2
-  if (zoom >= BOUNDARY_ZOOM) return 1
+  if (zoom >= BOUNDARY_ZOOM) return 2
+  if (zoom >= NATION_MIN_ZOOM) return 1
   return 0
 }
 
@@ -284,7 +302,6 @@ function MapController({
   decorating,
   decoratePreview,
   setZoomStage,
-  setStickersVisible,
   setCentroids,
   setViewportCentroids,
   centroidsRef,
@@ -302,7 +319,6 @@ function MapController({
   decorating: string | null
   decoratePreview: DecoratePreview | null
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
-  setStickersVisible: (visible: boolean) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
@@ -360,7 +376,14 @@ function MapController({
           const name = f.properties?.name as string | undefined
           if (!name) continue
           const center = computeCentroid(f)
-          if (center) computed.push({ name, lng: center[0], lat: center[1] })
+          if (center) {
+            computed.push({
+              name,
+              lng: center[0],
+              lat: center[1],
+              province: f.properties?.province as string | undefined,
+            })
+          }
         }
         centroidsRef.current = computed
         setCentroids(computed)
@@ -397,16 +420,12 @@ function MapController({
             // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
             setZoomStage(getZoomStage(zoom))
-            setStickersVisible(zoom >= STICKER_MIN_ZOOM)
             syncViewport()
             overlay?.draw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
         setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
-        setStickersVisible(
-          (map.getZoom() ?? KOREA_VIEW.zoom) >= STICKER_MIN_ZOOM
-        )
         syncViewport()
       })
       .catch(console.error)
@@ -443,7 +462,6 @@ function MapController({
     setCentroids,
     setViewportCentroids,
     setZoomStage,
-    setStickersVisible,
   ])
 
   // fills/hasPhoto 변경 반영 + 이미지 fill 다시 로드
@@ -535,9 +553,6 @@ function TravelMapGoogleInner({
   const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
     getZoomStage(lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom)
   )
-  const [stickersVisible, setStickersVisible] = React.useState(
-    () => (lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom) >= STICKER_MIN_ZOOM
-  )
   const zoomStageRef = React.useRef(zoomStage)
   React.useEffect(() => {
     zoomStageRef.current = zoomStage
@@ -605,11 +620,81 @@ function TravelMapGoogleInner({
     return next
   }, [fills, latestTripsByRegion])
 
+  // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
+  // 동수면 최근 여행)와 등록 지역 수를 모아 도 전체 색칠 + 스티커/[+N] 뱃지에 쓴다
+  const provinceAggregates = React.useMemo<Array<ProvinceAggregate>>(() => {
+    const regionsByProvince = new Map<string, Array<Centroid>>()
+    const provinceOf = new Map<string, string>()
+    for (const c of centroids) {
+      if (!c.province) continue
+      provinceOf.set(c.name, c.province)
+      const list = regionsByProvince.get(c.province) ?? []
+      list.push(c)
+      regionsByProvince.set(c.province, list)
+    }
+
+    const tripsByProvince = new Map<string, Array<CollaborationTrip>>()
+    for (const trip of collaborationTrips) {
+      const province = provinceOf.get(trip.region)
+      if (!province) continue
+      const list = tripsByProvince.get(province) ?? []
+      list.push(trip)
+      tripsByProvince.set(province, list)
+    }
+
+    const aggregates: Array<ProvinceAggregate> = []
+    for (const [province, trips] of tripsByProvince) {
+      const keyword = findKeyword(mostPickedKeyword(trips))
+      const members = regionsByProvince.get(province) ?? []
+      if (!keyword || members.length === 0) continue
+      aggregates.push({
+        province,
+        keyword,
+        regions: members.map((c) => c.name),
+        // 도 대표 위치 — 소속 지역 centroid 평균 (별도 도 지오메트리 없이 근사)
+        lat: members.reduce((sum, c) => sum + c.lat, 0) / members.length,
+        lng: members.reduce((sum, c) => sum + c.lng, 0) / members.length,
+      })
+    }
+    return aggregates
+  }, [centroids, collaborationTrips])
+
+  // 0단계(국가 뷰) 대표 스티커 — 전국에서 제일 많이 뽑힌 키워드 1개
+  const countryKeyword = React.useMemo(
+    () => findKeyword(mostPickedKeyword(collaborationTrips)),
+    [collaborationTrips]
+  )
+
+  // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
+  // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
+  const displayFills = React.useMemo<Record<string, RegionFill>>(() => {
+    // 0단계(국가 뷰) — 기록이 있으면 대한민국 전체를 전국 대표 키워드 색 하나로 칠한다
+    if (zoomStage === 0 && countryKeyword && centroids.length > 0) {
+      const next: Record<string, RegionFill> = {}
+      for (const { name } of centroids) {
+        next[name] = { type: "color", value: countryKeyword.fill }
+      }
+      return next
+    }
+    if (zoomStage >= 2 || provinceAggregates.length === 0) return mapFills
+    const next: Record<string, RegionFill> = { ...mapFills }
+    for (const agg of provinceAggregates) {
+      for (const region of agg.regions) {
+        // 사진 채움(image)은 유지 — 색만 도 대표 색으로 통일
+        if (Object.hasOwn(next, region) && next[region].type === "image") {
+          continue
+        }
+        next[region] = { type: "color", value: agg.keyword.fill }
+      }
+    }
+    return next
+  }, [zoomStage, mapFills, provinceAggregates, countryKeyword, centroids])
+
   // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
-  const fillsRef = React.useRef(mapFills)
+  const fillsRef = React.useRef(displayFills)
   React.useEffect(() => {
-    fillsRef.current = mapFills
-  }, [mapFills])
+    fillsRef.current = displayFills
+  }, [displayFills])
 
   // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
   const [seenTips, setSeenTips] = React.useState(false)
@@ -629,9 +714,9 @@ function TravelMapGoogleInner({
     onAlbumAvailabilityChange?.(photos.length > 0)
   }, [onAlbumAvailabilityChange, photos.length])
 
-  // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰일 때만 진입점을 노출
+  // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰 이하(0·1단계)일 때만 진입점을 노출
   const showRecordTip =
-    seenTips && photos.length === 0 && !decorating && zoomStage === 0
+    seenTips && photos.length === 0 && !decorating && zoomStage <= 1
   const [dismissedRecordTipKey, setDismissedRecordTipKey] = React.useState<
     string | null
   >(null)
@@ -654,7 +739,7 @@ function TravelMapGoogleInner({
     !!latestCompletedTrip &&
     completionTipKey === `${currentPotId}|${latestCompletedTripKey}` &&
     !decorating &&
-    zoomStage === 0
+    zoomStage <= 1
   const encouragementRecorderName = encouragementTrip
     ? (partyMembers.find(
         (member) =>
@@ -705,7 +790,7 @@ function TravelMapGoogleInner({
     }
 
     const key = `${currentPotId}|${latestCompletedTripKey}`
-    if (zoomStage !== 0 || !canShowCompletionTip(key)) {
+    if (zoomStage > 1 || !canShowCompletionTip(key)) {
       setCompletionTipKey(null)
       return
     }
@@ -896,29 +981,26 @@ function TravelMapGoogleInner({
           geojsonRef={geojsonRef}
           dataLayerRef={dataLayerRef}
           overlayRef={overlayRef}
-          fills={mapFills}
+          fills={displayFills}
           fillsRef={fillsRef}
           photoRegionSet={photoRegionSet}
           incompleteRegionSet={incompleteRegionSet}
           decorating={decorating}
           decoratePreview={decoratePreview}
           setZoomStage={setZoomStage}
-          setStickersVisible={setStickersVisible}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
         />
 
-        {zoomStage >= 1 &&
+        {/* 지역명 + [+] 버튼은 3단계에서만 — 2단계는 "시/군별 스티커만" (Figma 줌인 기준 2·3단계) */}
+        {zoomStage >= 3 &&
           !decorating &&
           viewportCentroids
-            // 줌 2단계(zoomStage 1)는 관광지 상위 30%만, 줌 3단계(zoomStage 2+)는 전부 노출
             .filter(
               ({ name }) =>
-                !Object.hasOwn(mapFills, name) &&
-                !photoRegionSet.has(name) &&
-                (zoomStage >= 2 || POPULAR_REGIONS.has(name))
+                !Object.hasOwn(mapFills, name) && !photoRegionSet.has(name)
             )
             .map(({ name, lng, lat }) => (
               <AdvancedMarker
@@ -990,8 +1072,39 @@ function TravelMapGoogleInner({
             </AdvancedMarker>
           ))}
 
-        {/* 스티커와 같은 기준 — 한반도 밖까지 보이게 줌아웃하면 기록하기 툴팁도 숨긴다 */}
-        {stickersVisible && visibleRecordTip?.center ? (
+        {/* 0단계(국가) — 전국에서 제일 많이 뽑힌 키워드 스티커 1개만 노출 */}
+        {zoomStage === 0 && !decorating && countryKeyword ? (
+          <AdvancedMarker
+            position={KOREA_STICKER_ANCHOR}
+            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          >
+            <img
+              src={countryKeyword.emojiSrc}
+              alt={`대한민국 대표 키워드 ${countryKeyword.label}`}
+              className="size-10"
+            />
+          </AdvancedMarker>
+        ) : null}
+
+        {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 스티커 1개 */}
+        {zoomStage === 1 &&
+          !decorating &&
+          provinceAggregates.map((agg) => (
+            <AdvancedMarker
+              key={`province-${agg.province}`}
+              position={{ lat: agg.lat, lng: agg.lng }}
+              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            >
+              <img
+                src={agg.keyword.emojiSrc}
+                alt={`${agg.province} 대표 키워드 ${agg.keyword.label}`}
+                className="size-14"
+              />
+            </AdvancedMarker>
+          ))}
+
+        {/* 전국 뷰(1단계) 이상에서만 — 국가 뷰(0단계)로 줌아웃하면 기록하기 툴팁도 숨긴다 */}
+        {zoomStage >= 1 && visibleRecordTip?.center ? (
           <AdvancedMarker
             position={{
               lat: visibleRecordTip.center.lat,
@@ -1038,8 +1151,8 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {/* 한반도를 넘어 주변 지역까지 보일 만큼 줌아웃하면 스티커를 숨긴다 */}
-        {stickersVisible &&
+        {/* 시/군별 스티커는 2단계부터 — 1단계 이하는 도/국가 단위 대표 스티커로 대체 */}
+        {zoomStage >= 2 &&
           !decorating &&
           visiblePins.map((p) => (
             <AdvancedMarker
