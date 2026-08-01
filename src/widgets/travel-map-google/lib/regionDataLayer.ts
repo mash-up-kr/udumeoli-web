@@ -61,6 +61,9 @@ function computeStyle(
     strokeWeight,
     strokeOpacity,
     clickable: true,
+    // 완전 투명 지역을 visible:false로 빼는 최적화는 하지 않는다 — 줌 제스처마다
+    // BOUNDARY_ZOOM(7.5) 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
+    // 히치가 생겨, 투명 렌더 비용 절감보다 체감 버벅임이 더 컸다
   }
 }
 
@@ -82,6 +85,26 @@ export type RegionDataLayer = {
   /** 줌 변경 시 경계선 minzoom 게이팅 재계산 */
   syncZoom: (zoom: number) => void
   destroy: () => void
+}
+
+/**
+ * 상위 행정 경계선(시도/국가) 레이어 — 비인터랙티브 stroke 전용 google.maps.Data.
+ * 기록 지역 테두리(#232936)와 같은 짙은 톤 — 기본 경계선(#aaaaaa 0.65)은 축소 뷰에서
+ * 흐려 보인다. 노출 제어는 호출부가 setMap으로 한다.
+ */
+export function createBoundaryLayer(
+  geojson: GeoJSON.FeatureCollection | GeoJSON.Feature
+): google.maps.Data {
+  const layer = new google.maps.Data()
+  layer.addGeoJson(geojson)
+  layer.setStyle({
+    clickable: false,
+    fillOpacity: 0,
+    strokeColor: "#232936",
+    strokeWeight: 1,
+    strokeOpacity: 1,
+  })
+  return layer
 }
 
 export function createRegionDataLayer(

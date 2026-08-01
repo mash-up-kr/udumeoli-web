@@ -4,6 +4,7 @@ import {
   buildCollaborationTrips,
   findLatestCompletedTrip,
   findLatestMissingMineTrip,
+  mostPickedKeyword,
   visibleStickerTrips,
 } from "./collaboration"
 import type { Photo } from "@/entities/photo"
@@ -129,5 +130,44 @@ describe("visibleStickerTrips", () => {
     expect(visibleStickerTrips(trips).map((trip) => trip.region)).toEqual([
       "강릉시",
     ])
+  })
+})
+
+describe("mostPickedKeyword", () => {
+  it("제일 많이 뽑힌 키워드를 반환한다 (하트 2번 / 빵 1번 → 하트)", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        photo("newest", "속초시", "2026-09-01", "user-1", { keyword: "bread" }),
+        photo("mid", "동해시", "2026-08-01", "user-1", { keyword: "nature" }),
+        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "nature" }),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+
+    expect(mostPickedKeyword(trips)).toBe("nature")
+  })
+
+  it("개수가 동일하면 가장 최근 여행의 키워드를 고른다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        photo("new", "동해시", "2026-08-01", "user-1", { keyword: "bread" }),
+        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "nature" }),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+
+    expect(mostPickedKeyword(trips)).toBe("bread")
+  })
+
+  it("키워드가 없는 여행만 있으면 undefined를 반환한다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [photo("no-keyword", "강릉시", "2026-07-01", "user-1")],
+      members,
+      currentUserId: "user-1",
+    })
+
+    expect(mostPickedKeyword(trips)).toBeUndefined()
   })
 })

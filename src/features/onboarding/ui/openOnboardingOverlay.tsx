@@ -285,3 +285,12 @@ export function openOnboardingOverlay(options?: {
     />
   ))
 }
+
+/**
+ * 계정 삭제 시 노출 이력 초기화 — 안 하면 재가입 시 가입 완료 팝업 뒤
+ * openOnboardingOverlay가 "이미 봤음"으로 early-return해 onComplete(지도 이동)가
+ * 호출되지 않아 /signup에서 플로우가 멈춘다.
+ */
+export function resetOnboardingSeen() {
+  localStorage.removeItem(SEEN_KEY)
+}
