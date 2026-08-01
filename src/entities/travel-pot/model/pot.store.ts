@@ -3,12 +3,14 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 import {
+  ALBUM_POT,
   JOIN_ERROR_CODES,
   JOIN_PREVIEW,
   UT_POTS,
   makeInviteCode,
 } from "../api/pot.mock"
 import type { JoinPreviewResult, PotMember, TravelPot } from "./types"
+import { USE_MOCK } from "@/shared/api/client"
 
 interface PotState {
   pots: Array<TravelPot>
@@ -201,7 +203,27 @@ export const usePotStore = create<PotState>()(
           }
         }),
     }),
-    { name: "photato-pots" }
+    {
+      name: "photato-pots",
+      // 목 모드 한정: 온보딩을 마친(팟이 하나라도 있는) 유저에게 앨범 목데이터용
+      // 4인 팟(우두머리)을 1회 주입하고 선택한다. 빈 상태에는 넣지 않아
+      // 신규 유저의 /pot-start 온보딩 흐름은 그대로 유지된다.
+      merge: (persisted, current) => {
+        const state = { ...current, ...(persisted as Partial<PotState>) }
+        if (
+          USE_MOCK &&
+          state.pots.length > 0 &&
+          !state.pots.some((p) => p.id === ALBUM_POT.id)
+        ) {
+          return {
+            ...state,
+            pots: [...state.pots, ALBUM_POT],
+            currentPotId: ALBUM_POT.id,
+          }
+        }
+        return state
+      },
+    }
   )
 )
 

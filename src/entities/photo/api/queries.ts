@@ -3,9 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { applyPhotoEdits, usePhotoEditStore } from "../model/edit.store"
 import { usePhotoUploadStore } from "../model/upload.store"
-import { makeAlbumPhotos } from "./photo.mock"
 import { deletePhoto, fetchPhotos, updatePhotoComment } from "./photo.api"
-import { USE_MOCK } from "@/shared/api/client"
 
 export const photoKeys = {
   all: ["photo"] as const,
@@ -33,25 +31,15 @@ export function useAllPhotos(potId: string) {
 }
 
 /**
- * 여행 앨범 지역 상세용 사진 목록 — 앨범 시드(목) + 전체 사진에서 해당 지역만,
- * 수정/삭제 반영. 컴포넌트가 목데이터를 직접 만들지 않도록 여기서 병합한다.
- * memberIds는 호출부에서 메모이즈해 전달할 것.
+ * 여행 앨범 지역 상세용 사진 목록 — 전체 사진에서 해당 지역만.
+ * 앨범 목 시드는 fetchPhotos(목)에서 병합되므로 여기선 필터만 한다.
  */
-export function useRegionAlbumPhotos(
-  potId: string,
-  region: string,
-  memberIds: Array<string>
-) {
+export function useRegionAlbumPhotos(potId: string, region: string) {
   const all = useAllPhotos(potId)
-  const deletedIds = usePhotoEditStore((s) => s.deletedIds)
-  const comments = usePhotoEditStore((s) => s.comments)
-  return React.useMemo(() => {
-    const seed = USE_MOCK ? makeAlbumPhotos(potId, memberIds) : []
-    return applyPhotoEdits(
-      [...seed, ...all].filter((p) => p.region === region),
-      { deletedIds, comments }
-    )
-  }, [all, potId, region, memberIds, deletedIds, comments])
+  return React.useMemo(
+    () => all.filter((p) => p.region === region),
+    [all, region]
+  )
 }
 
 /** 사진 코멘트 수정 — 성공 시 사진 목록 갱신. (수정 화면 연결 시 사용) */

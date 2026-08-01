@@ -7,32 +7,17 @@ import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
-import { groupTrips, makeAlbumPhotos, useAllPhotos } from "@/entities/photo"
-import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
+import { groupTrips, useAllPhotos } from "@/entities/photo"
+import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
 
-/** 현재 팟의 사진 + 앨범 목 시드 병합 — 앨범 화면에서만 쓰는 데이터 소스 */
-function useAlbumPhotos(): Array<Photo> {
-  const currentPotId = usePotStore((s) => s.currentPotId)
-  const members = usePotStore(selectCurrentPotMembers)
-  const photos = useAllPhotos(currentPotId)
-  return React.useMemo(() => {
-    const seed = USE_MOCK
-      ? makeAlbumPhotos(
-          currentPotId,
-          members.map((m) => m.id)
-        )
-      : []
-    return [...seed, ...photos]
-  }, [currentPotId, members, photos])
-}
-
 function TravelAlbumPageContent() {
   const router = useRouter()
-  const photos = useAlbumPhotos()
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  // 앨범 목 시드는 fetchPhotos(목)에서 병합 — 지도와 동일한 목록을 본다
+  const photos = useAllPhotos(currentPotId)
   const myId = useSessionStore((s) => s.currentUser?.id ?? null)
 
   // 지역별 카드 데이터 — 방문 횟수(연속 일자 그룹 수)·이미지 스택·미기록 Alert

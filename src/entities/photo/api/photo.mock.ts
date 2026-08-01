@@ -340,48 +340,65 @@ function isMemberOfPot(uploaderId: string, potSize: number): boolean {
   return Number.isInteger(idx) && idx + 2 <= potSize
 }
 
-// 여행 앨범 시드 — [날짜, 업로더(멤버 인덱스), 코멘트?] 튜플로 지역별 방문 기록을 정의.
-// 연속된 날짜가 방문 1회로 묶이므로(groupTrips) 창원 5회 / 대전 4회 / 강릉 2회가 된다.
-// 인덱스 0(나)이 창원·강릉의 최신 방문에 빠져 있어 카드 Alert와 '기록하기' CTA를 확인할 수 있다.
+// 여행 앨범 목데이터 전용 팟 id — pot.mock ALBUM_POT과 일치해야 한다 (photo.ut의
+// "pot-ut-1" 하드코딩과 같은 컨벤션). 이 팟의 멤버는 user-1 + m-유지-0/m-성아-1/m-가연-2.
+export const ALBUM_POT_ID = "pot-album-1"
+
+// 여행 앨범 시드 — [날짜, 업로더 id, 코멘트?] 튜플로 지역별 방문 기록을 정의.
+// 연속된 날짜가 방문 1회로 묶인다(groupTrips). keyword는 지도 스티커·지역 색을 결정.
+// 창원 최신 방문에 나(user-1)와 성아가 빠져 있어 '기록하기' CTA와 zzZ 슬롯,
+// 카드 Alert, 지도 미완료(협업) 상태를 모두 확인할 수 있다.
 type AlbumSeed = {
   region: string
-  uploads: Array<[date: string, memberIdx: number, comment?: string]>
+  keyword: Photo["keyword"]
+  uploads: Array<[date: string, uploaderId: string, comment?: string]>
 }
 
 const ALBUM_SEEDS: Array<AlbumSeed> = [
   {
     region: "창원시",
+    keyword: "bread",
     uploads: [
-      ["2026-07-20", 1, "야르하게찍었쥬?ㅋㅋㅋㅋ"],
-      ["2026-07-21", 1],
-      ["2026-07-21", 2, "여기 다음에 또 오자"],
-      ["2026-05-02", 0, "벚꽃 만개!"],
-      ["2026-05-03", 1],
-      ["2026-05-03", 2],
-      ["2026-03-14", 0],
-      ["2025-11-21", 1, "겨울 바다도 좋네"],
-      ["2025-08-01", 0, "휴가 1일차"],
-      ["2025-08-02", 2],
+      // 최신 방문 — 유지·가연만 업로드, 나·성아 미기록 (기록하기/zzZ 케이스)
+      ["2026-07-20", "m-유지-0", "야르하게찍었쥬?ㅋㅋㅋㅋ"],
+      ["2026-07-21", "m-유지-0", "빵지순례 2일차"],
+      ["2026-07-21", "m-가연-2", "여기 다음에 또 오자"],
+      // 전원 업로드 완료 방문 (지도 색칠·스티커 케이스)
+      ["2026-05-02", "user-1", "벚꽃 만개!"],
+      ["2026-05-03", "m-유지-0", "사진 미쳤다"],
+      ["2026-05-03", "m-성아-1", "다음엔 회 먹으러 가자"],
+      ["2026-05-03", "m-가연-2"],
+      ["2026-03-14", "user-1"],
+      ["2025-11-21", "m-유지-0", "겨울 바다도 좋네"],
+      ["2025-08-01", "user-1", "휴가 1일차"],
+      ["2025-08-02", "m-성아-1", "더워도 바다는 못 참지"],
     ],
   },
   {
     region: "대전광역시",
+    keyword: "bread",
     uploads: [
-      ["2026-06-19", 0, "성심당은 못 참지"],
-      ["2026-06-20", 1],
-      ["2026-04-10", 0],
-      ["2025-12-24", 0, "크리스마스 이브"],
-      ["2025-12-25", 2],
-      ["2025-09-05", 0],
+      // 전원 업로드 완료 방문
+      ["2026-06-19", "user-1", "성심당은 못 참지"],
+      ["2026-06-19", "m-유지-0", "튀소 4박스 클리어"],
+      ["2026-06-20", "m-성아-1", "빵 냄새로 배부름"],
+      ["2026-06-20", "m-가연-2", "다음엔 보문산도 가자"],
+      ["2026-04-10", "user-1"],
+      ["2025-12-24", "user-1", "크리스마스 이브"],
+      ["2025-12-25", "m-가연-2", "겨울 대전 감성"],
     ],
   },
   {
     region: "강릉시",
+    keyword: "nature",
     uploads: [
-      ["2026-02-27", 1, "혼자 다녀옴 ㅎㅎ"],
-      ["2026-02-28", 1],
-      ["2025-07-18", 0, "바다!!"],
-      ["2025-07-19", 1],
+      ["2026-02-27", "m-유지-0", "혼자 다녀옴 ㅎㅎ"],
+      ["2026-02-28", "m-유지-0"],
+      // 전원 업로드 완료 방문
+      ["2025-07-18", "user-1", "바다!!"],
+      ["2025-07-18", "m-유지-0"],
+      ["2025-07-19", "m-성아-1", "서핑 재밌다"],
+      ["2025-07-19", "m-가연-2", "일출 대박"],
     ],
   },
 ]
@@ -393,30 +410,23 @@ const ALBUM_REGION_CENTERS: Record<string, { lat: number; lng: number }> = {
   강릉시: { lat: 37.752, lng: 128.876 },
 }
 
-/**
- * 여행 앨범 목 사진 생성 — 현재 팟 기준으로 창원/대전/강릉 방문 기록을 만든다.
- * memberIds는 팟 멤버 id 순서(0번째 = 나)이며, 인원이 적으면 순환해 채운다.
- */
-export function makeAlbumPhotos(
-  potId: string,
-  memberIds: Array<string>
-): Array<Photo> {
-  if (memberIds.length === 0) return []
-  return ALBUM_SEEDS.flatMap((seed) => {
-    const center = ALBUM_REGION_CENTERS[seed.region]
-    return seed.uploads.map(([date, memberIdx, comment], i) => ({
-      id: `album-${potId}-${seed.region}-${i}`,
-      potId,
-      region: seed.region,
-      lat: center.lat + i * 0.004,
-      lng: center.lng + i * 0.004,
-      date,
-      uploaderId: memberIds[memberIdx % memberIds.length],
-      thumbnailUrl: `https://picsum.photos/seed/album-${seed.region}-${i}/400/400`,
-      comment,
-    }))
-  })
-}
+// 여행 앨범 목 사진 — fetchPhotos(목)에 항상 포함돼 지도/앨범/지역 상세가
+// 같은 목록을 본다. ALBUM_POT_ID 팟에서만 노출된다(useAllPhotos가 potId로 필터).
+export const ALBUM_PHOTOS: Array<Photo> = ALBUM_SEEDS.flatMap((seed) => {
+  const center = ALBUM_REGION_CENTERS[seed.region]
+  return seed.uploads.map(([date, uploaderId, comment], i) => ({
+    id: `album-${ALBUM_POT_ID}-${seed.region}-${i}`,
+    potId: ALBUM_POT_ID,
+    region: seed.region,
+    lat: center.lat + i * 0.004,
+    lng: center.lng + i * 0.004,
+    date,
+    uploaderId,
+    thumbnailUrl: `https://picsum.photos/seed/album-${seed.region}-${i}/400/400`,
+    ...(comment ? { comment } : {}),
+    ...(seed.keyword ? { keyword: seed.keyword } : {}),
+  }))
+})
 
 // 팟별로 사진을 분리 — 각 팟(pot-1~pot-6)에는 그 팟 멤버가 올린 사진만 존재.
 // 썸네일 시드도 팟별로 달리해 팟마다 다른 사진처럼 보이게 한다.

@@ -9,6 +9,7 @@ import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
 import { openMapTipsOverlay } from "@/features/onboarding"
+import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
 import {
@@ -77,6 +78,10 @@ function MapGooglePageContent() {
               {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
                   빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
               <AppHeader potSelector={<PotSelector />} />
+              {/* RECAP 버튼 — 시안 1745-38063 로고 아래 좌측 */}
+              <div className="px-4">
+                <RecapButton className="pointer-events-auto" />
+              </div>
             </div>
 
             {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움 */}

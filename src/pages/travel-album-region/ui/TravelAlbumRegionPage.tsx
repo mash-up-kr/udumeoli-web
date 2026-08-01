@@ -35,8 +35,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
-  const memberIds = React.useMemo(() => members.map((m) => m.id), [members])
-  const regionPhotos = useRegionAlbumPhotos(currentPotId, region, memberIds)
+  const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
   const trips = React.useMemo(() => groupTrips(regionPhotos), [regionPhotos])
   const deletePhotoMutation = useDeletePhoto()
 
