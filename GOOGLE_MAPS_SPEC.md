@@ -53,14 +53,24 @@ VITE_GOOGLE_MAPS_MAP_ID=    # 선택. 비우면 DEMO_MAP_ID 폴백 (AdvancedMark
 
 ### 2.1 줌 단계
 
+> Google 구현은 Figma "줌인 기준 정리"(1959-6730) 반영으로 단계 체계가 원본 `/map`과
+> 달라졌다. 아래는 Google 구현 기준.
+
 ```
-BOUNDARY_ZOOM = 7.5   # 경계선 + "+" 버튼 등장
-ZOOM_COLOR    = 8.5   # (구: 핀 2개·72px — #79에서 폐기, 상수만 잔존)
+NATION_MIN_ZOOM = 6   # 전국(1단계) 뷰 하한 — 이 아래는 국가(0단계) 뷰
+BOUNDARY_ZOOM = 7.5   # 경계선 등장 + 시군구(2단계) 시작
 PARTY_ZOOM    = 9.5   # 지역 상세(파티 슬롯) 진입 = maxZoom
 PARTY_ENTER   = 9.49  # 관성 줌이 9.4999에서 멈춰도 3단계 인정 (epsilon 0.01)
-getZoomStage(z): 0(<7.5) / 1(≥7.5) / 2(≥8.5) / 3(≥PARTY_ENTER)
+getZoomStage(z): 0(<6) / 1(≥6) / 2(≥7.5) / 3(≥PARTY_ENTER)
 ```
 
+- 단계별 노출 (Figma 1959-6730):
+  - **0 국가**: 대한민국 전체를 전국 대표 키워드 색 하나로 색칠 + 해당 키워드 스티커
+    1개 (동수면 최근 여행 키워드)
+  - **1 전국(메인)**: 기록이 있는 도 전체를 대표 키워드 색으로 색칠 + 도별 대표 스티커
+    1개 (시안의 `[+N]` 집계 뱃지는 제품 결정으로 미노출)
+  - **2 시군구**: 다녀온 지역만 색칠 + 시/군별 스티커만
+  - **3 상세**: 2단계 + 지역명·[+] 추가 버튼·팟 진행 상태(멤버 카운트)까지
 - 초기 뷰 `{lng 127.8, lat 36.2, zoom 6.5}`, `maxZoom=PARTY_ZOOM`
 - **소수점 줌 필수** — Google은 `isFractionalZoomEnabled: true` 명시해야 함 (없으면 정수 스냅되어 9.5 경계 죽음)
 
@@ -85,6 +95,8 @@ getZoomStage(z): 0(<7.5) / 1(≥7.5) / 2(≥8.5) / 3(≥PARTY_ENTER)
 - 노출: `zoomStage ≥ 1 && !selectedRegion && !decorating`, 뷰포트 내 centroid만
 - 필터: 색칠 없음 && 사진 없음 && `(zoomStage ≥ 2 || POPULAR_REGIONS.has(name))`
   — 줌 1단계(7.5~8.5)는 관광지 상위 30개만, 2단계(8.5+)부터 전 지역
+- **Google 구현 변경(Figma 1959-6730)**: 3단계(≥PARTY_ENTER)에서만 노출,
+  POPULAR_REGIONS 필터 미사용 — 2단계는 "시/군별 스티커만"
 - 디자인: 28px(size-7) 원형 흰 배경(white/70) + `border-[2.5px] border-stroke-neutral-bold` + `icon-add.svg`(size-5), 아래 `formatRegionName` 라벨 `text-h9 [text-shadow:0_0_8px_white]`
 - 클릭: `startDecorate(name)` — 등록 플로우 진입
 
