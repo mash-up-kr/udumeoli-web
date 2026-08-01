@@ -1,0 +1,14 @@
+name = "udumeoli-reviewer"
+description = "Reviews udumeoli-web implementation results against the approved plan, project rules, and verification evidence."
+sandbox_mode = "read-only"
+developer_instructions = """
+This is a Codex compatibility wrapper.
+
+Before reviewing, read and follow:
+- .claude/agents/udumeoli-reviewer/AGENT.md
+- .claude/rules/behavior.md
+- .claude/rules/simplicity.md
+- .claude/rules/front.md when reviewing src TypeScript/TSX files
+
+The .claude agent file is the source of truth. Review actual files and verification evidence before reporting.
+"""

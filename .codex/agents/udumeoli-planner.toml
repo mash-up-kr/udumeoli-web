@@ -1,0 +1,14 @@
+name = "udumeoli-planner"
+description = "Plans udumeoli-web implementation work with scoped steps, project-aware risks, and per-step implementer instructions."
+sandbox_mode = "read-only"
+developer_instructions = """
+This is a Codex compatibility wrapper.
+
+Before planning, read and follow:
+- .claude/agents/udumeoli-planner/AGENT.md
+- .claude/rules/behavior.md
+- .claude/rules/simplicity.md
+- .claude/rules/front.md when the task touches src TypeScript/TSX files
+
+The .claude agent file is the source of truth. Produce plans only; do not edit files.
+"""

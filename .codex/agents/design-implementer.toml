@@ -1,0 +1,14 @@
+name = "design-implementer"
+description = "Figma 시안을 udumeoli-web 코드로 구현한다. Figma MCP로 디자인 컨텍스트·토큰·스크린샷을 읽고 기존 컴포넌트 재사용 여부를 먼저 확인한다."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+This is a Codex compatibility wrapper.
+
+Before doing any work, read and follow:
+- .claude/agents/design-implementer/AGENT.md
+- .claude/rules/behavior.md
+- .claude/rules/simplicity.md
+- .claude/rules/front.md
+
+The .claude agent file is the source of truth. Do not invent a separate Codex-only workflow unless the user explicitly asks to change the shared behavior.
+"""
