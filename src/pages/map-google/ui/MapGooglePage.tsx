@@ -12,11 +12,7 @@ import { openMapTipsOverlay } from "@/features/onboarding"
 import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
-import {
-  getMemberPots,
-  usePotStore,
-  usePotsHydrated,
-} from "@/entities/travel-pot"
+import { useMyPots, usePotStore, usePotsHydrated } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
 function MapGooglePageContent() {
@@ -34,9 +30,12 @@ function MapGooglePageContent() {
   const seedUtPots = usePotStore((s) => s.seedUtPots)
   const seededUtPreviewRef = React.useRef(false)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
-  const hasPot = usePotStore(
-    (s) => getMemberPots(s.pots, currentUserId).length > 0
-  )
+  // UT 프리뷰는 시드된 store만 본다 — 서버 목록을 덮어써 미리보기가 사라지면 안 된다
+  const { hasPot, isPending } = useMyPots(currentUserId, {
+    enabled: hydrated && !isUtPreview,
+  })
+  const ready = hydrated && !isPending
+
   React.useEffect(() => {
     if (!hydrated || !isUtPreview || seededUtPreviewRef.current) return
     seededUtPreviewRef.current = true
@@ -46,9 +45,9 @@ function MapGooglePageContent() {
   }, [hydrated, isUtPreview, queryClient, seedUtPots])
 
   React.useEffect(() => {
-    if (hydrated && !hasPot && !isUtPreview)
+    if (ready && !hasPot && !isUtPreview)
       router.navigate({ to: "/pot-start", replace: true })
-  }, [hydrated, hasPot, isUtPreview, router])
+  }, [hasPot, isUtPreview, ready, router])
 
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
@@ -58,10 +57,10 @@ function MapGooglePageContent() {
 
   // 팟과 함께 지도에 처음 진입했을 때 지도 사용법 안내 (줌인/사진 업로드) 1회 노출
   React.useEffect(() => {
-    if (hydrated && hasPot) openMapTipsOverlay()
-  }, [hydrated, hasPot])
+    if (ready && hasPot) openMapTipsOverlay()
+  }, [hasPot, ready])
 
-  if (!hydrated || !hasPot) return null
+  if (!ready || !hasPot) return null
 
   return (
     <MobileLayout className="flex h-dvh flex-col">

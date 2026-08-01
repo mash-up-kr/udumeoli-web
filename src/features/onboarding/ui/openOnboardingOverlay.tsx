@@ -270,7 +270,10 @@ export function openOnboardingOverlay(options?: {
   onComplete?: () => void
 }): void {
   // 한 번이라도 노출되면 확인한 것으로 처리 — 재접속 시 다시 노출되지 않음
-  if (!options?.force && localStorage.getItem(SEEN_KEY) !== null) return
+  if (!options?.force && localStorage.getItem(SEEN_KEY) !== null) {
+    options?.onComplete?.()
+    return
+  }
   localStorage.setItem(SEEN_KEY, "true")
 
   overlay.open(({ unmount }) => (

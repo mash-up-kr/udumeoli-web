@@ -8,6 +8,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
+import { GRAPHQL_USER_ID, USE_MOCK } from "@/shared/api/client"
 import { MOCK_USER, useSessionStore } from "@/entities/user"
 import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
@@ -209,7 +210,12 @@ export function SignupPage() {
   // 팝업·온보딩이 통째로 스킵되는 경합이 생긴다. 온보딩이 끝난 뒤에야 이동한다.
   const handleSubmit = () => {
     const name = nickname.trim()
-    login({ ...MOCK_USER, nickname: name, profileImageUrl: profileImage })
+    const user = USE_MOCK
+      ? { ...MOCK_USER, nickname: name, profileImageUrl: profileImage }
+      : { id: GRAPHQL_USER_ID, nickname: name, profileImageUrl: null }
+
+    login(user)
+
     openModal(
       ({ close }) => (
         <SignupCompleteContent

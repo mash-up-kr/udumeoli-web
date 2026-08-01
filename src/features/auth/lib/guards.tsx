@@ -1,7 +1,8 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { useSessionStore } from "@/entities/user"
+import { useMe, useSessionStore } from "@/entities/user"
+import { USE_MOCK } from "@/shared/api/client"
 
 // persist 미들웨어가 localStorage에서 세션을 복원하기 전엔 isAuthenticated가
 // 항상 false라, 직접 URL 진입 시 복원 전/후 값이 튀며 오탐 리다이렉트가 난다.
@@ -32,12 +33,49 @@ function useSessionHydrated() {
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated)
+  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const login = useSessionStore((s) => s.login)
+  const logout = useSessionStore((s) => s.logout)
   const hydrated = useSessionHydrated()
   const router = useRouter()
+  const meQuery = useMe({ enabled: !USE_MOCK && hydrated, retry: false })
+
   React.useEffect(() => {
-    if (hydrated && !isAuthenticated) router.navigate({ to: "/" })
-  }, [hydrated, isAuthenticated, router])
-  if (!hydrated || !isAuthenticated) return null
+    if (!hydrated) return
+
+    if (USE_MOCK) {
+      if (!isAuthenticated) router.navigate({ to: "/" })
+      return
+    }
+
+    if (meQuery.data) {
+      login(meQuery.data)
+      return
+    }
+
+    if (meQuery.isError && !isAuthenticated) {
+      logout()
+      router.navigate({ to: "/" })
+    }
+  }, [
+    hydrated,
+    isAuthenticated,
+    login,
+    logout,
+    meQuery.data,
+    meQuery.isError,
+    router,
+  ])
+
+  if (USE_MOCK) {
+    if (!hydrated || !isAuthenticated) return null
+    return <>{children}</>
+  }
+
+  // 서버 세션이 확인됐거나, persist된 로컬 세션이 있으면 진입 허용
+  const canEnter =
+    meQuery.data !== undefined || (isAuthenticated && currentUserId !== null)
+  if (!hydrated || !canEnter) return null
   return <>{children}</>
 }
 
@@ -45,12 +83,16 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated)
   const hydrated = useSessionHydrated()
   const router = useRouter()
+
   React.useEffect(() => {
+    if (!hydrated) return
+    if (!USE_MOCK) return
+
     // replace — push하면 "/"가 히스토리에 남아 지도에서 뒤로가기 시 "/"로 갔다가
     // 다시 인증됨→지도로 튕기는 왕복이 반복돼 뒤로가기가 아무 일도 안 하는 것처럼 느껴진다
-    if (hydrated && isAuthenticated)
-      router.navigate({ to: "/map-google", replace: true })
+    if (isAuthenticated) router.navigate({ to: "/map-google", replace: true })
   }, [hydrated, isAuthenticated, router])
-  if (!hydrated || isAuthenticated) return null
+
+  if (!hydrated || (USE_MOCK && isAuthenticated)) return null
   return <>{children}</>
 }

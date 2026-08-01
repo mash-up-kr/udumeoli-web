@@ -12,8 +12,9 @@ import {
 } from "@/shared/ui/bottom-sheet"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
+import { USE_MOCK } from "@/shared/api/client"
 import { useAllPhotos } from "@/entities/photo"
-import { usePotStore } from "@/entities/travel-pot"
+import { useJoinParty, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import partySrc from "@/shared/assets/party.svg"
 
@@ -91,6 +92,7 @@ function JoinConfirm({
 function PotJoinSheet({ close }: { close: () => void }) {
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
+  const joinPartyMutation = useJoinParty()
   // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
   const currentPotId = usePotStore((s) => s.currentPotId)
   const hasRegionCards = useAllPhotos(currentPotId).length > 0
@@ -99,7 +101,32 @@ function PotJoinSheet({ close }: { close: () => void }) {
   // 코드 검증 실패 시 에러 테두리 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)
 
-  const handleDone = () => {
+  const showJoinedToast = (pot: TravelPot, memberCount: number) => {
+    showToast({
+      message: `${pot.name}에 참여했어요 (${memberCount}/${POT_CAPACITY})`,
+      icon: "check",
+      className: hasRegionCards ? MAP_TOAST_POSITION : MAP_TOAST_POSITION_EMPTY,
+    })
+  }
+
+  const handleDone = async () => {
+    if (!USE_MOCK) {
+      try {
+        // 캐시·store 반영은 useJoinParty의 onSuccess가 처리한다
+        const pot = await joinPartyMutation.mutateAsync(code)
+        close()
+        showJoinedToast(pot, pot.members.length)
+      } catch {
+        setCodeError(true)
+        showToast({
+          message: "초대코드를 확인해 주세요",
+          icon: "alert",
+          className: SHEET_TOAST_POSITION,
+        })
+      }
+      return
+    }
+
     const result = previewJoin(code, currentUser?.id)
     if (result.status !== "ok") {
       setCodeError(true)
@@ -130,14 +157,8 @@ function PotJoinSheet({ close }: { close: () => void }) {
             })
             closeConfirm()
             close()
-            showToast({
-              // 인원 수는 나를 포함한 값
-              message: `${pot.name}에 참여했어요 (${pot.members.length + 1}/${POT_CAPACITY})`,
-              icon: "check",
-              className: hasRegionCards
-                ? MAP_TOAST_POSITION
-                : MAP_TOAST_POSITION_EMPTY,
-            })
+            // 인원 수는 나를 포함한 값
+            showJoinedToast(pot, pot.members.length + 1)
           }}
         />
       ),
@@ -171,8 +192,11 @@ function PotJoinSheet({ close }: { close: () => void }) {
         />
       </div>
       <div className="w-full px-4 pb-[34px]">
-        <ButtonCta disabled={code.length < CODE_LENGTH} onClick={handleDone}>
-          완료
+        <ButtonCta
+          disabled={code.length < CODE_LENGTH || joinPartyMutation.isPending}
+          onClick={handleDone}
+        >
+          {joinPartyMutation.isPending ? "참여 중..." : "완료"}
         </ButtonCta>
       </div>
     </>
