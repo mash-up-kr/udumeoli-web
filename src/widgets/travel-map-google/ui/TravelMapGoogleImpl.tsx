@@ -90,8 +90,9 @@ const PARTY_ZOOM = 9.5
 const PARTY_ZOOM_EPSILON = 0.01
 const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
 // 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(6.7)는 1단계에 들고,
-// 한반도를 넘어 주변 국가까지 보일 정도로 줌아웃하면 국가(0단계) 뷰가 된다
-const NATION_MIN_ZOOM = 6
+// 한반도를 훌쩍 넘어 동아시아 권역이 보일 정도로 줌아웃해야 국가(0단계) 뷰가 된다.
+// 6 → 5: 도 단위 집계(1단계) 화면을 더 오래 유지하기 위해 한 단계 낮췄다
+const NATION_MIN_ZOOM = 5
 // 0단계(국가 뷰) 대표 스티커 위치 — 남한 내륙 중앙부 부근 고정
 const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
@@ -357,6 +358,16 @@ function MapController({
     // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음
     map.setOptions({ isFractionalZoomEnabled: true })
 
+    // 세계지도(세로 256·2^zoom px)가 화면 세로를 꽉 채우는 지점까지만 줌아웃 허용 —
+    // 그 아래로 내려가면 지도 위아래로 회색 여백이 남는다. 회전/리사이즈 시 재계산
+    const syncMinZoom = () => {
+      const height = map.getDiv().clientHeight
+      if (height > 0) map.setOptions({ minZoom: Math.log2(height / 256) })
+    }
+    syncMinZoom()
+    const minZoomObserver = new ResizeObserver(syncMinZoom)
+    minZoomObserver.observe(map.getDiv())
+
     let cancelled = false
     const listeners: Array<google.maps.MapsEventListener> = []
     let dataLayer: RegionDataLayer | null = null
@@ -475,6 +486,7 @@ function MapController({
 
     return () => {
       cancelled = true
+      minZoomObserver.disconnect()
       for (const l of listeners) l.remove()
       dataLayer?.destroy()
       overlay?.setMap(null)
