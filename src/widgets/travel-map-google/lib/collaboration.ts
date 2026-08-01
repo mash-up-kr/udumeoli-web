@@ -120,6 +120,33 @@ export function latestTripByRegion(
   return byRegion
 }
 
+/**
+ * 제일 많이 뽑힌 키워드 — 개수가 동일하면 가장 최근 여행의 키워드 (Figma 줌인 기준 1959-6730).
+ * trips는 buildCollaborationTrips가 보장하는 최신순(endDate desc) 정렬을 전제로 한다.
+ */
+export function mostPickedKeyword(
+  trips: Array<CollaborationTrip>
+): TravelKeywordId | undefined {
+  const counts = new Map<TravelKeywordId, number>()
+  for (const trip of trips) {
+    if (!trip.keyword) continue
+    counts.set(trip.keyword, (counts.get(trip.keyword) ?? 0) + 1)
+  }
+
+  let best: TravelKeywordId | undefined
+  let bestCount = 0
+  // 최신순 순회 + 초과일 때만 교체 → 동수면 먼저 만난(더 최근) 키워드가 유지된다
+  for (const trip of trips) {
+    if (!trip.keyword) continue
+    const count = counts.get(trip.keyword) ?? 0
+    if (count > bestCount) {
+      best = trip.keyword
+      bestCount = count
+    }
+  }
+  return best
+}
+
 export function visibleStickerTrips(
   trips: Array<CollaborationTrip>
 ): Array<CollaborationTrip> {
