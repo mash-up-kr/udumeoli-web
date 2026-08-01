@@ -34,6 +34,16 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
   })
 )
 
+// 신규 가입(목) 첫 진입 데모용 5인 팟 — photo.mock STICKER_DEMO_PHOTOS(전국 100개
+// 지역 스티커 시드)가 이 팟에 매인다. 가입 완료 시 SignupPage가 store에 주입·선택한다.
+export const TRIP_100_POT: TravelPot = {
+  id: "pot-trip-100-1",
+  name: "여행 100번",
+  inviteCode: "260715",
+  members: [ME, ...OTHERS.slice(0, 4)],
+  joinedAt: "2026-07-15",
+}
+
 // 여행 앨범 목데이터 전용 4인 팟 — photo.mock ALBUM_PHOTOS의 uploaderId
 // (user-1, m-유지-0, m-성아-1, m-가연-2)와 일치해야 앨범/지도 슬롯에 매칭된다.
 // 온보딩을 마친(팟 보유) 유저에게 pot.store가 자동 주입한다.

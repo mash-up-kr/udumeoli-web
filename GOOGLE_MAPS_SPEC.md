@@ -57,12 +57,16 @@ VITE_GOOGLE_MAPS_MAP_ID=    # 선택. 비우면 DEMO_MAP_ID 폴백 (AdvancedMark
 > 달라졌다. 아래는 Google 구현 기준.
 
 ```
-NATION_MIN_ZOOM = 6   # 전국(1단계) 뷰 하한 — 이 아래는 국가(0단계) 뷰
+NATION_MIN_ZOOM = 5   # 전국(1단계) 뷰 하한 — 이 아래는 국가(0단계) 뷰
 BOUNDARY_ZOOM = 7.5   # 경계선 등장 + 시군구(2단계) 시작
 PARTY_ZOOM    = 9.5   # 지역 상세(파티 슬롯) 진입 = maxZoom
 PARTY_ENTER   = 9.49  # 관성 줌이 9.4999에서 멈춰도 3단계 인정 (epsilon 0.01)
-getZoomStage(z): 0(<6) / 1(≥6) / 2(≥7.5) / 3(≥PARTY_ENTER)
+getZoomStage(z): 0(<5) / 1(≥5) / 2(≥7.5) / 3(≥PARTY_ENTER)
 ```
+
+- **minZoom 동적 제한**: 세계지도 세로(256·2^zoom px)가 지도 컨테이너 높이를 꽉
+  채우는 `log2(height/256)`까지만 줌아웃 허용 — 위아래 회색 여백 방지.
+  컨테이너 리사이즈(회전 등) 시 ResizeObserver로 재계산.
 
 - 단계별 노출 (Figma 1959-6730):
   - **0 국가**: 대한민국 전체를 전국 대표 키워드 색 하나로 색칠 + 해당 키워드 스티커

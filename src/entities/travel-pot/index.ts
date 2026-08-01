@@ -14,4 +14,4 @@ export {
   useMyParties,
   useMyPots,
 } from "./api/queries"
-export { MOCK_POTS } from "./api/pot.mock"
+export { MOCK_POTS, TRIP_100_POT } from "./api/pot.mock"

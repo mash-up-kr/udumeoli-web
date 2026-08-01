@@ -410,6 +410,232 @@ const ALBUM_REGION_CENTERS: Record<string, { lat: number; lng: number }> = {
   강릉시: { lat: 37.752, lng: 128.876 },
 }
 
+// ── 스티커 100개 데모 시드 ──────────────────────────────────────────────
+// 전국 100개 시군구에 전원 업로드 완료 여행 1개씩 시드 — 지도에서 지역 색칠과
+// 키워드 스티커가 전 지역에 골고루 깔린 모습을 확인하는 용도.
+// 지역명은 municipalities TopoJSON 명칭과 일치해야 스티커가 centroid에 붙는다.
+// (ALBUM_SEEDS의 창원시·대전광역시·강릉시, 이름이 중복되는 고성군은 제외)
+// 데모가 끝나면 이 블록과 photo.api의 STICKER_DEMO_PHOTOS 스프레드만 지우면 된다.
+
+// 신규 가입 데모 팟 — pot.mock TRIP_100_POT(여행 100번)과 일치해야 한다
+export const TRIP_100_POT_ID = "pot-trip-100-1"
+
+// TRIP_100_POT 멤버 전원 — 5명 모두 업로드해야 여행이 완료(색칠) 상태가 된다
+const STICKER_DEMO_UPLOADERS = [
+  "user-1",
+  "m-유지-0",
+  "m-성아-1",
+  "m-가연-2",
+  "m-수빈-3",
+]
+
+const STICKER_DEMO_KEYWORDS: Array<NonNullable<Photo["keyword"]>> = [
+  "bread",
+  "vibe",
+  "shopping",
+  "activity",
+  "nature",
+]
+
+// 좌표는 권역별 러프 중심 + 순번 오프셋 — 스티커 위치는 GeoJSON centroid를 쓰므로 폴백용
+const STICKER_DEMO_GROUPS: Array<{
+  lat: number
+  lng: number
+  regions: Array<string>
+}> = [
+  {
+    // 수도권
+    lat: 37.45,
+    lng: 127.0,
+    regions: [
+      "서울특별시",
+      "인천광역시",
+      "수원시",
+      "성남시",
+      "고양시",
+      "용인시",
+      "부천시",
+      "안산시",
+      "안양시",
+      "남양주시",
+      "평택시",
+      "파주시",
+      "김포시",
+      "이천시",
+      "양평군",
+      "가평군",
+    ],
+  },
+  {
+    // 강원
+    lat: 37.8,
+    lng: 128.2,
+    regions: [
+      "춘천시",
+      "원주시",
+      "동해시",
+      "속초시",
+      "삼척시",
+      "홍천군",
+      "영월군",
+      "평창군",
+      "정선군",
+      "철원군",
+      "인제군",
+    ],
+  },
+  {
+    // 충북
+    lat: 36.8,
+    lng: 127.7,
+    regions: [
+      "청주시",
+      "충주시",
+      "제천시",
+      "보은군",
+      "옥천군",
+      "영동군",
+      "진천군",
+      "단양군",
+    ],
+  },
+  {
+    // 충남·세종
+    lat: 36.5,
+    lng: 126.9,
+    regions: [
+      "세종특별자치시",
+      "천안시",
+      "공주시",
+      "보령시",
+      "아산시",
+      "서산시",
+      "논산시",
+      "당진시",
+      "부여군",
+      "홍성군",
+      "태안군",
+    ],
+  },
+  {
+    // 전북
+    lat: 35.75,
+    lng: 127.05,
+    regions: [
+      "전주시",
+      "군산시",
+      "익산시",
+      "정읍시",
+      "남원시",
+      "김제시",
+      "완주군",
+      "무주군",
+      "고창군",
+      "부안군",
+    ],
+  },
+  {
+    // 전남·광주
+    lat: 34.9,
+    lng: 126.8,
+    regions: [
+      "광주광역시",
+      "목포시",
+      "여수시",
+      "순천시",
+      "나주시",
+      "광양시",
+      "담양군",
+      "고흥군",
+      "보성군",
+      "강진군",
+      "영광군",
+      "완도군",
+      "진도군",
+      "신안군",
+    ],
+  },
+  {
+    // 경북·대구
+    lat: 36.3,
+    lng: 128.7,
+    regions: [
+      "대구광역시",
+      "포항시",
+      "경주시",
+      "김천시",
+      "안동시",
+      "구미시",
+      "영주시",
+      "영천시",
+      "상주시",
+      "문경시",
+      "경산시",
+      "청송군",
+      "울진군",
+      "울릉군",
+    ],
+  },
+  {
+    // 경남·부산·울산
+    lat: 35.3,
+    lng: 128.3,
+    regions: [
+      "부산광역시",
+      "울산광역시",
+      "진주시",
+      "통영시",
+      "사천시",
+      "김해시",
+      "밀양시",
+      "거제시",
+      "양산시",
+      "창녕군",
+      "남해군",
+      "하동군",
+      "거창군",
+      "합천군",
+    ],
+  },
+  {
+    // 제주
+    lat: 33.4,
+    lng: 126.55,
+    regions: ["제주시", "서귀포시"],
+  },
+]
+
+const STICKER_DEMO_REGIONS = STICKER_DEMO_GROUPS.flatMap((group) =>
+  group.regions.map((region, i) => ({
+    region,
+    lat: group.lat + (i % 5) * 0.02,
+    lng: group.lng + (i % 7) * 0.02,
+  }))
+)
+
+// 2025년 안에서 지역별로 결정적 날짜 — ALBUM_SEEDS의 2026년 최신 여행
+// (창원 기록하기 케이스 등)보다 과거라 기존 시나리오 순서를 건드리지 않는다
+function stickerDemoDate(i: number): string {
+  const month = String((i % 12) + 1).padStart(2, "0")
+  const day = String((Math.floor(i / 12) % 28) + 1).padStart(2, "0")
+  return `2025-${month}-${day}`
+}
+
+export const STICKER_DEMO_PHOTOS: Array<Photo> = STICKER_DEMO_REGIONS.flatMap(
+  ({ region, lat, lng }, i) =>
+    STICKER_DEMO_UPLOADERS.map((uploaderId, u) => ({
+      id: `sticker-demo-${region}-${u}`,
+      potId: TRIP_100_POT_ID,
+      region,
+      lat: lat + u * 0.003,
+      lng: lng + u * 0.003,
+      date: stickerDemoDate(i),
+      uploaderId,
+      thumbnailUrl: `https://picsum.photos/seed/sticker-demo-${i}-${u}/400/400`,
+      keyword: STICKER_DEMO_KEYWORDS[i % STICKER_DEMO_KEYWORDS.length],
+    }))
+)
+
 // 여행 앨범 목 사진 — fetchPhotos(목)에 항상 포함돼 지도/앨범/지역 상세가
 // 같은 목록을 본다. ALBUM_POT_ID 팟에서만 노출된다(useAllPhotos가 potId로 필터).
 export const ALBUM_PHOTOS: Array<Photo> = ALBUM_SEEDS.flatMap((seed) => {
