@@ -1,5 +1,6 @@
 import { feature as toFeature, merge as toMerge } from "topojson-client"
-import type { Topology } from "topojson-specification"
+import { presimplify, quantile, simplify } from "topojson-simplify"
+import type { Objects, Topology } from "topojson-specification"
 
 // 지도 라이브러리 무관 — TopoJSON 원본 두 개를 병합해 시군구 GeoJSON FeatureCollection 생성.
 // MapLibre/Google Maps 구현 공용.
@@ -20,11 +21,25 @@ const METRO_CITIES = new Set([
   "세종특별자치시",
 ])
 
+// 원본(-simple)도 시군구 전체 ~5.5만 정점이라, 지도 라이브러리가 줌/팬 중 매 프레임
+// 다시 그리기엔 과하다. 공유 경계(arc) 단위로 절반 수준까지 추가 단순화 —
+// 인접 지역 사이 틈이 생기지 않고, 모바일 최대 줌(9.5)에선 시각 차이가 거의 없다.
+const SIMPLIFY_RETAIN = 0.5
+
+function simplifyTopo(topo: Topology): Topology {
+  // @types/topojson-simplify 시그니처가 properties의 null을 허용하지 않아 재단언 —
+  // 단순화는 arcs만 다루고 properties는 건드리지 않는다
+  const pre = presimplify(topo as Topology<Objects<{}>>)
+  return simplify(pre, quantile(pre, SIMPLIFY_RETAIN))
+}
+
 export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
-  const [muniTopo, provTopo]: [Topology, Topology] = await Promise.all([
+  const [muniTopoRaw, provTopoRaw]: [Topology, Topology] = await Promise.all([
     fetch(MUNICIPALITIES_URL).then((r) => r.json()),
     fetch(PROVINCES_URL).then((r) => r.json()),
   ])
+  const muniTopo = simplifyTopo(muniTopoRaw)
+  const provTopo = simplifyTopo(provTopoRaw)
 
   const muniKey = Object.keys(muniTopo.objects)[0]
   const muniGeoms = (
@@ -80,29 +95,41 @@ export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
   }
   geojson.features.forEach((f, i) => {
     f.id = i
-    closeRings(f)
+    sanitizeRings(f)
   })
   return geojson
 }
 
-// topojson merge()가 만드는 링은 시작/끝 좌표가 다를 수 있다.
-// MapLibre는 관대하지만 Google Maps data.addGeoJson()은 GeoJSON 스펙(링 폐합)을
-// 엄격 검증해 InvalidValueError를 던지므로, 열린 링은 첫 좌표를 복제해 닫아준다.
-function closeRings(feature: GeoJSON.Feature) {
+// Google Maps data.addGeoJson()은 GeoJSON 스펙(링 폐합, 4점 이상)을 엄격 검증해
+// InvalidValueError를 던지므로 (MapLibre는 관대):
+// - topojson merge()가 만드는 열린 링은 첫 좌표를 복제해 닫는다
+// - 단순화로 퇴화한 링(서로 다른 점 3개 미만 — 이 줌에선 서브픽셀인 초소형 섬)은
+//   버린다. 그리기 패스도 함께 줄어든다 (전체 지역이 사라지는 경우는 없음을 실측 확인)
+function sanitizeRings(feature: GeoJSON.Feature) {
   const g = feature.geometry
-  const polys =
-    g.type === "Polygon"
-      ? [g.coordinates]
-      : g.type === "MultiPolygon"
-        ? g.coordinates
-        : []
-  for (const poly of polys) {
-    for (const ring of poly) {
-      const first = ring[0]
-      const last = ring[ring.length - 1]
-      if (first[0] !== last[0] || first[1] !== last[1]) {
-        ring.push([first[0], first[1]])
-      }
+  if (g.type === "Polygon") {
+    g.coordinates = cleanPolygon(g.coordinates)
+  } else if (g.type === "MultiPolygon") {
+    g.coordinates = g.coordinates
+      .map(cleanPolygon)
+      .filter((poly) => poly.length > 0)
+  }
+}
+
+function cleanPolygon(
+  poly: Array<Array<GeoJSON.Position>>
+): Array<Array<GeoJSON.Position>> {
+  const rings = poly.filter(
+    (ring) => new Set(ring.map(([x, y]) => `${x},${y}`)).size >= 3
+  )
+  // 외곽 링(첫 번째)이 퇴화했으면 남은 구멍 링이 외곽으로 오인되므로 폴리곤 전체를 버린다
+  if (rings.length > 0 && rings[0] !== poly[0]) return []
+  for (const ring of rings) {
+    const first = ring[0]
+    const last = ring[ring.length - 1]
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      ring.push([first[0], first[1]])
     }
   }
+  return rings
 }
