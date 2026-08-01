@@ -97,6 +97,10 @@ const STICKER_OFFSETS = [
   { x: -18, y: -12, rotate: -17 },
   { x: 18, y: 12, rotate: 9 },
 ]
+// STICKER_OFFSETS(px)를 PARTY_ZOOM 화면 기준 위경도로 환산하는 계수.
+// CSS translate(px)는 줌아웃해도 화면상 크기가 고정이라 지역이 작아지면 스티커가
+// 지역 밖으로 벗어난다 — 좌표 자체에 반영하면 지도와 함께 스케일된다
+const STICKER_DEG_PER_PX = 360 / (256 * 2 ** PARTY_ZOOM)
 
 type Centroid = { name: string; lng: number; lat: number }
 
@@ -824,13 +828,19 @@ function TravelMapGoogleInner({
       const c = centroidMap.get(trip.region)
       const offsetIndex = regionCounts.get(trip.region) ?? 0
       regionCounts.set(trip.region, offsetIndex + 1)
+      const offset = STICKER_OFFSETS[offsetIndex] ?? { x: 0, y: 0, rotate: 0 }
+      const baseLat = c?.lat ?? representative.lat
+      const baseLng = c?.lng ?? representative.lng
       return [
         {
           trip,
           keyword,
-          pinLat: c?.lat ?? representative.lat,
-          pinLng: c?.lng ?? representative.lng,
-          offset: STICKER_OFFSETS[offsetIndex] ?? { x: 0, y: 0, rotate: 0 },
+          // 화면 y축은 아래로 갈수록 위도 감소, 위도 px 밀도는 메르카토르 보정(cos)
+          pinLat:
+            baseLat -
+            offset.y * STICKER_DEG_PER_PX * Math.cos((baseLat * Math.PI) / 180),
+          pinLng: baseLng + offset.x * STICKER_DEG_PER_PX,
+          rotate: offset.rotate,
         },
       ]
     })
@@ -1046,9 +1056,7 @@ function TravelMapGoogleInner({
                   handleTripMarkerClick(p.trip)
                 }}
                 className="transition-transform hover:scale-110 active:scale-95"
-                style={{
-                  transform: `translate(${p.offset.x}px, ${p.offset.y}px) rotate(${p.offset.rotate}deg)`,
-                }}
+                style={{ transform: `rotate(${p.rotate}deg)` }}
               >
                 <img src={p.keyword.emojiSrc} alt="" className="size-10" />
               </button>
