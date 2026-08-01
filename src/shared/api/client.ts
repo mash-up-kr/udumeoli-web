@@ -3,12 +3,44 @@ import { GraphQLClient } from "graphql-request"
 // 목↔실서버 전환 단일 지점. 기본: 목 ON.
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false"
 
-const endpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT ?? ""
+// graphql-request는 절대 URL만 받는다 — 상대경로(/graphql, vite proxy 경유)면
+// 브라우저 origin을 붙여준다. SSR에선 window가 없지만 쿼리는 클라에서만 실행된다.
+const rawEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || "/graphql"
+const endpoint =
+  rawEndpoint.startsWith("/") && typeof window !== "undefined"
+    ? window.location.origin + rawEndpoint
+    : rawEndpoint
+export const GRAPHQL_USER_ID = import.meta.env.VITE_GRAPHQL_USER_ID || "1"
 
-// USE_MOCK=false 일 때만 실제 호출. 지금은 스캐폴드.
-export const gqlClient = new GraphQLClient(endpoint)
+// 현재 GraphQL 서버는 개발용 사용자 식별 헤더를 요구한다.
+export const gqlClient = new GraphQLClient(endpoint, {
+  credentials: "include",
+  headers: {
+    "X-User-Id": GRAPHQL_USER_ID,
+  },
+})
 
 /** 목 응답을 비동기로 흉내(네트워크 지연 시뮬레이션) */
 export function mockResponse<T>(data: T, delayMs = 200): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), delayMs))
+}
+
+/** 엔티티 쿼리 훅이 호출부에 열어두는 옵션 — 전체 UseQueryOptions를 노출하지 않는다. */
+export interface QueryOptions {
+  enabled?: boolean
+  refetchOnMount?: boolean | "always"
+  retry?: boolean | number
+}
+
+/** 서버가 내려주는 유저 형태 — user·travel-pot 등 여러 엔티티가 같은 모양으로 받는다. */
+export interface UserDto {
+  id: string
+  nickname: string
+  profileImageUrl: string | null
+}
+
+/** 서버는 기본 프로필을 "DEFAULT" 문자열로 내려준다 — 앱에서는 null로 통일. */
+export function toProfileImageUrl(value: string | null): string | null {
+  if (!value || value === "DEFAULT") return null
+  return value
 }
