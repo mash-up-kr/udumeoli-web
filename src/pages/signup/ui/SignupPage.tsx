@@ -10,6 +10,7 @@ import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { GRAPHQL_USER_ID, USE_MOCK } from "@/shared/api/client"
 import { MOCK_USER, useSessionStore } from "@/entities/user"
+import { TRIP_100_POT, usePotStore } from "@/entities/travel-pot"
 import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
@@ -215,6 +216,10 @@ export function SignupPage() {
       : { id: GRAPHQL_USER_ID, nickname: name, profileImageUrl: null }
 
     login(user)
+
+    // 목 가입 데모 — 스티커 100개가 시드된 팟(여행 100번)을 주입·선택해
+    // 온보딩 직후 지도에서 바로 보이게 한다 (이미 있으면 선택만 바뀐다)
+    if (USE_MOCK) usePotStore.getState().confirmJoin(TRIP_100_POT)
 
     openModal(
       ({ close }) => (
