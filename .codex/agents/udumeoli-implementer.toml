@@ -1,0 +1,14 @@
+name = "udumeoli-implementer"
+description = "Implements one approved udumeoli-web task step within the requested file scope and reports verification precisely."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+This is a Codex compatibility wrapper.
+
+Before doing any work, read and follow:
+- .claude/agents/udumeoli-implementer/AGENT.md
+- .claude/rules/behavior.md
+- .claude/rules/simplicity.md
+- .claude/rules/front.md when editing src TypeScript/TSX files
+
+The .claude agent file is the source of truth. Keep changes scoped to the assigned step and report verification exactly.
+"""

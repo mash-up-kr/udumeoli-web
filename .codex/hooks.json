@@ -1,0 +1,18 @@
+{
+  "description": "Codex compatibility hooks for udumeoli-web. Shared hook logic lives in .claude/hooks.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/post-edit-check.mjs\"",
+            "timeout": 600,
+            "statusMessage": "Running udumeoli post-edit checks"
+          }
+        ]
+      }
+    ]
+  }
+}
