@@ -33,7 +33,16 @@ function simplifyTopo(topo: Topology): Topology {
   return simplify(pre, quantile(pre, SIMPLIFY_RETAIN))
 }
 
-export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
+export type KoreaGeo = {
+  /** 시군구(구 병합 시 포함) — 지역 인터랙션·색칠용 */
+  municipalities: GeoJSON.FeatureCollection
+  /** 시도 경계 — 전국(1단계) 뷰 경계선용 */
+  provinces: GeoJSON.FeatureCollection
+  /** 대한민국 외곽선(시도 전체 union) — 국가(0단계) 뷰 경계선용 */
+  nation: GeoJSON.Feature
+}
+
+export async function loadKoreaGeoJson(): Promise<KoreaGeo> {
   const [muniTopoRaw, provTopoRaw]: [Topology, Topology] = await Promise.all([
     fetch(MUNICIPALITIES_URL).then((r) => r.json()),
     fetch(PROVINCES_URL).then((r) => r.json()),
@@ -114,7 +123,28 @@ export async function loadKoreaGeoJson(): Promise<GeoJSON.FeatureCollection> {
     if (province && f.properties) f.properties.province = province
     sanitizeRings(f)
   })
-  return geojson
+
+  // 상위 행정 단위 경계선용 지오메트리 — 시도는 원본 그대로, 국가는 시도 전체 union.
+  // 광역시 feature는 municipalities와 객체를 공유하지만 sanitizeRings는 멱등이라 무해
+  const provinces: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: provRaw.features,
+  }
+  provinces.features.forEach(sanitizeRings)
+
+  const provGeoms = (
+    provTopo.objects[provKey] as {
+      geometries: Array<{ properties: Record<string, unknown> }>
+    }
+  ).geometries
+  const nation: GeoJSON.Feature = {
+    type: "Feature",
+    geometry: toMerge(provTopo, provGeoms as Parameters<typeof toMerge>[1]),
+    properties: { name: "대한민국" },
+  }
+  sanitizeRings(nation)
+
+  return { municipalities: geojson, provinces, nation }
 }
 
 // Google Maps data.addGeoJson()은 GeoJSON 스펙(링 폐합, 4점 이상)을 엄격 검증해

@@ -30,7 +30,10 @@ import {
   markCompletionTipSeen,
   markCompletionTipShown,
 } from "../lib/completionTips"
-import { createRegionDataLayer } from "../lib/regionDataLayer"
+import {
+  createBoundaryLayer,
+  createRegionDataLayer,
+} from "../lib/regionDataLayer"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
@@ -301,6 +304,8 @@ function MapController({
   incompleteRegionSet,
   decorating,
   decoratePreview,
+  recordedProvinces,
+  hasNationRecord,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
@@ -318,6 +323,10 @@ function MapController({
   incompleteRegionSet: Set<string>
   decorating: string | null
   decoratePreview: DecoratePreview | null
+  /** 기록(여행)이 있는 도 — 1단계 시도 경계선을 이 도들에만 노출 */
+  recordedProvinces: Set<string>
+  /** 전국 기록 존재 여부 — 0단계 국가 외곽선 노출 조건 (단일 색칠과 동일 게이트) */
+  hasNationRecord: boolean
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
@@ -331,6 +340,12 @@ function MapController({
   photoRegionSetRef.current = photoRegionSet
   const incompleteRegionSetRef = React.useRef(incompleteRegionSet)
   incompleteRegionSetRef.current = incompleteRegionSet
+  const recordedProvincesRef = React.useRef(recordedProvinces)
+  recordedProvincesRef.current = recordedProvinces
+  const hasNationRecordRef = React.useRef(hasNationRecord)
+  hasNationRecordRef.current = hasNationRecord
+  // 기록 변화 시 idle을 기다리지 않고 경계선 노출을 재평가하기 위한 재동기화 핸들
+  const syncBoundaryLayersRef = React.useRef<(() => void) | null>(null)
 
   // 지도 인스턴스별 초기화 — StrictMode 이중 마운트나 리마운트로 vis.gl이 지도를
   // 재생성하면 새 인스턴스에 레이어/리스너를 다시 붙여야 하므로 "1회 가드" 대신
@@ -346,10 +361,13 @@ function MapController({
     const listeners: Array<google.maps.MapsEventListener> = []
     let dataLayer: RegionDataLayer | null = null
     let overlay: ImageFillOverlay | null = null
+    let provinceBoundary: google.maps.Data | null = null
+    let nationBoundary: google.maps.Data | null = null
 
     loadKoreaGeoJson()
-      .then((geojson) => {
+      .then((geo) => {
         if (cancelled) return
+        const geojson = geo.municipalities
         geojsonRef.current = geojson
 
         dataLayer = createRegionDataLayer(map, geojson, {
@@ -370,6 +388,29 @@ function MapController({
         )
         overlay.setMap(map)
         overlayRef.current = overlay
+
+        // 0·1단계 상위 경계선 (0: 국가 외곽, 1: 시도 경계) — 여행 기록이 있는 곳에만
+        // 테두리를 씌운다. 노출 전환은 마커 갱신과 같은 idle 시점에만 해 제스처 중
+        // 레이어 교체를 피한다
+        provinceBoundary = createBoundaryLayer(geo.provinces)
+        nationBoundary = createBoundaryLayer(geo.nation)
+        const syncBoundaryLayers = (stage: 0 | 1 | 2 | 3) => {
+          nationBoundary?.setMap(
+            stage === 0 && hasNationRecordRef.current ? map : null
+          )
+          const province = provinceBoundary
+          if (!province) return
+          province.forEach((f) =>
+            province.overrideStyle(f, {
+              visible: recordedProvincesRef.current.has(
+                String(f.getProperty("name"))
+              ),
+            })
+          )
+          province.setMap(stage === 1 ? map : null)
+        }
+        syncBoundaryLayersRef.current = () =>
+          syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
 
         const computed: Array<Centroid> = []
         for (const f of geojson.features) {
@@ -420,12 +461,14 @@ function MapController({
             // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
             setZoomStage(getZoomStage(zoom))
+            syncBoundaryLayers(getZoomStage(zoom))
             syncViewport()
             overlay?.draw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
         setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
+        syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncViewport()
       })
       .catch(console.error)
@@ -435,6 +478,9 @@ function MapController({
       for (const l of listeners) l.remove()
       dataLayer?.destroy()
       overlay?.setMap(null)
+      provinceBoundary?.setMap(null)
+      nationBoundary?.setMap(null)
+      syncBoundaryLayersRef.current = null
       if (dataLayerRef.current === dataLayer) dataLayerRef.current = null
       if (overlayRef.current === overlay) overlayRef.current = null
 
@@ -463,6 +509,11 @@ function MapController({
     setViewportCentroids,
     setZoomStage,
   ])
+
+  // 기록 변화(기록 있는 도 추가/삭제 등) 시 경계선 노출을 즉시 재평가
+  React.useEffect(() => {
+    syncBoundaryLayersRef.current?.()
+  }, [recordedProvinces, hasNationRecord])
 
   // fills/hasPhoto 변경 반영 + 이미지 fill 다시 로드
   React.useEffect(() => {
@@ -658,6 +709,12 @@ function TravelMapGoogleInner({
     }
     return aggregates
   }, [centroids, collaborationTrips])
+
+  // 기록이 있는 도 — 1단계 시도 경계선을 이 도들에만 씌운다
+  const recordedProvinces = React.useMemo(
+    () => new Set(provinceAggregates.map((agg) => agg.province)),
+    [provinceAggregates]
+  )
 
   // 0단계(국가 뷰) 대표 스티커 — 전국에서 제일 많이 뽑힌 키워드 1개
   const countryKeyword = React.useMemo(
@@ -987,6 +1044,8 @@ function TravelMapGoogleInner({
           incompleteRegionSet={incompleteRegionSet}
           decorating={decorating}
           decoratePreview={decoratePreview}
+          recordedProvinces={recordedProvinces}
+          hasNationRecord={Boolean(countryKeyword)}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}

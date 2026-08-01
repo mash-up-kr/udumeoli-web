@@ -87,6 +87,26 @@ export type RegionDataLayer = {
   destroy: () => void
 }
 
+/**
+ * 상위 행정 경계선(시도/국가) 레이어 — 비인터랙티브 stroke 전용 google.maps.Data.
+ * 기록 지역 테두리(#232936)와 같은 짙은 톤 — 기본 경계선(#aaaaaa 0.65)은 축소 뷰에서
+ * 흐려 보인다. 노출 제어는 호출부가 setMap으로 한다.
+ */
+export function createBoundaryLayer(
+  geojson: GeoJSON.FeatureCollection | GeoJSON.Feature
+): google.maps.Data {
+  const layer = new google.maps.Data()
+  layer.addGeoJson(geojson)
+  layer.setStyle({
+    clickable: false,
+    fillOpacity: 0,
+    strokeColor: "#232936",
+    strokeWeight: 1,
+    strokeOpacity: 1,
+  })
+  return layer
+}
+
 export function createRegionDataLayer(
   map: google.maps.Map,
   geojson: GeoJSON.FeatureCollection,
