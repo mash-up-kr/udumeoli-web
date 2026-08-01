@@ -1162,8 +1162,8 @@ function TravelMapGoogleInner({
             </AdvancedMarker>
           ))}
 
-        {/* 전국 뷰(1단계) 이상에서만 — 국가 뷰(0단계)로 줌아웃하면 기록하기 툴팁도 숨긴다 */}
-        {zoomStage >= 1 && visibleRecordTip?.center ? (
+        {/* 시군구가 보이는 2단계 이상에서만 — 도/국가 단위 뷰에선 기록하기 툴팁을 숨긴다 */}
+        {zoomStage >= 2 && visibleRecordTip?.center ? (
           <AdvancedMarker
             position={{
               lat: visibleRecordTip.center.lat,
