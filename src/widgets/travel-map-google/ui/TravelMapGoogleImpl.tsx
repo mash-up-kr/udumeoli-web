@@ -88,6 +88,9 @@ const PARTY_ZOOM = 9.5
 // 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
 const PARTY_ZOOM_EPSILON = 0.01
 const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
+// 스티커(이모지 핀) 노출 하한 줌 — 전국 뷰(KOREA_VIEW 6.7)에서는 보이고,
+// 한반도를 넘어 주변 지역까지 보일 정도로 더 줌아웃하면 숨긴다
+const STICKER_MIN_ZOOM = 6
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
 const STICKER_OFFSETS = [
@@ -277,6 +280,7 @@ function MapController({
   decorating,
   decoratePreview,
   setZoomStage,
+  setStickersVisible,
   setCentroids,
   setViewportCentroids,
   centroidsRef,
@@ -294,6 +298,7 @@ function MapController({
   decorating: string | null
   decoratePreview: DecoratePreview | null
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
+  setStickersVisible: (visible: boolean) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
@@ -388,12 +393,16 @@ function MapController({
             // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
             setZoomStage(getZoomStage(zoom))
+            setStickersVisible(zoom >= STICKER_MIN_ZOOM)
             syncViewport()
             overlay?.draw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
         setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
+        setStickersVisible(
+          (map.getZoom() ?? KOREA_VIEW.zoom) >= STICKER_MIN_ZOOM
+        )
         syncViewport()
       })
       .catch(console.error)
@@ -430,6 +439,7 @@ function MapController({
     setCentroids,
     setViewportCentroids,
     setZoomStage,
+    setStickersVisible,
   ])
 
   // fills/hasPhoto 변경 반영 + 이미지 fill 다시 로드
@@ -520,6 +530,9 @@ function TravelMapGoogleInner({
   }, [])
   const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
     getZoomStage(lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom)
+  )
+  const [stickersVisible, setStickersVisible] = React.useState(
+    () => (lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom) >= STICKER_MIN_ZOOM
   )
   const zoomStageRef = React.useRef(zoomStage)
   React.useEffect(() => {
@@ -880,6 +893,7 @@ function TravelMapGoogleInner({
           decorating={decorating}
           decoratePreview={decoratePreview}
           setZoomStage={setZoomStage}
+          setStickersVisible={setStickersVisible}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
           centroidsRef={centroidsRef}
@@ -966,7 +980,8 @@ function TravelMapGoogleInner({
             </AdvancedMarker>
           ))}
 
-        {visibleRecordTip?.center ? (
+        {/* 스티커와 같은 기준 — 한반도 밖까지 보이게 줌아웃하면 기록하기 툴팁도 숨긴다 */}
+        {stickersVisible && visibleRecordTip?.center ? (
           <AdvancedMarker
             position={{
               lat: visibleRecordTip.center.lat,
@@ -1013,7 +1028,9 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {!decorating &&
+        {/* 한반도를 넘어 주변 지역까지 보일 만큼 줌아웃하면 스티커를 숨긴다 */}
+        {stickersVisible &&
+          !decorating &&
           visiblePins.map((p) => (
             <AdvancedMarker
               key={`trip-${p.trip.key}`}
