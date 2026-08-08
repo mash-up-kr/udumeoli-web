@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import type { TravelPot } from "@/entities/travel-pot"
+import type { PotMember, TravelPot } from "@/entities/travel-pot"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Chip } from "@/shared/ui/chip"
@@ -12,9 +12,13 @@ import {
 } from "@/shared/ui/bottom-sheet"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
-import { USE_MOCK } from "@/shared/api/client"
+import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
 import { useAllPhotos } from "@/entities/photo"
-import { useJoinParty, usePotStore } from "@/entities/travel-pot"
+import {
+  fetchPartyPreview,
+  useJoinParty,
+  usePotStore,
+} from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import partySrc from "@/shared/assets/party.svg"
 
@@ -29,6 +33,13 @@ const JOIN_ERROR_MESSAGES = {
   full: "정원이 다 찼어요 (6/6)",
 } as const
 
+const JOIN_CODE_MESSAGES: Record<string, string> = {
+  INVALID_INVITE_CODE: JOIN_ERROR_MESSAGES.not_found,
+  ALREADY_JOINED_PARTY: JOIN_ERROR_MESSAGES.already_joined,
+  PARTY_FULL: JOIN_ERROR_MESSAGES.full,
+  RATE_LIMITED: "잠시 후 다시 시도해 주세요",
+}
+
 // 시트 CTA(완료) 바로 위에 에러 토스트 노출 (시안 y기준 106px)
 const SHEET_TOAST_POSITION = "bottom-[106px]"
 
@@ -39,11 +50,11 @@ const MAP_TOAST_POSITION = "bottom-[242px]"
 const MAP_TOAST_POSITION_EMPTY = "bottom-[62px]"
 
 function JoinConfirm({
-  pot,
+  party,
   onRetry,
   onYes,
 }: {
-  pot: TravelPot
+  party: { name: string; members: Array<PotMember> }
   onRetry: () => void
   onYes: () => void
 }) {
@@ -56,16 +67,16 @@ function JoinConfirm({
       <div className="w-full rounded-[12px] bg-bg-neutral-subtle pb-3">
         <div className="flex w-full items-center justify-between gap-2 p-3">
           <p className="min-w-0 truncate text-h5 text-fg-neutral-bold">
-            {pot.name}
+            {party.name}
           </p>
           <Chip
-            label={`${pot.members.length}/${POT_CAPACITY}명`}
+            label={`${party.members.length}/${POT_CAPACITY}명`}
             className="shrink-0"
           />
         </div>
         {/* 참여자는 한 줄 최대 3명 — 초과분은 다음 줄 (최대 6명 = 2줄) */}
         <div className="grid w-full grid-cols-3 justify-items-center">
-          {pot.members.map((member) => (
+          {party.members.map((member) => (
             <Chip
               key={member.id}
               label={member.nickname}
@@ -109,21 +120,57 @@ function PotJoinSheet({ close }: { close: () => void }) {
     })
   }
 
+  const showJoinError = (error: unknown) => {
+    setCodeError(true)
+    const errorCode = getGraphQLErrorCode(error)
+    showToast({
+      message:
+        (errorCode && JOIN_CODE_MESSAGES[errorCode]) ||
+        "초대코드를 확인해 주세요",
+      icon: "alert",
+      className: SHEET_TOAST_POSITION,
+    })
+  }
+
   const handleDone = async () => {
     if (!USE_MOCK) {
+      let preview
       try {
-        // 캐시·store 반영은 useJoinParty의 onSuccess가 처리한다
-        const pot = await joinPartyMutation.mutateAsync(code)
-        close()
-        showJoinedToast(pot, pot.members.length)
-      } catch {
-        setCodeError(true)
-        showToast({
-          message: "초대코드를 확인해 주세요",
-          icon: "alert",
-          className: SHEET_TOAST_POSITION,
-        })
+        preview = await fetchPartyPreview(code)
+      } catch (error) {
+        showJoinError(error)
+        return
       }
+
+      openModal(
+        ({ close: closeConfirm }) => (
+          <JoinConfirm
+            party={preview}
+            onRetry={() => {
+              // 다시 입력 — 이전 화면 복귀 + 코드 초기화 (X 닫기는 코드 유지)
+              setCode("")
+              setCodeError(false)
+              closeConfirm()
+            }}
+            onYes={async () => {
+              try {
+                // 캐시·store 반영은 useJoinParty의 onSuccess가 처리한다
+                const pot = await joinPartyMutation.mutateAsync(code)
+                closeConfirm()
+                close()
+                showJoinedToast(pot, pot.members.length)
+              } catch (error) {
+                closeConfirm()
+                showJoinError(error)
+              }
+            }}
+          />
+        ),
+        {
+          className:
+            "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4",
+        }
+      )
       return
     }
 
@@ -142,7 +189,7 @@ function PotJoinSheet({ close }: { close: () => void }) {
     openModal(
       ({ close: closeConfirm }) => (
         <JoinConfirm
-          pot={pot}
+          party={pot}
           onRetry={() => {
             // 다시 입력 — 이전 화면 복귀 + 코드 초기화 (X 닫기는 코드 유지)
             setCode("")

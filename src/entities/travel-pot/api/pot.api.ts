@@ -50,6 +50,20 @@ const JOIN_PARTY_MUTATION = /* GraphQL */ `
   }
 `
 
+const PARTY_PREVIEW_QUERY = /* GraphQL */ `
+  query PartyPreview($inviteCode: String!) {
+    partyPreview(inviteCode: $inviteCode) {
+      name
+      memberCount
+      members {
+        id
+        nickname
+        profileImage
+      }
+    }
+  }
+`
+
 const LEAVE_PARTY_MUTATION = /* GraphQL */ `
   mutation LeaveParty($partyId: ID!) {
     leaveParty(partyId: $partyId)
@@ -81,6 +95,17 @@ interface CreatePartyResponse {
 
 interface JoinPartyResponse {
   joinParty: PartyDto
+}
+
+/** 참여 확정 전 팟 미리보기 — 초대코드는 응답에 없다. */
+export interface PotPreview {
+  name: string
+  memberCount: number
+  members: Array<PotMember>
+}
+
+interface PartyPreviewResponse {
+  partyPreview: { name: string; memberCount: number; members: Array<UserDto> }
 }
 
 function toPotMember(dto: UserDto): PotMember {
@@ -129,6 +154,20 @@ export async function joinParty(inviteCode: string): Promise<TravelPot> {
     inviteCode,
   })
   return toTravelPot(data.joinParty)
+}
+
+export async function fetchPartyPreview(
+  inviteCode: string
+): Promise<PotPreview> {
+  const data = await gqlClient.request<PartyPreviewResponse>(
+    PARTY_PREVIEW_QUERY,
+    { inviteCode }
+  )
+  return {
+    name: data.partyPreview.name,
+    memberCount: data.partyPreview.memberCount,
+    members: data.partyPreview.members.map((member) => toPotMember(member)),
+  }
 }
 
 /** 팟 나가기 — [정책] owner가 호출하면 OWNER_CANNOT_LEAVE 에러. */
