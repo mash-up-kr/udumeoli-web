@@ -218,9 +218,15 @@ export function SignupPage() {
     if (USE_MOCK) {
       user = { ...MOCK_USER, nickname: name, profileImageUrl: profileImage }
     } else {
-      // 서버에 닉네임 저장 — 프로필 이미지는 로컬 선택이라 세션에도 싣지 않는다(기존 동작 유지)
       try {
-        user = await updateProfileMutation.mutateAsync(name)
+        const saved = await updateProfileMutation.mutateAsync({
+          nickname: name,
+          ...(selectedAvatar != null
+            ? { profileImage: selectedAvatar + 1 }
+            : {}),
+        })
+        // 커스텀 파일(blob)은 서버 저장 불가 — 세션에서만 유지
+        user = customImage ? { ...saved, profileImageUrl: customImage } : saved
       } catch {
         showToast({
           message: "닉네임 저장에 실패했어요. 다시 시도해 주세요.",

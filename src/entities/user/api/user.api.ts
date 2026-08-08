@@ -1,19 +1,15 @@
 import { MOCK_USER } from "./user.mock"
 import type { User } from "../model/types"
 import type { UserDto } from "@/shared/api/client"
-import {
-  USE_MOCK,
-  gqlClient,
-  mockResponse,
-  toProfileImageUrl,
-} from "@/shared/api/client"
+import { USE_MOCK, gqlClient, mockResponse } from "@/shared/api/client"
+import { presetAvatarSrc } from "@/shared/ui/profile"
 
 const ME_QUERY = /* GraphQL */ `
   query Me {
     me {
       id
       nickname
-      profileImageUrl
+      profileImage
     }
   }
 `
@@ -23,7 +19,7 @@ const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
     updateProfile(input: $input) {
       id
       nickname
-      profileImageUrl
+      profileImage
     }
   }
 `
@@ -40,7 +36,7 @@ export function toUser(dto: UserDto): User {
   return {
     id: dto.id,
     nickname: dto.nickname,
-    profileImageUrl: toProfileImageUrl(dto.profileImageUrl),
+    profileImageUrl: presetAvatarSrc(dto.profileImage),
   }
 }
 
@@ -51,16 +47,25 @@ export async function fetchMe(): Promise<User> {
   return toUser(data.me)
 }
 
-/**
- * 닉네임 설정/변경 (가입 온보딩 포함) — 프로필 이미지는 로컬 blob URL이라
- * 서버에 보내지 않는다 (미전달 시 서버가 기존 값 유지).
- */
-export async function updateProfile(nickname: string): Promise<User> {
-  if (USE_MOCK) return mockResponse({ ...MOCK_USER, nickname })
+export interface UpdateProfileInput {
+  nickname: string
+  /** 프리셋 아바타 번호(1부터). 미전달 시 서버가 기존 값 유지 — 커스텀 blob은 전송 불가. */
+  profileImage?: number
+}
+
+export async function updateProfile(input: UpdateProfileInput): Promise<User> {
+  if (USE_MOCK)
+    return mockResponse({
+      ...MOCK_USER,
+      nickname: input.nickname,
+      ...(input.profileImage != null
+        ? { profileImageUrl: presetAvatarSrc(input.profileImage) }
+        : {}),
+    })
 
   const data = await gqlClient.request<UpdateProfileResponse>(
     UPDATE_PROFILE_MUTATION,
-    { input: { nickname } }
+    { input }
   )
   return toUser(data.updateProfile)
 }

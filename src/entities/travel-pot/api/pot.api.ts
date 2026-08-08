@@ -1,12 +1,8 @@
 import { MOCK_POTS } from "./pot.mock"
 import type { PotMember, TravelPot } from "../model/types"
 import type { UserDto } from "@/shared/api/client"
-import {
-  USE_MOCK,
-  gqlClient,
-  mockResponse,
-  toProfileImageUrl,
-} from "@/shared/api/client"
+import { USE_MOCK, gqlClient, mockResponse } from "@/shared/api/client"
+import { presetAvatarSrc } from "@/shared/ui/profile"
 
 const PARTY_FIELDS = /* GraphQL */ `
   fragment PartyFields on Party {
@@ -17,12 +13,12 @@ const PARTY_FIELDS = /* GraphQL */ `
     owner {
       id
       nickname
-      profileImageUrl
+      profileImage
     }
     members {
       id
       nickname
-      profileImageUrl
+      profileImage
     }
   }
 `
@@ -91,7 +87,7 @@ function toPotMember(dto: UserDto): PotMember {
   return {
     id: dto.id,
     nickname: dto.nickname,
-    profileImageUrl: toProfileImageUrl(dto.profileImageUrl),
+    profileImageUrl: presetAvatarSrc(dto.profileImage),
   }
 }
 

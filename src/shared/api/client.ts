@@ -56,13 +56,7 @@ export interface QueryOptions {
 export interface UserDto {
   id: string
   nickname: string
-  profileImageUrl: string | null
-}
-
-/** 서버는 기본 프로필을 "DEFAULT" 문자열로 내려준다 — 앱에서는 null로 통일. */
-export function toProfileImageUrl(value: string | null): string | null {
-  if (!value || value === "DEFAULT") return null
-  return value
+  profileImage: number
 }
 
 /** GraphQL 에러 응답의 extensions.code — 네트워크 오류 등 그 외 에러는 undefined. */

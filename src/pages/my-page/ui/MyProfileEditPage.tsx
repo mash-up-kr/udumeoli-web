@@ -53,9 +53,12 @@ function MyProfileEditContent() {
 
   const handleSave = async () => {
     if (updateProfileMutation.isPending) return
-    // 서버에는 닉네임만 저장 — 프로필 이미지는 로컬 blob URL이라 세션에만 유지
+    // 커스텀 이미지는 blob이라 서버 미전송(프리셋 선택 시에만 번호 전송)
     try {
-      await updateProfileMutation.mutateAsync(nickname.trim())
+      await updateProfileMutation.mutateAsync({
+        nickname: nickname.trim(),
+        ...(selectedAvatar != null ? { profileImage: selectedAvatar + 1 } : {}),
+      })
     } catch {
       showToast({
         message: "프로필 수정에 실패했어요. 다시 시도해 주세요.",
