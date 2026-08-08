@@ -36,6 +36,7 @@ function MyProfileEditContent() {
   const [selectedAvatar, setSelectedAvatar] = React.useState<number | null>(
     initialAvatar >= 0 ? initialAvatar : null
   )
+  const [avatarTouched, setAvatarTouched] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const nicknameTooLong = nickname.length > NICKNAME_MAX
@@ -57,7 +58,9 @@ function MyProfileEditContent() {
     try {
       await updateProfileMutation.mutateAsync({
         nickname: nickname.trim(),
-        ...(selectedAvatar != null ? { profileImage: selectedAvatar + 1 } : {}),
+        ...(avatarTouched && selectedAvatar != null
+          ? { profileImage: selectedAvatar + 1 }
+          : {}),
       })
     } catch {
       showToast({
@@ -113,6 +116,7 @@ function MyProfileEditContent() {
               onClick={() => {
                 setSelectedAvatar(i)
                 setCustomImage(null)
+                setAvatarTouched(true)
               }}
             >
               <Profile

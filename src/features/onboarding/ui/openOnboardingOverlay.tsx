@@ -80,18 +80,18 @@ function StickerGraphic() {
     <>
       <StickerChip
         iconSrc={emojiCameraSrc}
-        label="감성"
+        label="힐링"
         className="top-[72px] left-[121px] -rotate-4"
       />
       <StickerChip
         iconSrc={emojiCroissantSrc}
-        label="빵"
+        label="맛집"
         inverse
         className="top-[130px] left-[211px] rotate-[2.2deg]"
       />
       <StickerChip
         iconSrc={emojiShoppingBagSrc}
-        label="쇼핑"
+        label="도시"
         className="top-[202px] left-[102px] rotate-4"
       />
       <StickerChip
