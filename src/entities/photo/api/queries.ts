@@ -75,7 +75,7 @@ export function useUpdatePhotoComment() {
 export function useDeletePhoto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deletePhoto(id),
+    mutationFn: (photo: Photo) => deletePhoto(photo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
   })
 }

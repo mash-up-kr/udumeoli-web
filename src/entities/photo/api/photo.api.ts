@@ -73,9 +73,11 @@ const RECORD_TRIP_MUTATION = /* GraphQL */ `
   }
 `
 
-const DELETE_TRIP_MUTATION = /* GraphQL */ `
-  mutation DeleteTrip($tripId: ID!) {
-    deleteTrip(tripId: $tripId)
+const DELETE_TRIP_RECORD_MUTATION = /* GraphQL */ `
+  mutation DeleteTripRecord($tripId: ID!) {
+    deleteTripRecord(tripId: $tripId) {
+      id
+    }
   }
 `
 
@@ -320,13 +322,18 @@ export async function updatePhotoComment(
   })
 }
 
-/** 사진 삭제 — 목 모드는 edit.store에 기록해 시드·업로드 출처와 무관하게 목록에서 제외한다. */
-export function deletePhoto(id: string): Promise<void> {
-  if (USE_MOCK) {
-    usePhotoEditStore.getState().markDeleted(id)
+/**
+ * 내 기록 삭제 — 실서버는 deleteTripRecord (마지막 기록이면 여행 자체가 사라지고
+ * null 응답). 목 모드는 edit.store에 기록해 출처와 무관하게 목록에서 제외한다.
+ */
+export function deletePhoto(photo: Photo): Promise<void> {
+  if (USE_MOCK || !photo.tripId) {
+    usePhotoEditStore.getState().markDeleted(photo.id)
     return mockResponse(undefined)
   }
   return gqlClient
-    .request<{ deleteTrip: string }>(DELETE_TRIP_MUTATION, { tripId: id })
+    .request<{
+      deleteTripRecord: { id: string } | null
+    }>(DELETE_TRIP_RECORD_MUTATION, { tripId: photo.tripId })
     .then(() => undefined)
 }

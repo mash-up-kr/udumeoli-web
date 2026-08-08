@@ -129,7 +129,8 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
       }),
       initialId: photo.id,
       onDelete: async (target) => {
-        await deletePhotoMutation.mutateAsync(target.id)
+        const targetPhoto = regionPhotos.find((p) => p.id === target.id)
+        if (targetPhoto) await deletePhotoMutation.mutateAsync(targetPhoto)
       },
     })
   }
