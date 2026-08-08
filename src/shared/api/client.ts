@@ -1,7 +1,23 @@
 import { ClientError, GraphQLClient } from "graphql-request"
 
 // 목↔실서버 전환 단일 지점. 기본: 목 ON.
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false"
+// dev에선 우하단 MockToggle 버튼(localStorage 플래그)으로도 목 모드를 켤 수 있다.
+const MOCK_FLAG_KEY = "udumeoli:mock"
+
+function readMockFlag(): boolean {
+  if (!import.meta.env.DEV || typeof window === "undefined") return false
+  return window.localStorage.getItem(MOCK_FLAG_KEY) === "on"
+}
+
+export const USE_MOCK =
+  import.meta.env.VITE_USE_MOCK !== "false" || readMockFlag()
+
+/** dev 전용 — 목 플래그 토글 후 새로고침 (캐시·store 잔재까지 리셋). */
+export function toggleMockMode() {
+  if (readMockFlag()) window.localStorage.removeItem(MOCK_FLAG_KEY)
+  else window.localStorage.setItem(MOCK_FLAG_KEY, "on")
+  window.location.reload()
+}
 
 // graphql-request는 절대 URL만 받는다 — 상대경로(/graphql, vite proxy 경유)면
 // 브라우저 origin을 붙여준다. SSR에선 window가 없지만 쿼리는 클라에서만 실행된다.
