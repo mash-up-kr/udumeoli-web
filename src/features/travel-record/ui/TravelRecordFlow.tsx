@@ -42,6 +42,7 @@ export type CollaborationRecordSeed = {
   startDate: string
   endDate: string
   keyword?: TravelKeywordId
+  tripId?: string
 }
 
 function parseISODate(iso: string): Date | undefined {
@@ -152,6 +153,9 @@ export function TravelRecordFlow({
         region,
         date: startDate,
         ...(endDate && endDate !== startDate ? { endDate } : {}),
+        ...(collaborationTrip?.tripId
+          ? { tripId: collaborationTrip.tripId }
+          : {}),
         ...(keyword ? { keyword: keyword.id } : {}),
         ...(comment.trim() ? { comment: comment.trim() } : {}),
         uploaderId: currentUserId,

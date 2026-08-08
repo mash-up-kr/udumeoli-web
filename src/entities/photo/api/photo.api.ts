@@ -64,6 +64,15 @@ const CREATE_TRIP_MUTATION = /* GraphQL */ `
   }
 `
 
+const RECORD_TRIP_MUTATION = /* GraphQL */ `
+  ${TRIP_FIELDS}
+  mutation RecordTrip($input: RecordTripInput!) {
+    recordTrip(input: $input) {
+      ...TripFields
+    }
+  }
+`
+
 const DELETE_TRIP_MUTATION = /* GraphQL */ `
   mutation DeleteTrip($tripId: ID!) {
     deleteTrip(tripId: $tripId)
@@ -96,6 +105,10 @@ interface CreateImageUploadUrlResponse {
 
 interface CreateTripResponse {
   createTrip: TripDto
+}
+
+interface RecordTripResponse {
+  recordTrip: TripDto
 }
 
 function centerOf(region: string): { lat: number; lng: number } {
@@ -189,6 +202,8 @@ export interface CreatePhotoInput {
   previewUrl: string
   /** 사진 등록 좌표 — 없으면 지역 대표 좌표 (목 모드 전용, 서버는 좌표를 받지 않는다) */
   center?: { lat: number; lng: number }
+  /** 기존 여행(Trip)에 내 기록을 얹는 업로드 — 있으면 recordTrip(upsert), 없으면 createTrip(새 방문) */
+  tripId?: string
 }
 
 /**
@@ -217,6 +232,12 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     return mockResponse(photo)
   }
 
+  if (!input.tripId && !input.keyword) {
+    // v2 CreateTripInput.keyword는 필수 — 키워드 없는 업로드(팟원 합류)는
+    // tripId 분기(recordTrip)로 처리하므로 여기 도달하면 호출부 버그다.
+    // 업로드 낭비를 막기 위해 presigned 발급 전에 걸러낸다.
+    throw new Error("새 여행 기록에는 키워드가 필요해요")
+  }
   if (!(input.region in REGION_CODE_BY_NAME)) {
     throw new Error(`알 수 없는 지역: ${input.region}`)
   }
@@ -239,11 +260,24 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     throw new Error(`이미지 업로드 실패 (${uploaded.status})`)
   }
 
-  if (!input.keyword) {
-    // v2 CreateTripInput.keyword는 필수 — 키워드 없는 업로드(팟원 합류)는
-    // Task 6에서 recordTrip으로 분기하므로 여기 도달하면 호출부 버그다
-    throw new Error("새 여행 기록에는 키워드가 필요해요")
+  if (input.tripId) {
+    const data = await gqlClient.request<RecordTripResponse>(
+      RECORD_TRIP_MUTATION,
+      {
+        input: {
+          tripId: input.tripId,
+          image: { imageId, takenAt: input.date },
+          ...(input.comment ? { comment: input.comment } : {}),
+        },
+      }
+    )
+    const photo = tripToPhotos(data.recordTrip, input.potId).find(
+      (p) => p.uploaderId === input.uploaderId
+    )
+    if (!photo) throw new Error("등록한 기록을 응답에서 찾지 못했어요")
+    return photo
   }
+
   const data = await gqlClient.request<CreateTripResponse>(
     CREATE_TRIP_MUTATION,
     {
@@ -266,13 +300,24 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
 }
 
 /**
- * 사진 코멘트 수정 — 서버 Trip에 comment 필드가 없어 목·실서버 모두
- * 세션 로컬(edit.store)에 기록해 목록 훅이 즉시 반영한다.
- * TODO(graphql): 서버에 comment 필드가 생기면 updateTrip으로 이전
+ * 사진 코멘트 수정 — 실서버는 recordTrip upsert (RecordTripInput.image가 필수라
+ * 보존해둔 기존 imageId를 재전송한다). 목 모드는 세션 로컬(edit.store) 유지.
  */
-export function updatePhotoComment(id: string, comment: string): Promise<void> {
-  usePhotoEditStore.getState().setComment(id, comment)
-  return Promise.resolve()
+export async function updatePhotoComment(
+  photo: Photo,
+  comment: string
+): Promise<void> {
+  if (USE_MOCK || !photo.tripId || !photo.imageId) {
+    usePhotoEditStore.getState().setComment(photo.id, comment)
+    return
+  }
+  await gqlClient.request<RecordTripResponse>(RECORD_TRIP_MUTATION, {
+    input: {
+      tripId: photo.tripId,
+      image: { imageId: photo.imageId },
+      comment,
+    },
+  })
 }
 
 /** 사진 삭제 — 목 모드는 edit.store에 기록해 시드·업로드 출처와 무관하게 목록에서 제외한다. */

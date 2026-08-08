@@ -9,6 +9,7 @@ import {
   fetchPhotos,
   updatePhotoComment,
 } from "./photo.api"
+import type { Photo } from "../model/types"
 
 export const photoKeys = {
   all: ["photo"] as const,
@@ -64,8 +65,8 @@ export function useCreatePhoto() {
 export function useUpdatePhotoComment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-      updatePhotoComment(id, comment),
+    mutationFn: ({ photo, comment }: { photo: Photo; comment: string }) =>
+      updatePhotoComment(photo, comment),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
   })
 }

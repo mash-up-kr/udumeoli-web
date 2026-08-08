@@ -894,6 +894,7 @@ function TravelMapGoogleInner({
         startDate: trip.startDate,
         endDate: trip.endDate,
         ...(trip.keyword ? { keyword: trip.keyword } : {}),
+        ...(trip.tripId ? { tripId: trip.tripId } : {}),
       })
       startDecorate(trip.region, "photo")
     },

@@ -15,6 +15,7 @@ export type CollaborationTrip = {
   missingMemberIds: Array<string>
   keyword?: TravelKeywordId
   representativePhoto: Photo
+  tripId?: string
 }
 
 function dateValue(date: string): number {
@@ -91,6 +92,7 @@ export function buildCollaborationTrips({
           trip.photos.find((photo) => photo.keyword)?.keyword ??
           representativePhoto.keyword,
         representativePhoto,
+        tripId: trip.photos.find((photo) => photo.tripId)?.tripId,
       })
     }
   }

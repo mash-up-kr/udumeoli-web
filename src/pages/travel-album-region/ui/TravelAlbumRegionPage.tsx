@@ -72,11 +72,13 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     pickImageFile(async (url, file) => {
       // 팟원이 먼저 기록한 방문에 합류하는 업로드 — 그 방문의 키워드를 따라간다
       const keyword = trip.photos.find((p) => p.keyword)?.keyword
+      const tripId = trip.photos.find((p) => p.tripId)?.tripId
       try {
         await createPhotoMutation.mutateAsync({
           potId: currentPotId,
           region,
           date: trip.startDate,
+          ...(tripId ? { tripId } : {}),
           ...(keyword ? { keyword } : {}),
           uploaderId: myId,
           file,
