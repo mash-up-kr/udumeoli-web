@@ -12,7 +12,7 @@ export function MockToggle() {
     <button
       type="button"
       onClick={toggleMockMode}
-      className="fixed right-3 bottom-3 z-50 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md"
+      className="fixed bottom-3 left-3 z-50 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md"
       style={{ backgroundColor: USE_MOCK ? "#e8453a" : "#2f9e44" }}
     >
       {USE_MOCK ? "목 데이터" : "실서버"}
