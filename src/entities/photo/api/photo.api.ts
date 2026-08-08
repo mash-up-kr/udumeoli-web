@@ -1,6 +1,5 @@
 import { usePhotoEditStore } from "../model/edit.store"
 import { usePhotoUploadStore } from "../model/upload.store"
-import { TRAVEL_KEYWORDS, findKeyword } from "../model/keywords"
 import { REGION_CENTERS } from "../model/regions"
 import { ALBUM_PHOTOS, STICKER_DEMO_PHOTOS } from "./photo.mock"
 import { UT_PHOTOS } from "./photo.ut"
@@ -16,35 +15,32 @@ import {
 // 대표 좌표 폴백만 있으면 된다 (REGION_CENTERS에 없는 지역은 전국 중심 근처)
 const FALLBACK_CENTER = { lat: 36.2, lng: 127.8 }
 
-// 키워드 없이 등록되는 사진(팟원 합류 업로드 폴백)의 서버 색상 —
-// 키워드 fill과 겹치지 않는 중립색이라 다시 내려받아도 키워드 없음으로 복원된다
-const DEFAULT_TRIP_COLOR = "#9eb8ac"
-
 const TRIP_FIELDS = /* GraphQL */ `
   fragment TripFields on Trip {
     id
-    region {
-      code
-      name
-    }
-    color
+    regionCode
+    keyword
     startDate
     endDate
-    images {
-      id
-      originalUrl
-      thumbnailUrl
-    }
-    createdBy {
-      id
+    records {
+      member {
+        id
+      }
+      recorded
+      comment
+      image {
+        id
+        originalUrl
+        thumbnailUrl
+      }
     }
   }
 `
 
-const TRIPS_QUERY = /* GraphQL */ `
+const PARTY_TRIPS_QUERY = /* GraphQL */ `
   ${TRIP_FIELDS}
-  query Trips($partyId: ID!) {
-    trips(partyId: $partyId) {
+  query PartyTrips($partyId: ID!) {
+    partyTrips(partyId: $partyId) {
       ...TripFields
     }
   }
@@ -74,22 +70,24 @@ const DELETE_TRIP_MUTATION = /* GraphQL */ `
   }
 `
 
-interface TripDto {
-  id: string
-  region: { code: string; name: string }
-  color: string
-  startDate: string
-  endDate: string
-  images: Array<{
-    id: string
-    originalUrl: string
-    thumbnailUrl: string | null
-  }>
-  createdBy: { id: string } | null
+interface TripRecordDto {
+  member: { id: string }
+  recorded: boolean
+  comment: string | null
+  image: { id: string; originalUrl: string; thumbnailUrl: string | null } | null
 }
 
-interface TripsResponse {
-  trips: Array<TripDto>
+interface TripDto {
+  id: string
+  regionCode: string
+  keyword: TravelKeywordId
+  startDate: string
+  endDate: string
+  records: Array<TripRecordDto>
+}
+
+interface PartyTripsResponse {
+  partyTrips: Array<TripDto>
 }
 
 interface CreateImageUploadUrlResponse {
@@ -104,28 +102,37 @@ function centerOf(region: string): { lat: number; lng: number } {
   return region in REGION_CENTERS ? REGION_CENTERS[region] : FALLBACK_CENTER
 }
 
-/** 서버 Trip → 앱 Photo. 키워드는 색상 역매핑(키워드마다 fill이 유일)으로 복원한다. */
-function toPhoto(dto: TripDto, potId: string): Photo {
+/** 서버 Trip 1개 → 기록된 멤버당 Photo 1개로 평면화. */
+export function tripToPhotos(dto: TripDto, potId: string): Array<Photo> {
   const region =
-    dto.region.code in REGION_NAME_BY_CODE
-      ? REGION_NAME_BY_CODE[dto.region.code]
-      : dto.region.name
-  const image = dto.images.at(0)
+    dto.regionCode in REGION_NAME_BY_CODE
+      ? REGION_NAME_BY_CODE[dto.regionCode]
+      : dto.regionCode
   const center = centerOf(region)
-  const keyword = TRAVEL_KEYWORDS.find((k) => k.fill === dto.color)
-  return {
-    id: dto.id,
-    lat: center.lat,
-    lng: center.lng,
-    // [정책] 썸네일 생성 전이면 null — 원본으로 대체 표시
-    thumbnailUrl: image?.thumbnailUrl ?? image?.originalUrl ?? "",
-    date: dto.startDate,
-    uploaderId: dto.createdBy?.id ?? "",
-    region,
-    potId,
-    ...(keyword ? { keyword: keyword.id } : {}),
-    ...(dto.endDate !== dto.startDate ? { endDate: dto.endDate } : {}),
-  }
+  return dto.records
+    .filter(
+      (
+        record
+      ): record is TripRecordDto & {
+        image: NonNullable<TripRecordDto["image"]>
+      } => record.recorded && record.image !== null
+    )
+    .map((record) => ({
+      id: `${dto.id}:${record.member.id}`,
+      tripId: dto.id,
+      imageId: record.image.id,
+      lat: center.lat,
+      lng: center.lng,
+      // [정책] 썸네일 생성 전이면 null — 원본으로 대체 표시
+      thumbnailUrl: record.image.thumbnailUrl ?? record.image.originalUrl,
+      date: dto.startDate,
+      uploaderId: record.member.id,
+      region,
+      potId,
+      keyword: dto.keyword,
+      ...(record.comment ? { comment: record.comment } : {}),
+      ...(dto.endDate !== dto.startDate ? { endDate: dto.endDate } : {}),
+    }))
 }
 
 // UT 사진은 시드 트리거로만 주입 (새로고침 시 초기화). 앨범·스티커 데모 목 사진은
@@ -161,8 +168,10 @@ export function fetchPhotos(potId: string): Promise<Array<Photo>> {
   }
   if (!potId) return Promise.resolve([])
   return gqlClient
-    .request<TripsResponse>(TRIPS_QUERY, { partyId: potId })
-    .then((data) => data.trips.map((trip) => toPhoto(trip, potId)))
+    .request<PartyTripsResponse>(PARTY_TRIPS_QUERY, { partyId: potId })
+    .then((data) =>
+      data.partyTrips.flatMap((trip) => tripToPhotos(trip, potId))
+    )
 }
 
 export interface CreatePhotoInput {
@@ -230,26 +239,29 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     throw new Error(`이미지 업로드 실패 (${uploaded.status})`)
   }
 
+  if (!input.keyword) {
+    // v2 CreateTripInput.keyword는 필수 — 키워드 없는 업로드(팟원 합류)는
+    // Task 6에서 recordTrip으로 분기하므로 여기 도달하면 호출부 버그다
+    throw new Error("새 여행 기록에는 키워드가 필요해요")
+  }
   const data = await gqlClient.request<CreateTripResponse>(
     CREATE_TRIP_MUTATION,
     {
       input: {
         partyId: input.potId,
         regionCode,
-        color: findKeyword(input.keyword)?.fill ?? DEFAULT_TRIP_COLOR,
+        keyword: input.keyword,
         startDate: input.date,
         endDate: input.endDate ?? input.date,
-        imageIds: [imageId],
+        image: { imageId, takenAt: input.date },
+        ...(input.comment ? { comment: input.comment } : {}),
       },
     }
   )
-  const photo = toPhoto(data.createTrip, input.potId)
-
-  // TODO(graphql): 서버 Trip에 comment 필드가 없어 세션 로컬(edit.store)로만 유지
-  if (input.comment) {
-    usePhotoEditStore.getState().setComment(photo.id, input.comment)
-    return { ...photo, comment: input.comment }
-  }
+  const photo = tripToPhotos(data.createTrip, input.potId).find(
+    (p) => p.uploaderId === input.uploaderId
+  )
+  if (!photo) throw new Error("등록한 기록을 응답에서 찾지 못했어요")
   return photo
 }
 
