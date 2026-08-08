@@ -7,7 +7,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { showToast } from "@/shared/ui/toast"
-import { useSessionStore } from "@/entities/user"
+import { useSessionStore, useUpdateProfile } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
 
 const DEFAULT_AVATARS = [
@@ -23,6 +23,7 @@ function MyProfileEditContent() {
   const router = useRouter()
   const user = useSessionStore((s) => s.currentUser)
   const updateUser = useSessionStore((s) => s.updateUser)
+  const updateProfileMutation = useUpdateProfile()
 
   const originalNickname = user?.nickname ?? ""
   const originalProfileImage = user?.profileImageUrl ?? DEFAULT_AVATARS[0]
@@ -51,6 +52,17 @@ function MyProfileEditContent() {
   const goMyPage = () => router.navigate({ to: "/my-page", replace: true })
 
   const handleSave = async () => {
+    if (updateProfileMutation.isPending) return
+    // 서버에는 닉네임만 저장 — 프로필 이미지는 로컬 blob URL이라 세션에만 유지
+    try {
+      await updateProfileMutation.mutateAsync(nickname.trim())
+    } catch {
+      showToast({
+        message: "프로필 수정에 실패했어요. 다시 시도해 주세요.",
+        icon: "alert",
+      })
+      return
+    }
     updateUser({ nickname: nickname.trim(), profileImageUrl: profileImage })
     await goMyPage()
     showToast({ message: "프로필 수정이 완료됐어요.", icon: "check" })
