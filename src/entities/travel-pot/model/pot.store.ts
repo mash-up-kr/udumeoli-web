@@ -212,7 +212,8 @@ export const usePotStore = create<PotState>()(
         }),
     }),
     {
-      name: "photato-pots",
+      // 목↔실서버 persist 분리 — 실서버 응답(replacePots)이 목 팟을 덮어쓰지 않게 한다
+      name: USE_MOCK ? "photato-pots-mock" : "photato-pots",
       // 목 모드 한정: 온보딩을 마친(팟이 하나라도 있는) 유저에게 앨범 목데이터용
       // 4인 팟(우두머리)을 1회 주입한다. 빈 상태에는 넣지 않아 신규 유저의
       // /pot-start 온보딩 흐름은 그대로 유지되고, 기존 선택(예: 가입 시 주입되는
