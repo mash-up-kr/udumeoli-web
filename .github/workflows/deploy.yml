@@ -30,5 +30,8 @@ jobs:
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          # CI 러너에는 VERCEL 환경변수가 없어 nitro가 Vercel 프리셋을 자동 감지하지 못함 — 명시 지정
+          NITRO_PRESET: vercel
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
