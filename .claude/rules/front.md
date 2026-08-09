@@ -54,7 +54,7 @@ export async function fetchFoo(): Promise<Foo> {
 
 **공유 조각은 `shared/api/client.ts`에 있다** — entities끼리는 cross-import가 막혀 있어서 여기가 유일한 공용 지점이다.
 
-- `UserDto` / `toProfileImageUrl` — 서버가 여러 쿼리에서 같은 모양으로 내려주는 유저 (`"DEFAULT"` → `null`)
+- `UserDto` — 서버가 여러 쿼리에서 같은 모양으로 내려주는 유저 (`{ id, nickname, profileImage: number }`). 프리셋 번호→에셋 매핑은 `shared/ui/profile`의 `presetAvatarSrc`가 담당한다
 - `QueryOptions` — 엔티티 훅이 호출부에 열어주는 옵션
 
 **서버 데이터와 zustand store를 함께 쓰는 경우** (`travel-pot` 참고):

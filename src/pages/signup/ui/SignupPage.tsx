@@ -8,8 +8,9 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
-import { GRAPHQL_USER_ID, USE_MOCK } from "@/shared/api/client"
-import { MOCK_USER, useSessionStore } from "@/entities/user"
+import { showToast } from "@/shared/ui/toast"
+import { USE_MOCK } from "@/shared/api/client"
+import { MOCK_USER, useSessionStore, useUpdateProfile } from "@/entities/user"
 import { TRIP_100_POT, usePotStore } from "@/entities/travel-pot"
 import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
@@ -185,6 +186,7 @@ function SignupCompleteContent({
 export function SignupPage() {
   const router = useRouter()
   const login = useSessionStore((s) => s.login)
+  const updateProfileMutation = useUpdateProfile()
   const [nickname, setNickname] = React.useState("")
   // 입력은 막지 않고(한글 IME 조합 안전), 초과 시 에러 표시 + 다음 버튼만 비활성.
   const nicknameTooLong = nickname.length > NICKNAME_MAX
@@ -209,11 +211,30 @@ export function SignupPage() {
   // 가입 완료 팝업·온보딩은 /signup에 머문 채로 표시 — 먼저 /map-google로 이동해두면
   // 지도의 "팟 없음" 가드가 온보딩보다 먼저 끼어들어(둘 다 useEffect라 순서 보장 안 됨)
   // 팝업·온보딩이 통째로 스킵되는 경합이 생긴다. 온보딩이 끝난 뒤에야 이동한다.
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (updateProfileMutation.isPending) return
     const name = nickname.trim()
-    const user = USE_MOCK
-      ? { ...MOCK_USER, nickname: name, profileImageUrl: profileImage }
-      : { id: GRAPHQL_USER_ID, nickname: name, profileImageUrl: null }
+    let user
+    if (USE_MOCK) {
+      user = { ...MOCK_USER, nickname: name, profileImageUrl: profileImage }
+    } else {
+      try {
+        const saved = await updateProfileMutation.mutateAsync({
+          nickname: name,
+          ...(selectedAvatar != null
+            ? { profileImage: selectedAvatar + 1 }
+            : {}),
+        })
+        // 커스텀 파일(blob)은 서버 저장 불가 — 세션에서만 유지
+        user = customImage ? { ...saved, profileImageUrl: customImage } : saved
+      } catch {
+        showToast({
+          message: "닉네임 저장에 실패했어요. 다시 시도해 주세요.",
+          icon: "alert",
+        })
+        return
+      }
+    }
 
     login(user)
 
@@ -311,7 +332,7 @@ export function SignupPage() {
       <div className="px-4 pb-8">
         <ButtonCta
           disabled={!nickname.trim() || nicknameTooLong}
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
         >
           다음
         </ButtonCta>

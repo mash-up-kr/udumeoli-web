@@ -5,6 +5,7 @@ import { OverlayProvider } from "overlay-kit"
 
 import appCss from "../styles.css?url"
 import { QueryProvider } from "@/shared/api/QueryProvider"
+import { MockToggle } from "@/shared/ui/mock-toggle"
 
 // Microsoft Clarity 사용자 행동 분석 스니펫
 const CLARITY_SNIPPET = `(function(c,l,a,r,i,t,y){
@@ -45,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <QueryProvider>
           <OverlayProvider>{children}</OverlayProvider>
         </QueryProvider>
+        <MockToggle />
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[

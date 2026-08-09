@@ -16,4 +16,8 @@ export interface Photo {
   keyword?: TravelKeywordId
   /** 여행 종료일 — 기간으로 등록한 경우에만. 없으면 date 당일 여행 */
   endDate?: string
+  /** 서버 Trip id — record 삭제·기존 여행 기록(recordTrip)에 필요. 목 사진엔 없다 */
+  tripId?: string
+  /** 서버 Image id — 코멘트만 수정할 때 recordTrip 재전송에 필요 */
+  imageId?: string
 }

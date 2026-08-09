@@ -7,7 +7,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { showToast } from "@/shared/ui/toast"
-import { useSessionStore } from "@/entities/user"
+import { useSessionStore, useUpdateProfile } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
 
 const DEFAULT_AVATARS = [
@@ -23,6 +23,7 @@ function MyProfileEditContent() {
   const router = useRouter()
   const user = useSessionStore((s) => s.currentUser)
   const updateUser = useSessionStore((s) => s.updateUser)
+  const updateProfileMutation = useUpdateProfile()
 
   const originalNickname = user?.nickname ?? ""
   const originalProfileImage = user?.profileImageUrl ?? DEFAULT_AVATARS[0]
@@ -35,6 +36,7 @@ function MyProfileEditContent() {
   const [selectedAvatar, setSelectedAvatar] = React.useState<number | null>(
     initialAvatar >= 0 ? initialAvatar : null
   )
+  const [avatarTouched, setAvatarTouched] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const nicknameTooLong = nickname.length > NICKNAME_MAX
@@ -51,6 +53,22 @@ function MyProfileEditContent() {
   const goMyPage = () => router.navigate({ to: "/my-page", replace: true })
 
   const handleSave = async () => {
+    if (updateProfileMutation.isPending) return
+    // 커스텀 이미지는 blob이라 서버 미전송(프리셋 선택 시에만 번호 전송)
+    try {
+      await updateProfileMutation.mutateAsync({
+        nickname: nickname.trim(),
+        ...(avatarTouched && selectedAvatar != null
+          ? { profileImage: selectedAvatar + 1 }
+          : {}),
+      })
+    } catch {
+      showToast({
+        message: "프로필 수정에 실패했어요. 다시 시도해 주세요.",
+        icon: "alert",
+      })
+      return
+    }
     updateUser({ nickname: nickname.trim(), profileImageUrl: profileImage })
     await goMyPage()
     showToast({ message: "프로필 수정이 완료됐어요.", icon: "check" })
@@ -98,6 +116,7 @@ function MyProfileEditContent() {
               onClick={() => {
                 setSelectedAvatar(i)
                 setCustomImage(null)
+                setAvatarTouched(true)
               }}
             >
               <Profile

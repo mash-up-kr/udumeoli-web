@@ -13,11 +13,10 @@ import { RequireAuth } from "@/features/auth"
 import { openPhotoViewer } from "@/features/photo-gallery"
 import { pickImageFile } from "@/features/photo-upload"
 import {
-  REGION_CENTERS,
   formatTripRange,
   groupTrips,
+  useCreatePhoto,
   useDeletePhoto,
-  usePhotoUploadStore,
   useRegionAlbumPhotos,
 } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
@@ -31,7 +30,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.name ?? ""
   )
   const members = usePotStore(selectCurrentPotMembers)
-  const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
+  const createPhotoMutation = useCreatePhoto()
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
@@ -70,19 +69,28 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   // '기록하기' — 해당 방문 기간의 업로드 플로우(이미지 선택 → 등록) 진입
   const recordTrip = (trip: Trip) => {
     if (!myId) return
-    pickImageFile((url) => {
-      const center = REGION_CENTERS[region] ?? { lat: 36.2, lng: 127.8 }
-      addPhoto({
-        id: `up-${region}-${trip.startDate}-${Date.now()}`,
-        region,
-        date: trip.startDate,
-        lat: center.lat,
-        lng: center.lng,
-        thumbnailUrl: url,
-        uploaderId: myId,
-        potId: currentPotId,
-      })
-      showToast({ message: "업로드가 완료됐어요", icon: "check" })
+    pickImageFile(async (url, file) => {
+      // 팟원이 먼저 기록한 방문에 합류하는 업로드 — 그 방문의 키워드를 따라간다
+      const keyword = trip.photos.find((p) => p.keyword)?.keyword
+      const tripId = trip.photos.find((p) => p.tripId)?.tripId
+      try {
+        await createPhotoMutation.mutateAsync({
+          potId: currentPotId,
+          region,
+          date: trip.startDate,
+          ...(tripId ? { tripId } : {}),
+          ...(keyword ? { keyword } : {}),
+          uploaderId: myId,
+          file,
+          previewUrl: url,
+        })
+        showToast({ message: "업로드가 완료됐어요", icon: "check" })
+      } catch {
+        showToast({
+          message: "업로드에 실패했어요. 다시 시도해 주세요.",
+          icon: "alert",
+        })
+      }
     })
   }
 
@@ -121,7 +129,8 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
       }),
       initialId: photo.id,
       onDelete: async (target) => {
-        await deletePhotoMutation.mutateAsync(target.id)
+        const targetPhoto = regionPhotos.find((p) => p.id === target.id)
+        if (targetPhoto) await deletePhotoMutation.mutateAsync(targetPhoto)
       },
     })
   }

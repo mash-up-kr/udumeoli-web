@@ -8,11 +8,7 @@ import type { GallerySlot } from "./DateSection"
 import type { Photo } from "@/entities/photo"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
-import {
-  REGION_CENTERS,
-  useAllPhotos,
-  usePhotoUploadStore,
-} from "@/entities/photo"
+import { useAllPhotos, useCreatePhoto } from "@/entities/photo"
 import { formatRegionName } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -42,7 +38,7 @@ export function GalleryPanel({
 }: GalleryPanelProps) {
   const currentPotId = usePotStore((s) => s.currentPotId)
   const photos = useAllPhotos(currentPotId).filter((p) => p.region === region)
-  const addPhoto = usePhotoUploadStore((s) => s.addPhoto)
+  const createPhotoMutation = useCreatePhoto()
   const partyMembers = usePotStore(selectCurrentPotMembers)
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id ?? null
@@ -138,19 +134,32 @@ export function GalleryPanel({
     })
   }
 
-  const registerPhoto = (date: string, url: string) => {
-    if (!currentUserId) return
-    const center = REGION_CENTERS[region] ?? { lat: 36.2, lng: 127.8 }
-    addPhoto({
-      id: `up-${region}-${date}-${Date.now()}`,
-      region,
-      date,
-      lat: center.lat,
-      lng: center.lng,
-      thumbnailUrl: url,
-      uploaderId: currentUserId,
-      potId: currentPotId,
-    })
+  const registerPhoto = async (date: string, url: string, file: File) => {
+    if (!currentUserId || createPhotoMutation.isPending) return
+    // 팟원이 먼저 기록한 여행에 합류하는 업로드 — 같은 날짜(없으면 지역)의 키워드를 따라간다
+    const keyword = (
+      byDate.get(date)?.find((p) => p.keyword) ?? photos.find((p) => p.keyword)
+    )?.keyword
+    const joined = byDate.get(date)?.find((p) => p.tripId) ?? null
+    try {
+      await createPhotoMutation.mutateAsync({
+        potId: currentPotId,
+        region,
+        date,
+        ...(joined?.tripId ? { tripId: joined.tripId } : {}),
+        ...(keyword ? { keyword } : {}),
+        uploaderId: currentUserId,
+        file,
+        previewUrl: url,
+      })
+    } catch {
+      showToast({
+        message: "업로드에 실패했어요. 다시 시도해 주세요.",
+        icon: "alert",
+        className: expanded ? undefined : "bottom-[256px]",
+      })
+      return
+    }
     setPoppedDate(date)
     // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
     showToast({
@@ -162,13 +171,13 @@ export function GalleryPanel({
 
   // 날짜 행의 add 슬롯: 날짜 고정, 이미지 선택만
   const uploadForDate = (date: string) => {
-    pickImageFile((url) => registerPhoto(date, url))
+    pickImageFile((url, file) => void registerPhoto(date, url, file))
   }
 
   // 헤더 추가: 날짜 선택 → 이미지 선택
   const uploadWithDatePicker = () => {
     openDatePickerSheet((date) => {
-      pickImageFile((url) => registerPhoto(date, url))
+      pickImageFile((url, file) => void registerPhoto(date, url, file))
     })
   }
 

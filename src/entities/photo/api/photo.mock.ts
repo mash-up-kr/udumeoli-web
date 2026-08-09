@@ -357,7 +357,7 @@ type AlbumSeed = {
 const ALBUM_SEEDS: Array<AlbumSeed> = [
   {
     region: "창원시",
-    keyword: "bread",
+    keyword: "FOOD",
     uploads: [
       // 최신 방문 — 유지·가연만 업로드, 나·성아 미기록 (기록하기/zzZ 케이스)
       ["2026-07-20", "m-유지-0", "야르하게찍었쥬?ㅋㅋㅋㅋ"],
@@ -376,7 +376,7 @@ const ALBUM_SEEDS: Array<AlbumSeed> = [
   },
   {
     region: "대전광역시",
-    keyword: "bread",
+    keyword: "FOOD",
     uploads: [
       // 전원 업로드 완료 방문
       ["2026-06-19", "user-1", "성심당은 못 참지"],
@@ -390,7 +390,7 @@ const ALBUM_SEEDS: Array<AlbumSeed> = [
   },
   {
     region: "강릉시",
-    keyword: "nature",
+    keyword: "NATURE",
     uploads: [
       ["2026-02-27", "m-유지-0", "혼자 다녀옴 ㅎㅎ"],
       ["2026-02-28", "m-유지-0"],
@@ -430,11 +430,11 @@ const STICKER_DEMO_UPLOADERS = [
 ]
 
 const STICKER_DEMO_KEYWORDS: Array<NonNullable<Photo["keyword"]>> = [
-  "bread",
-  "vibe",
-  "shopping",
-  "activity",
-  "nature",
+  "FOOD",
+  "HEALING",
+  "CITY",
+  "ACTIVITY",
+  "NATURE",
 ]
 
 // 좌표는 권역별 러프 중심 + 순번 오프셋 — 스티커 위치는 GeoJSON centroid를 쓰므로 폴백용

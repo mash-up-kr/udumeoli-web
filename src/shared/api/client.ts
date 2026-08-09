@@ -1,7 +1,27 @@
-import { GraphQLClient } from "graphql-request"
+import { ClientError, GraphQLClient } from "graphql-request"
 
 // 목↔실서버 전환 단일 지점. 기본: 목 ON.
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false"
+// dev에선 좌하단 MockToggle 버튼(localStorage 오버라이드)이 env 설정보다 우선한다.
+const MOCK_FLAG_KEY = "udumeoli:mock"
+
+function readMockOverride(): boolean | null {
+  if (!import.meta.env.DEV || typeof window === "undefined") return null
+  const value = window.localStorage.getItem(MOCK_FLAG_KEY)
+  if (value === "on") return true
+  if (value === "off") return false
+  return null
+}
+
+export const USE_MOCK = (() => {
+  const override = readMockOverride()
+  return override ?? import.meta.env.VITE_USE_MOCK !== "false"
+})()
+
+/** dev 전용 — 목 플래그 토글 후 새로고침 (캐시·store 잔재까지 리셋). */
+export function toggleMockMode() {
+  window.localStorage.setItem(MOCK_FLAG_KEY, USE_MOCK ? "off" : "on")
+  window.location.reload()
+}
 
 // graphql-request는 절대 URL만 받는다 — 상대경로(/graphql, vite proxy 경유)면
 // 브라우저 origin을 붙여준다. SSR에선 window가 없지만 쿼리는 클라에서만 실행된다.
@@ -36,11 +56,14 @@ export interface QueryOptions {
 export interface UserDto {
   id: string
   nickname: string
-  profileImageUrl: string | null
+  profileImage: number
 }
 
-/** 서버는 기본 프로필을 "DEFAULT" 문자열로 내려준다 — 앱에서는 null로 통일. */
-export function toProfileImageUrl(value: string | null): string | null {
-  if (!value || value === "DEFAULT") return null
-  return value
+/** GraphQL 에러 응답의 extensions.code — 네트워크 오류 등 그 외 에러는 undefined. */
+export function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof ClientError)) return undefined
+  const extensions = error.response.errors?.[0]?.extensions as
+    | { code?: string }
+    | undefined
+  return extensions?.code
 }

@@ -46,7 +46,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utSeoulSrc,
     altUrls: [utSeoul2Src, utSeoul3Src],
     dates: ["2026-06-05", "2026-06-06", "2026-06-07"],
-    keyword: "vibe",
+    keyword: "HEALING",
   },
   {
     region: "양양군",
@@ -55,7 +55,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utYangyangSrc,
     altUrls: [utYangyang2Src, utYangyang3Src],
     dates: ["2026-07-03", "2026-07-04", "2026-07-05"],
-    keyword: "nature",
+    keyword: "NATURE",
   },
   {
     region: "대전광역시",
@@ -64,7 +64,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utDaejeonSrc,
     altUrls: [utDaejeon2Src, utDaejeon3Src],
     dates: ["2026-06-19", "2026-06-20", "2026-06-21"],
-    keyword: "bread",
+    keyword: "FOOD",
   },
   {
     region: "포항시",
@@ -73,7 +73,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utPohangSrc,
     altUrls: [utPohang2Src, utPohang3Src],
     dates: ["2026-05-15", "2026-05-16", "2026-05-17"],
-    keyword: "activity",
+    keyword: "ACTIVITY",
   },
   {
     region: "경주시",
@@ -82,7 +82,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGyeongjuSrc,
     altUrls: [utGyeongju2Src, utGyeongju3Src],
     dates: ["2026-04-17", "2026-04-18", "2026-04-19"],
-    keyword: "shopping",
+    keyword: "CITY",
   },
   {
     region: "부산광역시",
@@ -91,7 +91,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utBusanSrc,
     altUrls: [utBusan2Src, utBusan3Src],
     dates: ["2026-06-27", "2026-06-28", "2026-06-29"],
-    keyword: "activity",
+    keyword: "ACTIVITY",
   },
   {
     region: "거제시",
@@ -100,7 +100,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGeojeSrc,
     altUrls: [utGeoje2Src, utGeoje3Src],
     dates: ["2026-05-29", "2026-05-30", "2026-05-31"],
-    keyword: "nature",
+    keyword: "NATURE",
   },
 ]
 
@@ -184,7 +184,7 @@ const UT_DESIGN_PREVIEW_PHOTOS: Array<Photo> = [
     endDate: "2026-08-02",
     uploaderId: u.uploaderId,
     thumbnailUrl: u.url,
-    keyword: "bread" as const,
+    keyword: "FOOD" as const,
   })),
 
   // 1836:14569 — 내가 기록했지만 팟원들이 아직 기록하지 않은 1/4 상태.
@@ -197,7 +197,7 @@ const UT_DESIGN_PREVIEW_PHOTOS: Array<Photo> = [
     date: "2026-08-03",
     uploaderId: "user-1",
     thumbnailUrl: utDaejeonSrc,
-    keyword: "bread",
+    keyword: "FOOD",
   },
 
   // 1836:14270 — 팟원 전원이 완료한 최신 완료 여행.
@@ -230,7 +230,7 @@ const UT_DESIGN_PREVIEW_PHOTOS: Array<Photo> = [
     date: "2026-07-28",
     uploaderId: u.uploaderId,
     thumbnailUrl: u.url,
-    keyword: "vibe" as const,
+    keyword: "HEALING" as const,
   })),
 ]
 

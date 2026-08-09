@@ -5,11 +5,12 @@ import emojiShoppingBagSrc from "@/shared/assets/emoji-shopping-bag.svg"
 import emojiTreeSrc from "@/shared/assets/emoji-tree.svg"
 
 export type TravelKeywordId =
-  | "bread"
-  | "vibe"
-  | "shopping"
-  | "activity"
-  | "nature"
+  | "HEALING"
+  | "ACTIVITY"
+  | "FOOD"
+  | "NATURE"
+  | "CITY"
+  | "CULTURE"
 
 export interface TravelKeyword {
   id: TravelKeywordId
@@ -25,46 +26,52 @@ export interface TravelKeyword {
 /**
  * 여행 대표 키워드 (Figma 1836-16473).
  *
- * 키워드↔색상 매핑은 시안 annotation "임시 컬러 매칭" 기준:
- * 빵→Orange · 감성→Indigo · 쇼핑→Red · 액티비티→Yellow · 자연→Green.
+ * ponytail: 서버 enum 6종 확정, 라벨·이모지·색상은 임시 매핑(HEALING←감성,
+ * FOOD←빵, CITY←쇼핑, CULTURE 신규) — 디자인 확정 시 이 배열만 교체.
  * 색상값은 Color Swatch 팔레트의 primitive 100(fill) / 500(stroke).
- * ponytail: 키워드 목록·색상 모두 시안상 "임시" — 팀 확정 후 이 배열만 교체하면 된다.
  */
 export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
   {
-    id: "bread",
-    label: "빵",
-    emojiSrc: emojiCroissantSrc,
-    fill: "#ffdab5",
-    stroke: "#e3800f",
-  },
-  {
-    id: "vibe",
-    label: "감성",
+    id: "HEALING",
+    label: "힐링",
     emojiSrc: emojiCameraSrc,
     fill: "#c4c8ff",
     stroke: "#7b7fbf",
   },
   {
-    id: "shopping",
-    label: "쇼핑",
-    emojiSrc: emojiShoppingBagSrc,
-    fill: "#ffc5bf",
-    stroke: "#e8453a",
-  },
-  {
-    id: "activity",
+    id: "ACTIVITY",
     label: "액티비티",
     emojiSrc: emojiFerrisWheelSrc,
     fill: "#fff0b1",
     stroke: "#dbb71f",
   },
   {
-    id: "nature",
+    id: "FOOD",
+    label: "맛집",
+    emojiSrc: emojiCroissantSrc,
+    fill: "#ffdab5",
+    stroke: "#e3800f",
+  },
+  {
+    id: "NATURE",
     label: "자연",
     emojiSrc: emojiTreeSrc,
     fill: "#c8f0c0",
     stroke: "#7cb571",
+  },
+  {
+    id: "CITY",
+    label: "도시",
+    emojiSrc: emojiShoppingBagSrc,
+    fill: "#ffc5bf",
+    stroke: "#e8453a",
+  },
+  {
+    id: "CULTURE",
+    label: "문화",
+    emojiSrc: emojiCameraSrc,
+    fill: "#ffd3f2",
+    stroke: "#c65fae",
   },
 ]
 

@@ -3,20 +3,29 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { applyPhotoEdits, usePhotoEditStore } from "../model/edit.store"
 import { usePhotoUploadStore } from "../model/upload.store"
-import { deletePhoto, fetchPhotos, updatePhotoComment } from "./photo.api"
+import {
+  createPhoto,
+  deletePhoto,
+  fetchPhotos,
+  updatePhotoComment,
+} from "./photo.api"
+import type { Photo } from "../model/types"
 
 export const photoKeys = {
   all: ["photo"] as const,
-  list: () => [...photoKeys.all, "list"] as const,
+  list: (potId: string) => [...photoKeys.all, "list", potId] as const,
 }
 
-export function usePhotos() {
-  return useQuery({ queryKey: photoKeys.list(), queryFn: fetchPhotos })
+export function usePhotos(potId: string) {
+  return useQuery({
+    queryKey: photoKeys.list(potId),
+    queryFn: () => fetchPhotos(potId),
+  })
 }
 
 // 서버(목) 사진 + 세션 업로드 사진 병합 — 현재 팟 소속 사진만, 수정/삭제 반영
 export function useAllPhotos(potId: string) {
-  const { data = [] } = usePhotos()
+  const { data = [] } = usePhotos(potId)
   const uploaded = usePhotoUploadStore((s) => s.uploaded)
   const deletedIds = usePhotoEditStore((s) => s.deletedIds)
   const comments = usePhotoEditStore((s) => s.comments)
@@ -42,14 +51,23 @@ export function useRegionAlbumPhotos(potId: string, region: string) {
   )
 }
 
+/** 사진(여행) 등록 — 성공 시 해당 팟 사진 목록 갱신. */
+export function useCreatePhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createPhoto,
+    onSuccess: (photo) =>
+      queryClient.invalidateQueries({ queryKey: photoKeys.list(photo.potId) }),
+  })
+}
+
 /** 사진 코멘트 수정 — 성공 시 사진 목록 갱신. (수정 화면 연결 시 사용) */
 export function useUpdatePhotoComment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-      updatePhotoComment(id, comment),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: photoKeys.list() }),
+    mutationFn: ({ photo, comment }: { photo: Photo; comment: string }) =>
+      updatePhotoComment(photo, comment),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
   })
 }
 
@@ -57,8 +75,7 @@ export function useUpdatePhotoComment() {
 export function useDeletePhoto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deletePhoto(id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: photoKeys.list() }),
+    mutationFn: (photo: Photo) => deletePhoto(photo),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
   })
 }

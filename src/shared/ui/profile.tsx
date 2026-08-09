@@ -7,6 +7,22 @@ import { cn } from "@/shared/lib/utils"
 /** 기본 프로필 이미지 (추후 교체 예정). 번들 import라 배포 base path와 무관하게 동작. */
 export const DEFAULT_PROFILE_SRC = profileDefaultSrc
 
+/**
+ * 서버 프리셋 아바타(1부터 시작하는 번호) ↔ 에셋 매핑.
+ * ponytail: 아바타 4종 에셋이 아직 전부 기본 이미지 — 디자인 확정 시 배열만 교체
+ */
+export const PRESET_AVATARS = [
+  DEFAULT_PROFILE_SRC,
+  DEFAULT_PROFILE_SRC,
+  DEFAULT_PROFILE_SRC,
+  DEFAULT_PROFILE_SRC,
+]
+
+/** 프리셋 번호 → 에셋 URL. 범위 밖(서버 기본값 등)은 null → UI가 기본 이미지 폴백. */
+export function presetAvatarSrc(n: number): string | null {
+  return PRESET_AVATARS[n - 1] ?? null
+}
+
 export type ProfileSize = "xs" | "sm" | "md" | "lg" | "xl"
 export type ProfileType = "default" | "selected" | "add-image"
 
