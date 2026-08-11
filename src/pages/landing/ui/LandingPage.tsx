@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { API_BASE_URL, USE_MOCK } from "@/shared/api/client"
 import { RedirectIfAuthed } from "@/features/auth"
 import iconKakaoSrc from "@/shared/assets/icon-kakao.svg"
 import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
@@ -32,7 +33,14 @@ export function LandingPage() {
         {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
         <ButtonCta
           className="gap-2 bg-[#FDE500] text-[#3C1E1E]"
-          onClick={() => router.navigate({ to: "/signup" })}
+          onClick={() => {
+            if (USE_MOCK) {
+              void router.navigate({ to: "/signup" })
+              return
+            }
+            // 프록시를 경유하면 백엔드 OAuth 세션 쿠키가 우리 도메인에 심겨 state 검증이 깨진다 — 직접 이동
+            window.location.assign(`${API_BASE_URL}/oauth2/authorization/kakao`)
+          }}
         >
           <img src={iconKakaoSrc} alt="" className="size-6" />
           카카오로 시작하기
