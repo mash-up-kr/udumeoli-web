@@ -1,5 +1,8 @@
 import { ClientError, GraphQLClient } from "graphql-request"
 
+import { authFetch } from "./auth-fetch"
+import { getAccessToken } from "./token-storage"
+
 // 목↔실서버 전환 단일 지점. 기본: 목 ON.
 // dev에선 좌하단 MockToggle 버튼(localStorage 오버라이드)이 env 설정보다 우선한다.
 const MOCK_FLAG_KEY = "udumeoli:mock"
@@ -30,13 +33,16 @@ const endpoint =
   rawEndpoint.startsWith("/") && typeof window !== "undefined"
     ? window.location.origin + rawEndpoint
     : rawEndpoint
-export const GRAPHQL_USER_ID = import.meta.env.VITE_GRAPHQL_USER_ID || "1"
+/** 백엔드 origin — OAuth 시작처럼 브라우저를 직접 이동시킬 때만 사용. API 호출은 프록시 경유 상대경로. */
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ""
 
-// 현재 GraphQL 서버는 개발용 사용자 식별 헤더를 요구한다.
+// 인증: Authorization Bearer. 만료(401) 시 authFetch가 refresh 후 1회 재시도한다.
 export const gqlClient = new GraphQLClient(endpoint, {
   credentials: "include",
-  headers: {
-    "X-User-Id": GRAPHQL_USER_ID,
+  fetch: authFetch,
+  headers: (): Record<string, string> => {
+    const token = getAccessToken()
+    return token ? { Authorization: `Bearer ${token}` } : {}
   },
 })
 
