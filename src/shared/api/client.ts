@@ -63,6 +63,9 @@ export interface UserDto {
   id: string
   nickname: string
   profileImage: number
+  /** 업로드 이미지면 URL, 프리셋(1~4)이면 null.
+   *  TODO: 백엔드 배포 대기 중인 신규 필드 — 서버에 열리기 전에 배포되면 쿼리 검증 에러가 난다. */
+  profileImageUrl: string | null
 }
 
 /** GraphQL 에러 응답의 extensions.code — 네트워크 오류 등 그 외 에러는 undefined. */

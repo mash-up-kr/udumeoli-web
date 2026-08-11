@@ -227,6 +227,9 @@ function MyPageContent() {
             resetMapTipsSeen()
             resetCompletionTips()
             queryClient.removeQueries({ queryKey: photoKeys.all })
+            // TODO: 백엔드 회원 탈퇴 API(요청됨) 제공 시 서버 탈퇴 호출 연동 —
+            // 현재는 로컬 데이터만 초기화되고 서버 회원·refreshToken은 남아
+            // 재로그인 시 기존 회원으로 바로 들어온다
             clearTokens() // 토큰이 남으면 Bearer로 여전히 인증됨
             logout()
             await router.navigate({ to: "/" })

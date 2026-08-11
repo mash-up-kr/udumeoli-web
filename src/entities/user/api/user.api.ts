@@ -10,6 +10,7 @@ const ME_QUERY = /* GraphQL */ `
       id
       nickname
       profileImage
+      profileImageUrl
     }
   }
 `
@@ -20,6 +21,7 @@ const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
       id
       nickname
       profileImage
+      profileImageUrl
     }
   }
 `
@@ -36,7 +38,8 @@ export function toUser(dto: UserDto): User {
   return {
     id: dto.id,
     nickname: dto.nickname,
-    profileImageUrl: presetAvatarSrc(dto.profileImage),
+    // 업로드 이미지면 서버 URL, 프리셋이면 null이라 번호 매핑으로 폴백
+    profileImageUrl: dto.profileImageUrl ?? presetAvatarSrc(dto.profileImage),
   }
 }
 
