@@ -14,6 +14,11 @@ const config = defineConfig({
         target: "http://168.107.16.45",
         changeOrigin: true,
       },
+      // 카카오 로그인 REST API (/api/auth/*) — same-origin 상대경로 호출용
+      "/api": {
+        target: "http://168.107.16.45",
+        changeOrigin: true,
+      },
     },
   },
   // 테스트는 항상 목 모드 — 로컬 .env의 VITE_USE_MOCK에 결과가 흔들리면 안 된다
@@ -34,7 +39,13 @@ const config = defineConfig({
       },
     }),
     // Vercel 배포용 서버 번들 변환 — 없으면 SSR 함수가 생성되지 않아 404 (Vercel 공식 TanStack Start 가이드)
-    nitro(),
+    nitro({
+      // prod에서 https 페이지 → http 백엔드 직접 fetch는 mixed content로 차단됨 — 서버사이드 프록시 경유
+      routeRules: {
+        "/graphql": { proxy: "http://168.107.16.45/graphql" },
+        "/api/**": { proxy: "http://168.107.16.45/api/**" },
+      },
+    }),
     viteReact(),
   ],
 })
