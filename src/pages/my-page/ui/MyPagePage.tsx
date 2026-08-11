@@ -11,6 +11,7 @@ import { DialogTitle } from "@/shared/ui/dialog"
 import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
+import { clearTokens, getRefreshToken } from "@/shared/api/token-storage"
 import {
   photoKeys,
   removeSeedPhotosByUploader,
@@ -19,7 +20,7 @@ import {
 import { useRegionColorStore } from "@/entities/region"
 import { useMyPots, usePotStore } from "@/entities/travel-pot"
 import { useMe, useSessionStore } from "@/entities/user"
-import { RequireAuth } from "@/features/auth"
+import { RequireAuth, logoutSession } from "@/features/auth"
 import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
 import { resetCompletionTips } from "@/widgets/travel-map-google"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
@@ -191,6 +192,12 @@ function MyPageContent() {
       confirmText: "로그아웃",
     })
     if (!ok) return
+    // 서버 refreshToken 폐기 — 실패해도 로컬 로그아웃은 진행한다
+    const refreshToken = getRefreshToken()
+    if (!USE_MOCK && refreshToken) {
+      void logoutSession(refreshToken).catch(() => {})
+    }
+    clearTokens()
     logout()
     await router.navigate({ to: "/" })
     showToast({
@@ -220,6 +227,7 @@ function MyPageContent() {
             resetMapTipsSeen()
             resetCompletionTips()
             queryClient.removeQueries({ queryKey: photoKeys.all })
+            clearTokens() // 토큰이 남으면 Bearer로 여전히 인증됨
             logout()
             await router.navigate({ to: "/" })
             showToast({

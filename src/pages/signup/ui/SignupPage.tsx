@@ -10,8 +10,17 @@ import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
-import { MOCK_USER, useSessionStore, useUpdateProfile } from "@/entities/user"
+import { setTokens } from "@/shared/api/token-storage"
+import { MOCK_USER, fetchMe, useSessionStore } from "@/entities/user"
 import { TRIP_100_POT, usePotStore } from "@/entities/travel-pot"
+import {
+  AuthApiError,
+  clearSignupToken,
+  completeSignup,
+  getSignupToken,
+  requestSignupImageUpload,
+  uploadImage,
+} from "@/features/auth"
 import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
@@ -186,12 +195,23 @@ function SignupCompleteContent({
 export function SignupPage() {
   const router = useRouter()
   const login = useSessionStore((s) => s.login)
-  const updateProfileMutation = useUpdateProfile()
+  // 실서버 모드: 콜백에서 받은 signupToken 없이는 가입 불가 — 랜딩으로 돌려보낸다
+  const [signupToken] = React.useState(() =>
+    USE_MOCK ? null : getSignupToken()
+  )
+  React.useEffect(() => {
+    if (!USE_MOCK && !signupToken) {
+      void router.navigate({ to: "/", replace: true })
+    }
+  }, [router, signupToken])
+  const [submitting, setSubmitting] = React.useState(false)
   const [nickname, setNickname] = React.useState("")
   // 입력은 막지 않고(한글 IME 조합 안전), 초과 시 에러 표시 + 다음 버튼만 비활성.
   const nicknameTooLong = nickname.length > NICKNAME_MAX
   // 갤러리/파일에서 고른 커스텀 이미지. 있으면 기본 아바타 선택보다 우선.
   const [customImage, setCustomImage] = React.useState<string | null>(null)
+  // 실서버 가입 시 presigned 업로드에 쓸 원본 파일
+  const [customFile, setCustomFile] = React.useState<File | null>(null)
   // 기본 아바타 후보 중 선택 인덱스 — 첫 번째가 기본 선택. 커스텀 이미지 선택 시 해제.
   const [selectedAvatar, setSelectedAvatar] = React.useState<number | null>(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -212,27 +232,61 @@ export function SignupPage() {
   // 지도의 "팟 없음" 가드가 온보딩보다 먼저 끼어들어(둘 다 useEffect라 순서 보장 안 됨)
   // 팝업·온보딩이 통째로 스킵되는 경합이 생긴다. 온보딩이 끝난 뒤에야 이동한다.
   const handleSubmit = async () => {
-    if (updateProfileMutation.isPending) return
+    if (submitting) return
     const name = nickname.trim()
     let user
     if (USE_MOCK) {
       user = { ...MOCK_USER, nickname: name, profileImageUrl: profileImage }
     } else {
+      if (!signupToken) return
+      setSubmitting(true)
       try {
-        const saved = await updateProfileMutation.mutateAsync({
+        let profileImageValue: number
+        if (customFile) {
+          // 커스텀 이미지: presigned URL 발급 → PUT 업로드 → imageId를 가입에 사용
+          const { imageId, uploadUrl } = await requestSignupImageUpload({
+            signupToken,
+            contentType: customFile.type,
+          })
+          await uploadImage(uploadUrl, customFile)
+          profileImageValue = imageId
+        } else {
+          profileImageValue = (selectedAvatar ?? 0) + 1 // 프리셋 1~4
+        }
+        const tokens = await completeSignup({
+          signupToken,
           nickname: name,
-          ...(selectedAvatar != null
-            ? { profileImage: selectedAvatar + 1 }
-            : {}),
+          profileImage: profileImageValue,
         })
-        // 커스텀 파일(blob)은 서버 저장 불가 — 세션에서만 유지
+        setTokens(tokens)
+        clearSignupToken()
+        const saved = await fetchMe()
+        // 커스텀 이미지는 프리셋 번호 매핑이 없어 blob URL로 표시 유지
         user = customImage ? { ...saved, profileImageUrl: customImage } : saved
-      } catch {
+      } catch (e) {
+        if (
+          e instanceof AuthApiError &&
+          (e.status === 401 || e.status === 409)
+        ) {
+          // signupToken 만료(10분)·위조 / 이미 가입된 계정 — 재로그인부터 다시
+          clearSignupToken()
+          showToast({
+            message:
+              e.status === 409
+                ? "이미 가입된 계정이에요. 다시 로그인해 주세요."
+                : "가입 시간이 만료됐어요. 다시 로그인해 주세요.",
+            icon: "alert",
+          })
+          void router.navigate({ to: "/", replace: true })
+          return
+        }
         showToast({
-          message: "닉네임 저장에 실패했어요. 다시 시도해 주세요.",
+          message: "회원가입에 실패했어요. 다시 시도해 주세요.",
           icon: "alert",
         })
         return
+      } finally {
+        setSubmitting(false)
       }
     }
 
@@ -285,6 +339,7 @@ export function SignupPage() {
             const file = e.target.files?.[0]
             if (file) {
               setCustomImage(URL.createObjectURL(file))
+              setCustomFile(file)
               setSelectedAvatar(null)
             }
           }}
@@ -306,6 +361,7 @@ export function SignupPage() {
               onClick={() => {
                 setSelectedAvatar(i)
                 setCustomImage(null)
+                setCustomFile(null)
               }}
             >
               <Profile
