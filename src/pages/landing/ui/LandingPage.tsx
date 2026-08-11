@@ -39,7 +39,13 @@ export function LandingPage() {
               return
             }
             // 프록시를 경유하면 백엔드 OAuth 세션 쿠키가 우리 도메인에 심겨 state 검증이 깨진다 — 직접 이동
-            window.location.assign(`${API_BASE_URL}/oauth2/authorization/kakao`)
+            // frontendRedirect: 로그인 완료 후 돌아올 콜백 — 백엔드가 화이트리스트 검증 (https 전환 시 제거 예정)
+            const callback = encodeURIComponent(
+              `${window.location.origin}/login/callback`
+            )
+            window.location.assign(
+              `${API_BASE_URL}/oauth2/authorization/kakao?frontendRedirect=${callback}`
+            )
           }}
         >
           <img src={iconKakaoSrc} alt="" className="size-6" />
