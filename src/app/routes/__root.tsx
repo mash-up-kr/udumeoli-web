@@ -22,7 +22,7 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { title: "udumeoli" },
+      { title: "Pinnnned" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
     scripts: [{ children: CLARITY_SNIPPET }],
