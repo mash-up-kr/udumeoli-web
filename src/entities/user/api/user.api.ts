@@ -15,6 +15,12 @@ const ME_QUERY = /* GraphQL */ `
   }
 `
 
+const WITHDRAW_MUTATION = /* GraphQL */ `
+  mutation Withdraw {
+    withdraw
+  }
+`
+
 const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
@@ -71,4 +77,13 @@ export async function updateProfile(input: UpdateProfileInput): Promise<User> {
     { input }
   )
   return toUser(data.updateProfile)
+}
+
+/** 계정 탈퇴 — 서버가 사진·팟 멤버십을 정리한다(정책은 스키마 문서 참고). */
+export async function withdrawAccount(): Promise<void> {
+  if (USE_MOCK) {
+    await mockResponse(null)
+    return
+  }
+  await gqlClient.request(WITHDRAW_MUTATION)
 }

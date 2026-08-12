@@ -19,7 +19,7 @@ import {
 } from "@/entities/photo"
 import { useRegionColorStore } from "@/entities/region"
 import { useMyPots, usePotStore } from "@/entities/travel-pot"
-import { useMe, useSessionStore } from "@/entities/user"
+import { useMe, useSessionStore, withdrawAccount } from "@/entities/user"
 import { RequireAuth, logoutSession } from "@/features/auth"
 import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
 import { resetCompletionTips } from "@/widgets/travel-map-google"
@@ -214,6 +214,17 @@ function MyPageContent() {
           onCancel={close}
           onConfirm={async () => {
             close()
+            // 서버 탈퇴 먼저 — Bearer 인증이 필요해 clearTokens 전에 호출한다.
+            // 실패하면 계정이 서버에 남아 있으므로 로컬 데이터를 지우지 않고 알린다
+            try {
+              await withdrawAccount()
+            } catch {
+              showToast({
+                message: "계정 삭제에 실패했어요. 다시 시도해 주세요.",
+                icon: "alert",
+              })
+              return
+            }
             if (user) {
               removePhotosByUploader(user.id)
               removeSeedPhotosByUploader(user.id)
@@ -227,9 +238,6 @@ function MyPageContent() {
             resetMapTipsSeen()
             resetCompletionTips()
             queryClient.removeQueries({ queryKey: photoKeys.all })
-            // TODO: 백엔드 회원 탈퇴 API(요청됨) 제공 시 서버 탈퇴 호출 연동 —
-            // 현재는 로컬 데이터만 초기화되고 서버 회원·refreshToken은 남아
-            // 재로그인 시 기존 회원으로 바로 들어온다
             clearTokens() // 토큰이 남으면 Bearer로 여전히 인증됨
             logout()
             await router.navigate({ to: "/" })
