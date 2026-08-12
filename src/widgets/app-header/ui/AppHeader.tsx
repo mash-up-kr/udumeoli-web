@@ -2,7 +2,6 @@ import type { ComponentProps, ReactNode } from "react"
 
 import { cn } from "@/shared/lib/utils"
 import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
-import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
 
 /**
  * 브랜드/홈 헤더 (시안 1745-38063). 배경 투명, 1줄 구조: [로고 · 여행팟 선택].
@@ -25,7 +24,10 @@ function AppHeader({
       )}
       {...props}
     >
-      <img src={logoPhotatoSrc} alt="PHOTATO" className="h-[60px] w-[120px]" />
+      {/* 텍스트 로고 — 워드마크 에셋(구 PHOTATO) 교체분이 나오면 이미지로 되돌린다 */}
+      <span className="flex h-[60px] items-center font-eng text-[40px] text-fg-neutral-bold">
+        Pinnnned
+      </span>
 
       {potSelector ? (
         <div className="pointer-events-auto">{potSelector}</div>

@@ -11,6 +11,7 @@ import { DialogTitle } from "@/shared/ui/dialog"
 import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
+import { clearTokens, getRefreshToken } from "@/shared/api/token-storage"
 import {
   photoKeys,
   removeSeedPhotosByUploader,
@@ -18,8 +19,8 @@ import {
 } from "@/entities/photo"
 import { useRegionColorStore } from "@/entities/region"
 import { useMyPots, usePotStore } from "@/entities/travel-pot"
-import { useMe, useSessionStore } from "@/entities/user"
-import { RequireAuth } from "@/features/auth"
+import { useMe, useSessionStore, withdrawAccount } from "@/entities/user"
+import { RequireAuth, logoutSession } from "@/features/auth"
 import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
 import { resetCompletionTips } from "@/widgets/travel-map-google"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
@@ -191,6 +192,12 @@ function MyPageContent() {
       confirmText: "로그아웃",
     })
     if (!ok) return
+    // 서버 refreshToken 폐기 — 실패해도 로컬 로그아웃은 진행한다
+    const refreshToken = getRefreshToken()
+    if (!USE_MOCK && refreshToken) {
+      void logoutSession(refreshToken).catch(() => {})
+    }
+    clearTokens()
     logout()
     await router.navigate({ to: "/" })
     showToast({
@@ -207,6 +214,17 @@ function MyPageContent() {
           onCancel={close}
           onConfirm={async () => {
             close()
+            // 서버 탈퇴 먼저 — Bearer 인증이 필요해 clearTokens 전에 호출한다.
+            // 실패하면 계정이 서버에 남아 있으므로 로컬 데이터를 지우지 않고 알린다
+            try {
+              await withdrawAccount()
+            } catch {
+              showToast({
+                message: "계정 삭제에 실패했어요. 다시 시도해 주세요.",
+                icon: "alert",
+              })
+              return
+            }
             if (user) {
               removePhotosByUploader(user.id)
               removeSeedPhotosByUploader(user.id)
@@ -220,6 +238,7 @@ function MyPageContent() {
             resetMapTipsSeen()
             resetCompletionTips()
             queryClient.removeQueries({ queryKey: photoKeys.all })
+            clearTokens() // 토큰이 남으면 Bearer로 여전히 인증됨
             logout()
             await router.navigate({ to: "/" })
             showToast({

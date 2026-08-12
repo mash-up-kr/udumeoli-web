@@ -10,7 +10,14 @@ const ME_QUERY = /* GraphQL */ `
       id
       nickname
       profileImage
+      profileImageUrl
     }
+  }
+`
+
+const WITHDRAW_MUTATION = /* GraphQL */ `
+  mutation Withdraw {
+    withdraw
   }
 `
 
@@ -20,6 +27,7 @@ const UPDATE_PROFILE_MUTATION = /* GraphQL */ `
       id
       nickname
       profileImage
+      profileImageUrl
     }
   }
 `
@@ -36,7 +44,8 @@ export function toUser(dto: UserDto): User {
   return {
     id: dto.id,
     nickname: dto.nickname,
-    profileImageUrl: presetAvatarSrc(dto.profileImage),
+    // 업로드 이미지면 서버 URL, 프리셋이면 null이라 번호 매핑으로 폴백
+    profileImageUrl: dto.profileImageUrl ?? presetAvatarSrc(dto.profileImage),
   }
 }
 
@@ -68,4 +77,13 @@ export async function updateProfile(input: UpdateProfileInput): Promise<User> {
     { input }
   )
   return toUser(data.updateProfile)
+}
+
+/** 계정 탈퇴 — 서버가 사진·팟 멤버십을 정리한다(정책은 스키마 문서 참고). */
+export async function withdrawAccount(): Promise<void> {
+  if (USE_MOCK) {
+    await mockResponse(null)
+    return
+  }
+  await gqlClient.request(WITHDRAW_MUTATION)
 }

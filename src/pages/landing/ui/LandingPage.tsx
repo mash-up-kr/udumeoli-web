@@ -2,9 +2,9 @@ import { useRouter } from "@tanstack/react-router"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { API_BASE_URL, USE_MOCK } from "@/shared/api/client"
 import { RedirectIfAuthed } from "@/features/auth"
 import iconKakaoSrc from "@/shared/assets/icon-kakao.svg"
-import logoPhotatoSrc from "@/shared/assets/logo-photato.svg"
 
 export function LandingPage() {
   const router = useRouter()
@@ -12,11 +12,10 @@ export function LandingPage() {
     <RedirectIfAuthed>
       {/* Figma 스플래시: padding 24/16/32/16, CTA(343)는 홈 인디케이터 바로 위 */}
       <MobileLayout className="relative flex h-dvh flex-col items-start gap-4 px-4 pt-6 pb-[34px]">
-        <img
-          src={logoPhotatoSrc}
-          alt="PHOTATO"
-          className="h-[60px] w-[120px]"
-        />
+        {/* 텍스트 로고 — 워드마크 에셋(구 PHOTATO) 교체분이 나오면 이미지로 되돌린다 */}
+        <span className="flex h-[60px] items-center font-eng text-[40px] text-fg-neutral-bold">
+          Pinnnned
+        </span>
 
         <p className="text-h3-1 whitespace-pre-line text-fg-neutral-bold">
           {"로그인하고\n서비스를 사용해 보세요"}
@@ -32,7 +31,20 @@ export function LandingPage() {
         {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
         <ButtonCta
           className="gap-2 bg-[#FDE500] text-[#3C1E1E]"
-          onClick={() => router.navigate({ to: "/signup" })}
+          onClick={() => {
+            if (USE_MOCK) {
+              void router.navigate({ to: "/signup" })
+              return
+            }
+            // 프록시를 경유하면 백엔드 OAuth 세션 쿠키가 우리 도메인에 심겨 state 검증이 깨진다 — 직접 이동
+            // frontendRedirect: 로그인 완료 후 돌아올 콜백 — 백엔드가 화이트리스트 검증 (로컬 dev 복귀에 필요해 유지)
+            const callback = encodeURIComponent(
+              `${window.location.origin}/login/callback`
+            )
+            window.location.assign(
+              `${API_BASE_URL}/oauth2/authorization/kakao?frontendRedirect=${callback}`
+            )
+          }}
         >
           <img src={iconKakaoSrc} alt="" className="size-6" />
           카카오로 시작하기

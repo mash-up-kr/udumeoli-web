@@ -11,7 +11,12 @@ const config = defineConfig({
     // 개발 서버에서 /graphql을 사내 서버로 프록시 — 브라우저 CORS 없이 실서버 연동
     proxy: {
       "/graphql": {
-        target: "http://168.107.16.45",
+        target: "https://pinnnned.duckdns.org",
+        changeOrigin: true,
+      },
+      // 카카오 로그인 REST API (/api/auth/*) — same-origin 상대경로 호출용
+      "/api": {
+        target: "https://pinnnned.duckdns.org",
         changeOrigin: true,
       },
     },
@@ -34,7 +39,13 @@ const config = defineConfig({
       },
     }),
     // Vercel 배포용 서버 번들 변환 — 없으면 SSR 함수가 생성되지 않아 404 (Vercel 공식 TanStack Start 가이드)
-    nitro(),
+    nitro({
+      // prod에서 백엔드 직접 fetch는 CORS에 막힘 — 서버사이드 프록시로 same-origin 유지
+      routeRules: {
+        "/graphql": { proxy: "https://pinnnned.duckdns.org/graphql" },
+        "/api/**": { proxy: "https://pinnnned.duckdns.org/api/**" },
+      },
+    }),
     viteReact(),
   ],
 })
