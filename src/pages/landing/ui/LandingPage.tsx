@@ -39,7 +39,7 @@ export function LandingPage() {
               return
             }
             // 프록시를 경유하면 백엔드 OAuth 세션 쿠키가 우리 도메인에 심겨 state 검증이 깨진다 — 직접 이동
-            // frontendRedirect: 로그인 완료 후 돌아올 콜백 — 백엔드가 화이트리스트 검증 (https 전환 시 제거 예정)
+            // frontendRedirect: 로그인 완료 후 돌아올 콜백 — 백엔드가 화이트리스트 검증 (로컬 dev 복귀에 필요해 유지)
             const callback = encodeURIComponent(
               `${window.location.origin}/login/callback`
             )
