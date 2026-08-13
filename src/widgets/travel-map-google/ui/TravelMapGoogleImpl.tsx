@@ -120,6 +120,11 @@ type ProvinceAggregate = {
   keyword: TravelKeyword
   /** 도 소속 전체 지역명 — 1단계에서 도 전체를 색칠할 때 사용 */
   regions: Array<string>
+  /**
+   * 도 안에서 기록이 있는 지역 수 — [+N] 뱃지 (Figma 1959-6730 1단계).
+   * 여행 횟수가 아니라 지역 수다: 강릉 2번 + 동해 1번 → +2
+   */
+  recordedRegionCount: number
   lat: number
   lng: number
 }
@@ -714,6 +719,8 @@ function TravelMapGoogleInner({
         province,
         keyword,
         regions: members.map((c) => c.name),
+        // members는 도 소속 "전체" 시군구라 뱃지에 쓰면 안 된다 — 기록이 있는 지역만 센다
+        recordedRegionCount: new Set(trips.map((trip) => trip.region)).size,
         // 도 대표 위치 — 소속 지역 centroid 평균 (별도 도 지오메트리 없이 근사)
         lat: members.reduce((sum, c) => sum + c.lat, 0) / members.length,
         lng: members.reduce((sum, c) => sum + c.lng, 0) / members.length,
@@ -1158,7 +1165,7 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 스티커 1개 */}
+        {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 스티커 1개 + 등록 지역 수 [+N] */}
         {zoomStage === 1 &&
           !decorating &&
           provinceAggregates.map((agg) => (
@@ -1167,11 +1174,19 @@ function TravelMapGoogleInner({
               position={{ lat: agg.lat, lng: agg.lng }}
               anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
             >
-              <img
-                src={agg.keyword.emojiSrc}
-                alt={`${agg.province} 대표 키워드 ${agg.keyword.label}`}
-                className="size-14"
-              />
+              <div className="relative">
+                <img
+                  src={agg.keyword.emojiSrc}
+                  alt={`${agg.province} 대표 키워드 ${agg.keyword.label}`}
+                  className="size-14"
+                />
+                <span
+                  aria-label={`${agg.province} 등록 지역 ${agg.recordedRegionCount}곳`}
+                  className="absolute -top-0.5 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-bg-neutral-inverse px-1.5 text-h9 text-fg-neutral-inverse"
+                >
+                  +{agg.recordedRegionCount}
+                </span>
+              </div>
             </AdvancedMarker>
           ))}
 
