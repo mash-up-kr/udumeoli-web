@@ -1264,28 +1264,35 @@ function TravelMapGoogleInner({
           ))}
       </GoogleMap>
 
-      {visibleEncouragementTrip ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[130px] z-10 flex justify-center px-4">
-          <MapPillTooltip>{encouragementMessage}</MapPillTooltip>
-        </div>
-      ) : null}
+      {/* 독려·완료 툴팁은 노출 조건이 독립이라 동시에 뜰 수 있다 (Figma 1836-15926 #3).
+          같은 좌표에 겹치지 않게 한 컬럼에 쌓고, 오래 남는 [보러가기]를 아래(기준선)에 둬서
+          4초 뒤 독려 툴팁이 사라져도 위치가 흔들리지 않게 한다 */}
+      {visibleEncouragementTrip ||
+      (visibleCompletionTrip && completionTipKey) ? (
+        <div className="absolute inset-x-0 bottom-[130px] z-10 flex flex-col items-center gap-2 px-4">
+          {visibleEncouragementTrip ? (
+            <MapPillTooltip className="pointer-events-none">
+              {encouragementMessage}
+            </MapPillTooltip>
+          ) : null}
 
-      {visibleCompletionTrip && completionTipKey ? (
-        <div className="absolute inset-x-0 bottom-[130px] z-10 flex justify-center px-4">
-          <MapPillTooltip
-            onClick={() => {
-              markCompletionTipSeen(completionTipKey)
-              setCompletionTipKey(null)
-              router.navigate({
-                to: "/travel-album/$region",
-                params: { region: visibleCompletionTrip.region },
-              })
-            }}
-          >
-            ‘{currentPotName}’ {formatRegionName(visibleCompletionTrip.region)}{" "}
-            여행 기록 완료 했어요!{" "}
-            <span className="underline underline-offset-2">보러가기</span>
-          </MapPillTooltip>
+          {visibleCompletionTrip && completionTipKey ? (
+            <MapPillTooltip
+              onClick={() => {
+                markCompletionTipSeen(completionTipKey)
+                setCompletionTipKey(null)
+                router.navigate({
+                  to: "/travel-album/$region",
+                  params: { region: visibleCompletionTrip.region },
+                })
+              }}
+            >
+              ‘{currentPotName}’{" "}
+              {formatRegionName(visibleCompletionTrip.region)} 여행 기록 완료
+              했어요!{" "}
+              <span className="underline underline-offset-2">보러가기</span>
+            </MapPillTooltip>
+          ) : null}
         </div>
       ) : null}
 
