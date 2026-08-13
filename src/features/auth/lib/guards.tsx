@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 
 import { useMe, useSessionStore } from "@/entities/user"
 import { USE_MOCK } from "@/shared/api/client"
+import { AppSplash } from "@/shared/ui/app-splash"
 
 // persist 미들웨어가 localStorage에서 세션을 복원하기 전엔 isAuthenticated가
 // 항상 false라, 직접 URL 진입 시 복원 전/후 값이 튀며 오탐 리다이렉트가 난다.
@@ -67,15 +68,16 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     router,
   ])
 
+  // 판정 전·리다이렉트 대기 구간은 빈 화면 대신 스플래시 (실서버에선 me 응답만큼 지속)
   if (USE_MOCK) {
-    if (!hydrated || !isAuthenticated) return null
+    if (!hydrated || !isAuthenticated) return <AppSplash />
     return <>{children}</>
   }
 
   // 서버 세션이 확인됐거나, persist된 로컬 세션이 있으면 진입 허용
   const canEnter =
     meQuery.data !== undefined || (isAuthenticated && currentUserId !== null)
-  if (!hydrated || !canEnter) return null
+  if (!hydrated || !canEnter) return <AppSplash />
   return <>{children}</>
 }
 
@@ -93,6 +95,6 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
     if (isAuthenticated) router.navigate({ to: "/map-google", replace: true })
   }, [hydrated, isAuthenticated, router])
 
-  if (!hydrated || (USE_MOCK && isAuthenticated)) return null
+  if (!hydrated || (USE_MOCK && isAuthenticated)) return <AppSplash />
   return <>{children}</>
 }

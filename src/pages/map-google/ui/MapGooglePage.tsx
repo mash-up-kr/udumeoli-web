@@ -6,6 +6,7 @@ import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMapGoogle } from "@/widgets/travel-map-google"
+import { AppSplash } from "@/shared/ui/app-splash"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
 import { openMapTipsOverlay } from "@/features/onboarding"
@@ -60,7 +61,9 @@ function MapGooglePageContent() {
     if (ready && hasPot) openMapTipsOverlay()
   }, [hasPot, ready])
 
-  if (!ready || !hasPot) return null
+  // 팟 판정 전(persist 복원 + myParties 응답)과 pot-start 리다이렉트 대기 구간 —
+  // 빈 화면 대신 스플래시로 채운다
+  if (!ready || !hasPot) return <AppSplash />
 
   return (
     <MobileLayout className="flex h-dvh flex-col">

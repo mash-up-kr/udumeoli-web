@@ -277,10 +277,20 @@ function animateCamera(
 export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
+  /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
+  onReady?: () => void
 }
 
 export function TravelMapGoogleImpl(props: TravelMapImplProps) {
-  if (!GOOGLE_MAPS_KEY) {
+  const { onReady } = props
+  const missingKey = !GOOGLE_MAPS_KEY
+  // 키가 없으면 지도가 뜰 일이 없다 — 준비 완료로 알려야 래퍼 스켈레톤이 내려가고
+  // 아래 안내 문구가 보인다
+  React.useEffect(() => {
+    if (missingKey) onReady?.()
+  }, [missingKey, onReady])
+
+  if (missingKey) {
     return (
       <div className="flex size-full items-center justify-center bg-muted p-6 text-center text-b6 text-muted-foreground">
         VITE_GOOGLE_MAPS_API_KEY가 설정되지 않았습니다. .env에 Google Maps
@@ -317,6 +327,7 @@ function MapController({
   setViewportCentroids,
   centroidsRef,
   onFeatureClick,
+  onReady,
 }: {
   mapRef: React.MutableRefObject<google.maps.Map | null>
   geojsonRef: React.MutableRefObject<GeoJSON.FeatureCollection | null>
@@ -338,6 +349,7 @@ function MapController({
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
   onFeatureClick: (name: string) => void
+  onReady?: () => void
 }) {
   const map = useMap()
   const decoratingRef = React.useRef<string | null>(decorating)
@@ -352,6 +364,9 @@ function MapController({
   hasNationRecordRef.current = hasNationRecord
   // 기록 변화 시 idle을 기다리지 않고 경계선 노출을 재평가하기 위한 재동기화 핸들
   const syncBoundaryLayersRef = React.useRef<(() => void) | null>(null)
+  // 초기화 effect가 map만 보고 도니, 콜백은 ref 경유로 최신값을 읽는다
+  const onReadyRef = React.useRef(onReady)
+  onReadyRef.current = onReady
 
   // 지도 인스턴스별 초기화 — StrictMode 이중 마운트나 리마운트로 vis.gl이 지도를
   // 재생성하면 새 인스턴스에 레이어/리스너를 다시 붙여야 하므로 "1회 가드" 대신
@@ -486,6 +501,9 @@ function MapController({
         setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncViewport()
+
+        // 여기서부터 지역 폴리곤이 그려진 상태 — 래퍼가 스켈레톤을 내려도 된다
+        onReadyRef.current?.()
       })
       .catch(console.error)
 
@@ -592,6 +610,7 @@ const EMPTY_FILLS: Record<string, RegionFill> = {}
 function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
+  onReady,
 }: TravelMapImplProps) {
   const router = useRouter()
   const currentPotId = usePotStore((s) => s.currentPotId)
@@ -1071,6 +1090,7 @@ function TravelMapGoogleInner({
           setViewportCentroids={setViewportCentroids}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
+          onReady={onReady}
         />
 
         {/* 지역명 + [+] 버튼은 3단계에서만 — 2단계는 "시/군별 스티커만" (Figma 줌인 기준 2·3단계) */}
