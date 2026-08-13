@@ -97,6 +97,12 @@ const NATION_MIN_ZOOM = 5
 const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
+// AdvancedMarkerElement는 clickable이면 마커 자체가 포커스 대상이 되고, 그 안의
+// 포커스 가능한 자식(button/a/input)은 "not supported"로 경고하며 탭 순서·포커스 링
+// 관리가 깨진다. 그래서 마커 콘텐츠는 전부 div/span으로 두고, 클릭과 접근성 이름은
+// 마커의 onClick·title이 담당한다.
+const MARKER_CONTENT =
+  "flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
 const STICKER_OFFSETS = [
   { x: -18, y: -12, rotate: -17 },
   { x: 18, y: 12, rotate: 9 },
@@ -150,24 +156,31 @@ function MapPillTooltip({
   children,
   className,
   onClick,
+  withCaret,
 }: {
   children: React.ReactNode
   className?: string
   onClick?: () => void
+  /**
+   * 클릭은 부모(AdvancedMarker)가 받고 모양만 "누를 수 있는 툴팁"으로 두는 경우.
+   * 마커 안에서는 버튼을 쓸 수 없다 — MARKER_CONTENT 참고.
+   */
+  withCaret?: boolean
 }) {
+  const interactive = Boolean(onClick) || withCaret
   const content = (
     <>
       <span className="min-w-0 truncate text-b6 text-fg-neutral-inverse">
         {children}
       </span>
-      {onClick ? (
+      {interactive ? (
         <span className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-x-[8px] border-t-[8px] border-x-transparent border-t-bg-neutral-inverse" />
       ) : null}
     </>
   )
   const baseClassName = cn(
     "relative flex h-8 max-w-[343px] items-center justify-center rounded-full bg-bg-neutral-inverse px-4 py-1 shadow-[0px_0px_10px_rgba(142,150,169,0.12)]",
-    onClick && "transition-transform active:scale-95",
+    interactive && "transition-transform active:scale-95",
     className
   )
 
@@ -1106,25 +1119,20 @@ function TravelMapGoogleInner({
                 key={`centroid-${name}`}
                 position={{ lat, lng }}
                 anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-                // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 내부 버튼 클릭 불가
+                // 클릭·접근성은 마커 자체가 처리한다 (MARKER_CONTENT 참고).
+                // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 클릭도 안 먹는다
                 clickable
+                title={`${name} 꾸미기`}
+                onClick={() => startDecorate(name)}
               >
-                <button
-                  type="button"
-                  aria-label={`${name} 꾸미기`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    startDecorate(name)
-                  }}
-                  className="flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
-                >
+                <div className={MARKER_CONTENT}>
                   <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
                     <img src={iconAddSrc} alt="" className="size-5" />
                   </span>
                   <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                     {formatRegionName(name)}
                   </span>
-                </button>
+                </div>
               </AdvancedMarker>
             ))}
 
@@ -1136,16 +1144,10 @@ function TravelMapGoogleInner({
               position={{ lat, lng }}
               anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
               clickable
+              title={`${formatRegionName(name)} 여행 기록`}
+              onClick={() => handleFeatureClick(name)}
             >
-              <button
-                type="button"
-                aria-label={`${formatRegionName(name)} 여행 기록`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleFeatureClick(name)
-                }}
-                className="flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
-              >
+              <div className={MARKER_CONTENT}>
                 <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
                   {trip.hasMine ? (
                     <PenLine className="size-4 text-fg-neutral-bold" />
@@ -1167,7 +1169,7 @@ function TravelMapGoogleInner({
                     </span>
                   </span>
                 ) : null}
-              </button>
+              </div>
             </AdvancedMarker>
           ))}
 
@@ -1219,15 +1221,18 @@ function TravelMapGoogleInner({
             }}
             anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
             clickable
+            title={
+              zoomStage >= 3
+                ? "탭해서 기록하기"
+                : `‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`
+            }
+            onClick={() => {
+              setDismissedRecordTipKey(visibleRecordTip.trip.key)
+              openCollaborationConfirm(visibleRecordTip.trip)
+            }}
           >
             <div className="-translate-y-8">
-              <MapPillTooltip
-                className="gap-1"
-                onClick={() => {
-                  setDismissedRecordTipKey(visibleRecordTip.trip.key)
-                  openCollaborationConfirm(visibleRecordTip.trip)
-                }}
-              >
+              <MapPillTooltip className="gap-1" withCaret>
                 {zoomStage >= 3 ? (
                   "탭해서 기록하기"
                 ) : (
@@ -1267,19 +1272,15 @@ function TravelMapGoogleInner({
               position={{ lat: p.pinLat, lng: p.pinLng }}
               anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
               clickable
+              title={`${formatRegionName(p.trip.region)} 여행 기록하기`}
+              onClick={() => handleTripMarkerClick(p.trip)}
             >
-              <button
-                type="button"
-                aria-label={`${formatRegionName(p.trip.region)} 여행 기록하기`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleTripMarkerClick(p.trip)
-                }}
+              <div
                 className="transition-transform hover:scale-110 active:scale-95"
                 style={{ transform: `rotate(${p.rotate}deg)` }}
               >
                 <img src={p.keyword.emojiSrc} alt="" className="size-10" />
-              </button>
+              </div>
             </AdvancedMarker>
           ))}
       </GoogleMap>
