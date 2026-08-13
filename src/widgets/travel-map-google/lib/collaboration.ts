@@ -149,17 +149,61 @@ export function mostPickedKeyword(
   return best
 }
 
+export type RegionAction =
+  /** 아무 반응 없음 — 줌 1·2단계의 미완료 지역 (Figma 1836-15937 #4) */
+  | "ignore"
+  /** 날짜 확인 팝업 → 팟원이 만든 여행에 합류 (#5) */
+  | "confirm-join"
+  /** "모두가 기록해야 다음 여행을 기록할 수 있어요!" 토스트 (#7) */
+  | "blocked-toast"
+  /** 새 여행 등록 플로우 (#8, 기록이 없는 지역 포함) */
+  | "start-record"
+
+/**
+ * 지역을 눌렀을 때 무엇을 할지 — 폴리곤·키워드 스티커·협업 마커가 공유하는 단일 정책.
+ *
+ * 판단 기준은 "누른 대상"이 아니라 그 지역의 **최신 여행**이다. 스티커는 지역당 최대
+ * 2개라 과거 완료 여행 스티커가 남아 있는데, 그걸 기준으로 삼으면 최신 여행이 미완료인
+ * 지역에서도 다음 여행이 열려 "팟원 전원이 완료해야 N+1 등록 가능"(#6) 규칙이 뚫린다.
+ */
+export function resolveRegionAction({
+  latestTrip,
+  zoomStage,
+  applyZoomGate,
+}: {
+  /** 그 지역의 최신 여행 — 없으면 아직 아무도 기록하지 않은 지역 */
+  latestTrip: CollaborationTrip | undefined
+  zoomStage: 0 | 1 | 2 | 3
+  /** 폴리곤 클릭처럼 "지역을 눌렀을 뿐"인 경로만 줌 게이트를 적용한다 */
+  applyZoomGate: boolean
+}): RegionAction {
+  if (!latestTrip) return "start-record"
+  if (applyZoomGate && !latestTrip.isComplete && zoomStage < 3) return "ignore"
+  if (!latestTrip.hasMine) return "confirm-join"
+  if (!latestTrip.isComplete) return "blocked-toast"
+  return "start-record"
+}
+
+/** 한 지역 내 두 번째 여행까지만 이모티콘 노출 (Figma 1836-15937 #1-1) */
+const STICKER_VISIT_LIMIT = 2
+
+/**
+ * 키워드 스티커를 붙일 여행 — "한 지역 내 두 번째 여행까지, 세 번째 여행부터는 노출 X".
+ *
+ * 회차는 **지역 전체 여행** 기준으로 세고(내가 안 낀 여행도 회차를 차지한다),
+ * 그중 내가 기록한 여행에만 이모지가 붙는다 (#5 "내가 기록 안 했을 경우 이모지 & 색상 노출 안 함").
+ * trips는 최신순이라 회차를 세려면 오래된 순으로 뒤집는다.
+ */
 export function visibleStickerTrips(
   trips: Array<CollaborationTrip>
 ): Array<CollaborationTrip> {
-  const counts = new Map<string, number>()
+  const visitCounts = new Map<string, number>()
   const visible: Array<CollaborationTrip> = []
 
-  for (const trip of trips) {
-    if (!trip.hasMine) continue
-    const count = counts.get(trip.region) ?? 0
-    if (count >= 2) continue
-    counts.set(trip.region, count + 1)
+  for (const trip of [...trips].reverse()) {
+    const nth = (visitCounts.get(trip.region) ?? 0) + 1
+    visitCounts.set(trip.region, nth)
+    if (nth > STICKER_VISIT_LIMIT || !trip.hasMine) continue
     visible.push(trip)
   }
 

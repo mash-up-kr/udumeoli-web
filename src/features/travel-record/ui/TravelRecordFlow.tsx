@@ -110,11 +110,17 @@ export function TravelRecordFlow({
     onClose?.()
   }, [closeStore, onClose])
 
-  // 이번 기록이 이 지역의 몇 번째 방문인지 — 기존 방문 수 + 1 (Figma #3·#5)
+  // 이번 기록이 이 지역의 몇 번째 방문인지 (Figma #3·#5).
+  // 팟원이 만든 여행에 합류하는 경우엔 회차가 늘지 않는다 — 그 여행이 몇 번째였는지를
+  // 그대로 쓴다 (groupTrips는 최신순이라 뒤에서부터 세면 등록 순서가 된다)
   const nth = React.useMemo(() => {
-    const regionPhotos = photos.filter((p) => p.region === region)
-    return groupTrips(regionPhotos).length + 1
-  }, [photos, region])
+    const trips = groupTrips(photos.filter((p) => p.region === region))
+    if (!collaborationTrip) return trips.length + 1
+    const index = trips.findIndex(
+      (trip) => trip.startDate === collaborationTrip.startDate
+    )
+    return index === -1 ? trips.length : trips.length - index
+  }, [photos, region, collaborationTrip])
 
   const handleBack = () => {
     if (isCollaboration && step === "photo") closeFlow()
