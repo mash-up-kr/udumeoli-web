@@ -12,6 +12,7 @@
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "tsc --noEmit",
+    "geo:build": "node scripts/build-korea-topo.mjs",
     "prepare": "husky"
   },
   "dependencies": {

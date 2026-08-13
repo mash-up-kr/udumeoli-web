@@ -1,14 +1,13 @@
 import { feature as toFeature, merge as toMerge } from "topojson-client"
-import { presimplify, quantile, simplify } from "topojson-simplify"
-import type { Objects, Topology } from "topojson-specification"
+import type { Topology } from "topojson-specification"
 
-// 지도 라이브러리 무관 — TopoJSON 원본 두 개를 병합해 시군구 GeoJSON FeatureCollection 생성.
+// 지도 라이브러리 무관 — TopoJSON 두 개를 병합해 시군구 GeoJSON FeatureCollection 생성.
 // MapLibre/Google Maps 구현 공용.
 
-const MUNICIPALITIES_URL =
-  "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-topo-simple.json"
-const PROVINCES_URL =
-  "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-topo-simple.json"
+// 빌드타임 산출물 (scripts/build-korea-topo.mjs) — 외부 CDN 원본을 미리 받아
+// 단순화·재양자화해 굽는다. 런타임엔 같은 오리진에서 1회만 받고, 무거운
+// presimplify/simplify는 이미 끝나 있다.
+const KOREA_TOPO_URL = "/korea-topo.json"
 
 const METRO_CITIES = new Set([
   "서울특별시",
@@ -21,18 +20,6 @@ const METRO_CITIES = new Set([
   "세종특별자치시",
 ])
 
-// 원본(-simple)도 시군구 전체 ~5.5만 정점이라, 지도 라이브러리가 줌/팬 중 매 프레임
-// 다시 그리기엔 과하다. 공유 경계(arc) 단위로 절반 수준까지 추가 단순화 —
-// 인접 지역 사이 틈이 생기지 않고, 모바일 최대 줌(9.5)에선 시각 차이가 거의 없다.
-const SIMPLIFY_RETAIN = 0.5
-
-function simplifyTopo(topo: Topology): Topology {
-  // @types/topojson-simplify 시그니처가 properties의 null을 허용하지 않아 재단언 —
-  // 단순화는 arcs만 다루고 properties는 건드리지 않는다
-  const pre = presimplify(topo as Topology<Objects<{}>>)
-  return simplify(pre, quantile(pre, SIMPLIFY_RETAIN))
-}
-
 export type KoreaGeo = {
   /** 시군구(구 병합 시 포함) — 지역 인터랙션·색칠용 */
   municipalities: GeoJSON.FeatureCollection
@@ -42,13 +29,29 @@ export type KoreaGeo = {
   nation: GeoJSON.Feature
 }
 
-export async function loadKoreaGeoJson(): Promise<KoreaGeo> {
-  const [muniTopoRaw, provTopoRaw]: [Topology, Topology] = await Promise.all([
-    fetch(MUNICIPALITIES_URL).then((r) => r.json()),
-    fetch(PROVINCES_URL).then((r) => r.json()),
-  ])
-  const muniTopo = simplifyTopo(muniTopoRaw)
-  const provTopo = simplifyTopo(provTopoRaw)
+// 결과는 순수 함수라 한 번만 만들면 된다 — 지도↔앨범 왕복이나 StrictMode 이중 마운트마다
+// 다시 받고 다시 병합하지 않도록 promise를 모듈 스코프에 잡아둔다.
+// 실패한 promise는 남기지 않아 다음 호출이 재시도할 수 있다.
+let cached: Promise<KoreaGeo> | null = null
+
+export function loadKoreaGeoJson(): Promise<KoreaGeo> {
+  cached ??= buildKoreaGeoJson().catch((e: unknown) => {
+    cached = null
+    throw e
+  })
+  return cached
+}
+
+async function buildKoreaGeoJson(): Promise<KoreaGeo> {
+  const res = await fetch(KOREA_TOPO_URL)
+  if (!res.ok) {
+    throw new Error(`지도 데이터 로드 실패 (${res.status} ${res.statusText})`)
+  }
+  const { municipalities: muniTopo, provinces: provTopo } =
+    (await res.json()) as {
+      municipalities: Topology
+      provinces: Topology
+    }
 
   const muniKey = Object.keys(muniTopo.objects)[0]
   const muniGeoms = (
