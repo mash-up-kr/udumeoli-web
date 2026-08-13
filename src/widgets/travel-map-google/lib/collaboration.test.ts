@@ -4,7 +4,9 @@ import {
   buildCollaborationTrips,
   findLatestCompletedTrip,
   findLatestMissingMineTrip,
+  latestTripByRegion,
   mostPickedKeyword,
+  resolveRegionAction,
   visibleStickerTrips,
 } from "./collaboration"
 import type { Photo } from "@/entities/photo"
@@ -130,6 +132,111 @@ describe("visibleStickerTrips", () => {
     expect(visibleStickerTrips(trips).map((trip) => trip.region)).toEqual([
       "강릉시",
     ])
+  })
+})
+
+describe("resolveRegionAction", () => {
+  // 강릉: 1차 여행은 전원 완료, 2차(최신) 여행은 나만 기록 — 스티커가 2개 뜨는 상태
+  const 강릉 = () =>
+    buildCollaborationTrips({
+      photos: [
+        photo("first-me", "강릉시", "2026-07-01", "user-1", {
+          keyword: "FOOD",
+        }),
+        photo("first-1", "강릉시", "2026-07-01", "m-1"),
+        photo("first-2", "강릉시", "2026-07-01", "m-2"),
+        photo("second-me", "강릉시", "2026-09-01", "user-1", {
+          keyword: "NATURE",
+        }),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+
+  it("완료된 과거 여행 스티커를 눌러도 최신 여행이 미완료면 다음 여행을 열지 않는다", () => {
+    const trips = 강릉()
+    const past = trips.find((t) => t.startDate === "2026-07-01")
+    expect(past?.isComplete).toBe(true)
+
+    // 과거 여행이 아니라 지역의 최신 여행으로 판정해야 한다
+    const latest = latestTripByRegion(trips).get("강릉시")
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 3,
+        applyZoomGate: false,
+      })
+    ).toBe("blocked-toast")
+  })
+
+  it("최신 여행이 완료면 다음 여행 등록을 연다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        photo("me", "강릉시", "2026-07-01", "user-1"),
+        photo("one", "강릉시", "2026-07-01", "m-1"),
+        photo("two", "강릉시", "2026-07-01", "m-2"),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+    const latest = latestTripByRegion(trips).get("강릉시")
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 3,
+        applyZoomGate: true,
+      })
+    ).toBe("start-record")
+  })
+
+  it("내가 아직 기록하지 않은 여행은 확인 팝업으로 보낸다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [photo("other", "강릉시", "2026-07-01", "m-1")],
+      members,
+      currentUserId: "user-1",
+    })
+    const latest = latestTripByRegion(trips).get("강릉시")
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 3,
+        applyZoomGate: true,
+      })
+    ).toBe("confirm-join")
+  })
+
+  it("줌 3단계 미만 폴리곤 클릭은 미완료 지역에서 아무 반응이 없다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [photo("other", "강릉시", "2026-07-01", "m-1")],
+      members,
+      currentUserId: "user-1",
+    })
+    const latest = latestTripByRegion(trips).get("강릉시")
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 2,
+        applyZoomGate: true,
+      })
+    ).toBe("ignore")
+    // 스티커처럼 명시적으로 누른 경로는 같은 줌에서도 반응한다
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 2,
+        applyZoomGate: false,
+      })
+    ).toBe("confirm-join")
+  })
+
+  it("기록이 없는 지역은 바로 등록 플로우로 보낸다", () => {
+    expect(
+      resolveRegionAction({
+        latestTrip: undefined,
+        zoomStage: 1,
+        applyZoomGate: true,
+      })
+    ).toBe("start-record")
   })
 })
 

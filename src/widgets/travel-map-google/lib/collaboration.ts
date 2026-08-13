@@ -149,6 +149,41 @@ export function mostPickedKeyword(
   return best
 }
 
+export type RegionAction =
+  /** 아무 반응 없음 — 줌 1·2단계의 미완료 지역 (Figma 1836-15937 #4) */
+  | "ignore"
+  /** 날짜 확인 팝업 → 팟원이 만든 여행에 합류 (#5) */
+  | "confirm-join"
+  /** "모두가 기록해야 다음 여행을 기록할 수 있어요!" 토스트 (#7) */
+  | "blocked-toast"
+  /** 새 여행 등록 플로우 (#8, 기록이 없는 지역 포함) */
+  | "start-record"
+
+/**
+ * 지역을 눌렀을 때 무엇을 할지 — 폴리곤·키워드 스티커·협업 마커가 공유하는 단일 정책.
+ *
+ * 판단 기준은 "누른 대상"이 아니라 그 지역의 **최신 여행**이다. 스티커는 지역당 최대
+ * 2개라 과거 완료 여행 스티커가 남아 있는데, 그걸 기준으로 삼으면 최신 여행이 미완료인
+ * 지역에서도 다음 여행이 열려 "팟원 전원이 완료해야 N+1 등록 가능"(#6) 규칙이 뚫린다.
+ */
+export function resolveRegionAction({
+  latestTrip,
+  zoomStage,
+  applyZoomGate,
+}: {
+  /** 그 지역의 최신 여행 — 없으면 아직 아무도 기록하지 않은 지역 */
+  latestTrip: CollaborationTrip | undefined
+  zoomStage: 0 | 1 | 2 | 3
+  /** 폴리곤 클릭처럼 "지역을 눌렀을 뿐"인 경로만 줌 게이트를 적용한다 */
+  applyZoomGate: boolean
+}): RegionAction {
+  if (!latestTrip) return "start-record"
+  if (applyZoomGate && !latestTrip.isComplete && zoomStage < 3) return "ignore"
+  if (!latestTrip.hasMine) return "confirm-join"
+  if (!latestTrip.isComplete) return "blocked-toast"
+  return "start-record"
+}
+
 export function visibleStickerTrips(
   trips: Array<CollaborationTrip>
 ): Array<CollaborationTrip> {

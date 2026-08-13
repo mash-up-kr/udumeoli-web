@@ -23,6 +23,7 @@ import {
   findLatestMissingMineTrip,
   latestTripByRegion,
   mostPickedKeyword,
+  resolveRegionAction,
   visibleStickerTrips,
 } from "../lib/collaboration"
 import {
@@ -983,34 +984,42 @@ function TravelMapGoogleInner({
     startDecorateRef.current = startDecorate
   }, [startDecorate])
 
-  const handleFeatureClick = React.useCallback((name: string) => {
-    const latestTrip = latestTripsByRegionRef.current.get(name)
-    if (!latestTrip) {
+  // 폴리곤·키워드 스티커·협업 마커가 모두 이 한 곳을 탄다 — 경로마다 다른 결론이 나오면
+  // "팟원 전원 완료 전엔 다음 여행 금지"(Figma 1836-15937 #6) 규칙이 뚫린다
+  const handleRegionAction = React.useCallback(
+    (name: string, applyZoomGate: boolean) => {
+      const latestTrip = latestTripsByRegionRef.current.get(name)
+      const action = resolveRegionAction({
+        latestTrip,
+        zoomStage: zoomStageRef.current,
+        applyZoomGate,
+      })
+
+      if (action === "ignore") return
+      if (action === "confirm-join") {
+        // latestTrip은 confirm-join일 때만 필요하고, 그 분기는 존재를 보장한다
+        if (latestTrip) openCollaborationConfirmRef.current(latestTrip)
+        return
+      }
+      if (action === "blocked-toast") {
+        showToast({
+          message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
+          icon: "alert",
+          className: "bottom-[106px]",
+        })
+        return
+      }
+
       setCollaborationRecordDraft(null)
       startDecorateRef.current(name)
-      return
-    }
+    },
+    []
+  )
 
-    const stage = zoomStageRef.current
-    if (!latestTrip.isComplete && stage < 3) return
-
-    if (!latestTrip.hasMine) {
-      openCollaborationConfirmRef.current(latestTrip)
-      return
-    }
-
-    if (!latestTrip.isComplete) {
-      showToast({
-        message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
-        icon: "alert",
-        className: "bottom-[106px]",
-      })
-      return
-    }
-
-    setCollaborationRecordDraft(null)
-    startDecorateRef.current(name)
-  }, [])
+  const handleFeatureClick = React.useCallback(
+    (name: string) => handleRegionAction(name, true),
+    [handleRegionAction]
+  )
 
   const visiblePins = React.useMemo(() => {
     const trips = visibleStickerTrips(collaborationTrips)
@@ -1040,21 +1049,11 @@ function TravelMapGoogleInner({
     })
   }, [collaborationTrips, centroidMap])
 
+  // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
+  // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
-    (trip: CollaborationTrip) => {
-      if (!trip.isComplete) {
-        showToast({
-          message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
-          icon: "alert",
-          className: "bottom-[106px]",
-        })
-        return
-      }
-
-      setCollaborationRecordDraft(null)
-      startDecorate(trip.region)
-    },
-    [startDecorate]
+    (trip: CollaborationTrip) => handleRegionAction(trip.region, false),
+    [handleRegionAction]
   )
 
   const collaborationMarkers = React.useMemo(
