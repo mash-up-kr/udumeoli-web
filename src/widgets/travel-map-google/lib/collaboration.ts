@@ -184,17 +184,26 @@ export function resolveRegionAction({
   return "start-record"
 }
 
+/** 한 지역 내 두 번째 여행까지만 이모티콘 노출 (Figma 1836-15937 #1-1) */
+const STICKER_VISIT_LIMIT = 2
+
+/**
+ * 키워드 스티커를 붙일 여행 — "한 지역 내 두 번째 여행까지, 세 번째 여행부터는 노출 X".
+ *
+ * 회차는 **지역 전체 여행** 기준으로 세고(내가 안 낀 여행도 회차를 차지한다),
+ * 그중 내가 기록한 여행에만 이모지가 붙는다 (#5 "내가 기록 안 했을 경우 이모지 & 색상 노출 안 함").
+ * trips는 최신순이라 회차를 세려면 오래된 순으로 뒤집는다.
+ */
 export function visibleStickerTrips(
   trips: Array<CollaborationTrip>
 ): Array<CollaborationTrip> {
-  const counts = new Map<string, number>()
+  const visitCounts = new Map<string, number>()
   const visible: Array<CollaborationTrip> = []
 
-  for (const trip of trips) {
-    if (!trip.hasMine) continue
-    const count = counts.get(trip.region) ?? 0
-    if (count >= 2) continue
-    counts.set(trip.region, count + 1)
+  for (const trip of [...trips].reverse()) {
+    const nth = (visitCounts.get(trip.region) ?? 0) + 1
+    visitCounts.set(trip.region, nth)
+    if (nth > STICKER_VISIT_LIMIT || !trip.hasMine) continue
     visible.push(trip)
   }
 

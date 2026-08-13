@@ -92,7 +92,7 @@ describe("buildCollaborationTrips", () => {
 })
 
 describe("visibleStickerTrips", () => {
-  it("내가 기록한 같은 지역 여행은 최신 두 개까지만 이모지 노출 대상으로 반환한다", () => {
+  it("한 지역의 첫·두 번째 여행만 이모지 대상 — 세 번째 여행부터는 제외한다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("third", "강릉시", "2026-09-01", "user-1", {
@@ -110,8 +110,31 @@ describe("visibleStickerTrips", () => {
     })
 
     expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
-      "강릉시|2026-09-01|2026-09-01",
+      "강릉시|2026-07-01|2026-07-01",
       "강릉시|2026-08-01|2026-08-01",
+    ])
+  })
+
+  it("회차는 지역 전체 여행 기준 — 내가 안 낀 여행도 회차를 차지한다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        // 1차: 내가 기록 / 2차: 팟원만 / 3차: 내가 기록 → 3차는 회차 초과라 제외
+        photo("first-me", "강릉시", "2026-07-01", "user-1", {
+          keyword: "CITY",
+        }),
+        photo("second-other", "강릉시", "2026-08-01", "m-1", {
+          keyword: "NATURE",
+        }),
+        photo("third-me", "강릉시", "2026-09-01", "user-1", {
+          keyword: "FOOD",
+        }),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+
+    expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
+      "강릉시|2026-07-01|2026-07-01",
     ])
   })
 

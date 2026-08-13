@@ -1157,11 +1157,12 @@ function TravelMapGoogleInner({
                 <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                   {formatRegionName(name)}
                 </span>
+                {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
                 {trip.hasMine ? (
                   <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
                     <UserRound className="size-3.5 text-fg-neutral-solid" />
                     <span className="text-fg-neutral-bold">
-                      {trip.uploadedCount}
+                      {trip.missingMemberIds.length}
                     </span>
                     <span className="text-fg-neutral-solid">
                       /{trip.totalMembers}
