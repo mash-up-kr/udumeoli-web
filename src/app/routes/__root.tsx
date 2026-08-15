@@ -24,7 +24,10 @@ export const Route = createRootRoute({
       },
       { title: "Pinnnned" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+    ],
     scripts: [{ children: CLARITY_SNIPPET }],
   }),
   notFoundComponent: () => (
