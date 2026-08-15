@@ -31,7 +31,8 @@ description: |
 - 세부 내용 2
 ```
 
-- type은 영어: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`, `ci`
+- type은 영어: `feat`, `fix`, `hotfix`, `refactor`, `chore`, `docs`, `style`, `test`, `ci`
+  - `hotfix`: PR 없이 `main`에 바로 올리는 긴급 수정
 - 요약과 세부 내용은 **한글**로 작성
 - 변경 사항이 단순하면 bullet point 생략 가능
 - **Co-authored-by 줄은 절대 포함하지 않는다**

@@ -13,7 +13,6 @@ import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
 import { clearTokens, getRefreshToken } from "@/shared/api/token-storage"
 import {
-  photoKeys,
   removeSeedPhotosByUploader,
   usePhotoUploadStore,
 } from "@/entities/photo"
@@ -199,6 +198,8 @@ function MyPageContent() {
     }
     clearTokens()
     logout()
+    // me 캐시가 남으면 뒤로가기·재진입 시 RequireAuth가 캐시로 세션을 되살린다(유령 로그인)
+    queryClient.clear()
     await router.navigate({ to: "/" })
     showToast({
       message: "로그아웃이 완료됐어요.",
@@ -237,9 +238,10 @@ function MyPageContent() {
             resetOnboardingSeen()
             resetMapTipsSeen()
             resetCompletionTips()
-            queryClient.removeQueries({ queryKey: photoKeys.all })
             clearTokens() // 토큰이 남으면 Bearer로 여전히 인증됨
             logout()
+            // 서버 캐시(me·팟·사진) 전체 폐기 — me가 남으면 RequireAuth가 캐시로 세션을 되살린다
+            queryClient.clear()
             await router.navigate({ to: "/" })
             showToast({
               message: "계정 삭제가 완료되었습니다. 감사합니다.",
