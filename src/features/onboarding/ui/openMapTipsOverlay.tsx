@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { overlay } from "overlay-kit"
 
 import photoPohangSrc from "../assets/map-tip-pohang.jpg"
@@ -47,12 +48,26 @@ function PhotoFrame({
 }
 
 function MapTipsOverlay({ unmount }: { unmount: () => void }) {
+  // 배경(블러)은 지도와 같은 프레임에 바로 덮고, 본문은 사진 3장 디코드가 끝난 뒤에
+  // 마운트해 한 덩어리로 내려온다 — 프레임(테두리)만 먼저 뜨는 것도, 지도가 잠깐
+  // 맨살로 보였다가 블러가 덮이는 깜빡임도 없앤다
+  const [photosReady, setPhotosReady] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    void Promise.all(TIP_PHOTOS.map(preloadImage)).then(() => {
+      if (!cancelled) setPhotosReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <>
       {/* 배경 — 지도가 로딩 중이어도 상관없이 그 위에 얹히는 프로스티드 글라스 (Figma Dim_white) */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 animate-in overflow-hidden duration-300 fade-in-0"
+        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 overflow-hidden"
       >
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
@@ -65,49 +80,54 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
         aria-label="지도 사용 안내"
         className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto"
       >
-        {/* 문구·사진·버튼이 한 덩어리로 위에서 아래로 내려오며 페이드인 */}
-        <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-700 ease-out fade-in-0 slide-in-from-top-3">
-          <div className="flex w-full flex-col items-center gap-4">
-            <div className="flex w-full items-center gap-4">
-              <img
-                src={iconCameraAddSrc}
-                alt=""
-                className="size-8 shrink-0 brightness-0"
-              />
-              <div className="flex flex-col gap-1 whitespace-nowrap">
-                <p className="text-h8-1 text-neutral-500">여행지를 선택하고</p>
-                <p className="text-h5 text-fg-neutral-bold">
-                  여행을 기록해주세요!
-                </p>
+        {/* 문구·사진·버튼이 한 덩어리로 위에서 아래로 내려오며 페이드인 —
+            transform·opacity만 움직이고 will-change로 합성 레이어에 올려 지도 타일 로딩 중에도 끊기지 않게 */}
+        {photosReady && (
+          <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-700 ease-out will-change-[transform,opacity] fade-in-0 slide-in-from-top-3">
+            <div className="flex w-full flex-col items-center gap-4">
+              <div className="flex w-full items-center gap-4">
+                <img
+                  src={iconCameraAddSrc}
+                  alt=""
+                  className="size-8 shrink-0 brightness-0"
+                />
+                <div className="flex flex-col gap-1 whitespace-nowrap">
+                  <p className="text-h8-1 text-neutral-500">
+                    여행지를 선택하고
+                  </p>
+                  <p className="text-h5 text-fg-neutral-bold">
+                    여행을 기록해주세요!
+                  </p>
+                </div>
               </div>
+              {/* 예시 사진 3장 부채꼴 배치 (Figma 1893-13526, 컨테이너 204×60) */}
+              <span className="relative block h-[60px] w-[204px]">
+                <PhotoFrame
+                  src={photoPohangSrc}
+                  cropPosition="50% 60%"
+                  className="top-[2px] left-[122px] rotate-4"
+                />
+                <PhotoFrame
+                  src={photoSeoulSrc}
+                  cropPosition="50% 58%"
+                  className="top-[2px] left-[30px]"
+                />
+                <PhotoFrame
+                  src={photoYangyangSrc}
+                  cropPosition="48% 70%"
+                  className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
+                />
+              </span>
             </div>
-            {/* 예시 사진 3장 부채꼴 배치 (Figma 1893-13526, 컨테이너 204×60) */}
-            <span className="relative block h-[60px] w-[204px]">
-              <PhotoFrame
-                src={photoPohangSrc}
-                cropPosition="50% 60%"
-                className="top-[2px] left-[122px] rotate-4"
-              />
-              <PhotoFrame
-                src={photoSeoulSrc}
-                cropPosition="50% 58%"
-                className="top-[2px] left-[30px]"
-              />
-              <PhotoFrame
-                src={photoYangyangSrc}
-                cropPosition="48% 70%"
-                className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
-              />
-            </span>
+            <button
+              type="button"
+              onClick={unmount}
+              className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
+            >
+              시작하기
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={unmount}
-            className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
-          >
-            시작하기
-          </button>
-        </div>
+        )}
       </div>
     </>
   )
@@ -123,10 +143,7 @@ export function openMapTipsOverlay(): void {
   if (localStorage.getItem(SEEN_KEY) !== null) return
   localStorage.setItem(SEEN_KEY, "true")
 
-  // 사진 3장이 프레임(테두리)보다 늦게 채워지는 깜빡임 방지 — 디코드 끝난 뒤 한 번에 띄운다
-  void Promise.all(TIP_PHOTOS.map(preloadImage)).then(() => {
-    overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
-  })
+  overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
 }
 
 /**
