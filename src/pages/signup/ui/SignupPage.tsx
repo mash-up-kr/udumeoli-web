@@ -223,9 +223,14 @@ export function SignupPage() {
   // StrictMode/리렌더로 두 번 열리는 것 방지 (1회만)
   const permissionShown = React.useRef(false)
   React.useEffect(() => {
-    if (permissionShown.current) return
-    permissionShown.current = true
-    openPermissionFlow()
+    // 페이지 첫 페인트와 같은 프레임에 열면 무거운 초기 렌더에 등장 애니메이션이 먹혀
+    // '팍' 뜬다 — 화면이 자리 잡은 뒤 한 박자 늦게 연다 (다른 모달과 같은 모션이 되게)
+    const id = window.setTimeout(() => {
+      if (permissionShown.current) return
+      permissionShown.current = true
+      openPermissionFlow()
+    }, 200)
+    return () => window.clearTimeout(id)
   }, [])
 
   // 가입 완료 팝업·온보딩은 /signup에 머문 채로 표시 — 먼저 /map-google로 이동해두면
