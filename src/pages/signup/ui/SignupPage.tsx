@@ -305,16 +305,16 @@ export function SignupPage() {
             // 확인 → 첫 진입 간단 온보딩 시작 (1회만 노출)
             close()
             openOnboardingOverlay({
-              onComplete: () => {
+              // 이동이 끝난 뒤 오버레이가 걷히도록 navigate Promise를 돌려준다
+              onComplete: () =>
                 // replace — 가입 폼은 완료 후 뒤로가기로 되돌아갈 대상이 아니다.
                 // 신규 가입자는 팟이 없으니 지도 대신 팟 시작 화면으로 바로 간다 — 지도를
                 // 거치면 myParties 응답 대기 스플래시가 깜빡인 뒤 pot-start로 튕긴다.
                 // (목 가입은 시드 팟이 있어 지도로)
-                void router.navigate({
+                router.navigate({
                   to: USE_MOCK ? "/map-google" : "/pot-start",
                   replace: true,
-                })
-              },
+                }),
             })
           }}
         />
