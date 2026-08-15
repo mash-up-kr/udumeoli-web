@@ -46,10 +46,6 @@ function PhotoFrame({
   )
 }
 
-// 위에서 아래로 내려오며 페이드인 — fill-mode-both로 delay 동안 미리 보이지 않게
-const REVEAL_CLASS =
-  "animate-in fade-in-0 slide-in-from-top-3 duration-500 fill-mode-both"
-
 function MapTipsOverlay({ unmount }: { unmount: () => void }) {
   return (
     <>
@@ -69,10 +65,10 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
         aria-label="지도 사용 안내"
         className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto"
       >
-        {/* 문구 → 사진 → 버튼 순으로 위에서 아래로 시차를 두고 내려오며 나타난다 */}
-        <div className="m-auto flex w-[204px] flex-col items-center gap-5 py-10">
+        {/* 문구·사진·버튼이 한 덩어리로 위에서 아래로 내려오며 페이드인 */}
+        <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-500 fade-in-0 slide-in-from-top-3">
           <div className="flex w-full flex-col items-center gap-4">
-            <div className={cn("flex w-full items-center gap-4", REVEAL_CLASS)}>
+            <div className="flex w-full items-center gap-4">
               <img
                 src={iconCameraAddSrc}
                 alt=""
@@ -86,13 +82,7 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
               </div>
             </div>
             {/* 예시 사진 3장 부채꼴 배치 (Figma 1893-13526, 컨테이너 204×60) */}
-            <span
-              className={cn(
-                "relative block h-[60px] w-[204px]",
-                REVEAL_CLASS,
-                "delay-150"
-              )}
-            >
+            <span className="relative block h-[60px] w-[204px]">
               <PhotoFrame
                 src={photoPohangSrc}
                 cropPosition="50% 60%"
@@ -113,11 +103,7 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
           <button
             type="button"
             onClick={unmount}
-            className={cn(
-              "rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]",
-              REVEAL_CLASS,
-              "delay-300"
-            )}
+            className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
           >
             시작하기
           </button>
