@@ -1,0 +1,6 @@
+import{j as o}from"./jsx-runtime-u17CrQMm.js";import{I as a}from"./input-CK5ruff5.js";import{L as t}from"./label-DQnJPkV4.js";import"./utils-WKja2AN6.js";import"./iframe-BKJzNAiG.js";import"./preload-helper-PPVm8Dsz.js";import"./index-BhLpmiti.js";import"./index-MMES5Kag.js";import"./index-BX_zXsY0.js";import"./index-CStkaLeJ.js";const h={component:t,tags:["autodocs"],args:{children:"닉네임"},parameters:{docs:{description:{component:"Radix Label 기반 라벨(text-h6). htmlFor로 입력과 연결하면 클릭 시 포커스 이동."}}}},r={},e={render:()=>o.jsxs("div",{className:"flex w-[335px] flex-col gap-2",children:[o.jsx(t,{htmlFor:"nickname",children:"닉네임"}),o.jsx(a,{id:"nickname",placeholder:"닉네임을 작성해 주세요"})]})};r.parameters={...r.parameters,docs:{...r.parameters?.docs,source:{originalSource:"{}",...r.parameters?.docs?.source}}};e.parameters={...e.parameters,docs:{...e.parameters?.docs,source:{originalSource:`{
+  render: () => <div className="flex w-[335px] flex-col gap-2">
+      <Label htmlFor="nickname">닉네임</Label>
+      <Input id="nickname" placeholder="닉네임을 작성해 주세요" />
+    </div>
+}`,...e.parameters?.docs?.source},description:{story:"htmlFor로 입력과 연결 (라벨 클릭 → 입력 포커스).",...e.parameters?.docs?.description}}};const f=["Default","WithInput"];export{r as Default,e as WithInput,f as __namedExportsOrder,h as default};
