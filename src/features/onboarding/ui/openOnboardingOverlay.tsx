@@ -180,10 +180,25 @@ function GalleryGraphic() {
 
 const STEP_GRAPHICS = [StickerGraphic, MapGraphic, GalleryGraphic]
 
-function OnboardingOverlay({ unmount }: { unmount: () => void }) {
+function OnboardingOverlay({
+  onFinish,
+  unmount,
+}: {
+  /** "시작하기" — 다음 화면 이동. 끝나면 오버레이가 페이드아웃 후 걷힌다 */
+  onFinish: () => void | Promise<void>
+  unmount: () => void
+}) {
   const [step, setStep] = useState<Step>(1)
+  const [closing, setClosing] = useState(false)
   const { title, subtitle, cta } = STEP_CONTENT[step - 1]
   const Graphic = STEP_GRAPHICS[step - 1]
+
+  const finish = async () => {
+    // 이동이 끝난 뒤 페이드아웃 — 먼저 걷으면 아래 깔린 이전 화면이 잠깐 비치고,
+    // 그냥 걷으면 다음 화면이 '확' 나타난다
+    await onFinish()
+    setClosing(true)
+  }
 
   return (
     <div
@@ -191,7 +206,14 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
       aria-modal="true"
       aria-label="서비스 소개"
       // 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응
-      className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto bg-bg-neutral-subtle"
+      className={cn(
+        "fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto bg-bg-neutral-subtle",
+        closing && "animate-out duration-300 fade-out-0 fill-mode-forwards"
+      )}
+      onAnimationEnd={(e) => {
+        // 스텝 전환 페이드인(자식) 이벤트는 무시하고 루트 페이드아웃이 끝났을 때만 걷는다
+        if (closing && e.target === e.currentTarget) unmount()
+      }}
     >
       {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
       {step > 1 && (
@@ -245,7 +267,7 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
 
       <div className="shrink-0 px-4 pt-10 pb-8">
         <ButtonCta
-          onClick={step === 3 ? unmount : () => setStep((step + 1) as Step)}
+          onClick={step === 3 ? finish : () => setStep((step + 1) as Step)}
         >
           {cta}
         </ButtonCta>
@@ -264,8 +286,8 @@ function OnboardingOverlay({ unmount }: { unmount: () => void }) {
  * `onComplete`는 "시작하기"로 정상 종료됐을 때만 호출 — 가입 직후 흐름에서
  * 온보딩이 끝난 뒤에야 다음 화면으로 이동시켜, 지도의 "팟 없음" 가드가
  * 온보딩보다 먼저 끼어들어 팝업·온보딩이 스킵되는 경합을 막는다.
- * 페이지 이동을 반환(Promise)하면 이동이 끝난 뒤에 오버레이를 걷는다 — 먼저 걷으면
- * 아래 깔린 이전 화면(가입 폼)이 다음 화면이 뜰 때까지 잠깐 비친다.
+ * 페이지 이동을 반환(Promise)하면 이동이 끝난 뒤에 오버레이를 페이드아웃으로 걷는다 —
+ * 먼저 걷으면 아래 깔린 이전 화면(가입 폼)이 다음 화면이 뜰 때까지 잠깐 비친다.
  */
 export function openOnboardingOverlay(options?: {
   force?: boolean
@@ -280,10 +302,8 @@ export function openOnboardingOverlay(options?: {
 
   overlay.open(({ unmount }) => (
     <OnboardingOverlay
-      unmount={async () => {
-        await options?.onComplete?.()
-        unmount()
-      }}
+      onFinish={() => options?.onComplete?.()}
+      unmount={unmount}
     />
   ))
 }
