@@ -66,7 +66,7 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
         className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto"
       >
         {/* 문구·사진·버튼이 한 덩어리로 위에서 아래로 내려오며 페이드인 */}
-        <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-500 fade-in-0 slide-in-from-top-3">
+        <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-700 ease-out fade-in-0 slide-in-from-top-3">
           <div className="flex w-full flex-col items-center gap-4">
             <div className="flex w-full items-center gap-4">
               <img
