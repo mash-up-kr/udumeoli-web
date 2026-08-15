@@ -28,7 +28,7 @@ FSD(Feature-Sliced Design) 구조를 따른다.
 
 ## GraphQL 엔티티 연결
 
-목↔실서버 전환은 `shared/api/client.ts`의 `USE_MOCK` 한 곳에서만 갈린다 (`VITE_USE_MOCK=false`면 실서버).
+목↔실서버 전환은 `shared/api/client.ts`의 `USE_MOCK` 한 곳에서만 갈린다 (기본: dev 서버는 목, 프로덕션 빌드는 실서버. `VITE_USE_MOCK=true|false`로 강제).
 새 엔티티를 붙일 때는 이미 연결된 `entities/user`·`entities/travel-pot`를 그대로 베낀다.
 
 **파일 2개가 전부다.**
