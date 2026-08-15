@@ -104,9 +104,16 @@ export function useMyPots(
   const enabled = !USE_MOCK && (options.enabled ?? true)
   const query = useMyParties({ retry: false, ...options, enabled })
 
+  // 서버 응답이 store에 반영되는 건 effect 뒤(다음 커밋)라, 그 사이 한 렌더는
+  // "응답 완료인데 store는 빈 상태"로 읽힌다 — 지도가 이 순간을 보고 pot-start로 튕겼다가
+  // 돌아오는 깜빡임이 났다. 마지막으로 store에 반영한 응답을 기억해 그 전까진 pending으로 둔다.
+  const [syncedData, setSyncedData] = React.useState<Array<TravelPot>>()
   React.useEffect(() => {
-    if (query.data) replacePots(query.data)
+    if (!query.data) return
+    replacePots(query.data)
+    setSyncedData(query.data)
   }, [query.data, replacePots])
+  const synced = query.data === undefined || syncedData === query.data
 
   const myPots = React.useMemo(
     () => getMemberPots(pots, currentUserId),
@@ -118,7 +125,7 @@ export function useMyPots(
     pots: myPots,
     hasPot: hasFallback,
     // 보여줄 폴백이 있으면 로딩·에러 상태를 노출하지 않는다
-    isPending: enabled && query.isPending && !hasFallback,
+    isPending: enabled && (query.isPending || !synced) && !hasFallback,
     isError: enabled && query.isError && !hasFallback,
   }
 }
