@@ -1,12 +1,22 @@
 import { overlay } from "overlay-kit"
 
+import photoPohangSrc from "../assets/map-tip-pohang.jpg"
+import photoSeoulSrc from "../assets/map-tip-seoul.jpg"
+import photoYangyangSrc from "../assets/map-tip-yangyang.jpg"
 import { cn } from "@/shared/lib/utils"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
-import photoSeoulSrc from "@/shared/assets/ut-서울.jpg"
-import photoYangyangSrc from "@/shared/assets/ut-양양.jpg"
-import photoPohangSrc from "@/shared/assets/ut-포항.jpg"
 
 const SEEN_KEY = "photato-map-tips-seen"
+
+// 56px 표시용 축소본(3x) — 원본(ut-*.jpg, 300~500KB)은 프레임보다 사진이 한참 늦게 떠서 분리
+const TIP_PHOTOS = [photoSeoulSrc, photoYangyangSrc, photoPohangSrc]
+
+function preloadImage(src: string): Promise<void> {
+  const img = new Image()
+  img.src = src
+  // 실패해도 오버레이는 띄운다 — 사진 없이 프레임만 보이는 기존 동작으로 폴백
+  return img.decode().catch(() => {})
+}
 
 // 예시 사진 카드 — 56px · radius 16 · 3px 다크 테두리 (Figma 1893-13526 image Frame)
 function PhotoFrame({
@@ -42,7 +52,7 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
       {/* 배경 — 지도가 로딩 중이어도 상관없이 그 위에 얹히는 프로스티드 글라스 (Figma Dim_white) */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 overflow-hidden"
+        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 animate-in overflow-hidden duration-300 fade-in-0"
       >
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
@@ -53,7 +63,7 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="지도 사용 안내"
-        className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto"
+        className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 animate-in flex-col overflow-y-auto duration-300 fade-in-0"
       >
         <div className="m-auto flex w-[204px] flex-col items-center gap-5 py-10">
           <div className="flex w-full flex-col items-center gap-4">
@@ -112,7 +122,10 @@ export function openMapTipsOverlay(): void {
   if (localStorage.getItem(SEEN_KEY) !== null) return
   localStorage.setItem(SEEN_KEY, "true")
 
-  overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
+  // 사진 3장이 프레임(테두리)보다 늦게 채워지는 깜빡임 방지 — 디코드 끝난 뒤 한 번에 띄운다
+  void Promise.all(TIP_PHOTOS.map(preloadImage)).then(() => {
+    overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
+  })
 }
 
 /**
