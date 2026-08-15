@@ -1,12 +1,27 @@
+import { useEffect, useState } from "react"
 import { overlay } from "overlay-kit"
 
+import photoPohangSrc from "../assets/map-tip-pohang.jpg"
+import photoSeoulSrc from "../assets/map-tip-seoul.jpg"
+import photoYangyangSrc from "../assets/map-tip-yangyang.jpg"
 import { cn } from "@/shared/lib/utils"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
-import photoSeoulSrc from "@/shared/assets/ut-서울.jpg"
-import photoYangyangSrc from "@/shared/assets/ut-양양.jpg"
-import photoPohangSrc from "@/shared/assets/ut-포항.jpg"
 
 const SEEN_KEY = "photato-map-tips-seen"
+
+// 56px 표시용 축소본(3x) — 원본(ut-*.jpg, 300~500KB)은 프레임보다 사진이 한참 늦게 떠서 분리
+const TIP_PHOTOS = [photoSeoulSrc, photoYangyangSrc, photoPohangSrc]
+
+function preloadImage(src: string): Promise<void> {
+  const img = new Image()
+  img.src = src
+  // 실패해도 오버레이는 띄운다 — 사진 없이 프레임만 보이는 기존 동작으로 폴백
+  return img.decode().catch(() => {})
+}
+
+// 디코드가 이 시간 안에 안 끝나면(네트워크 정체 등) 사진 없이라도 본문을 띄운다 —
+// 배경만 덮인 채 닫을 수단이 없는 상태로 사용자를 막아두지 않기 위한 상한
+const PHOTOS_READY_TIMEOUT_MS = 1500
 
 // 예시 사진 카드 — 56px · radius 16 · 3px 다크 테두리 (Figma 1893-13526 image Frame)
 function PhotoFrame({
@@ -37,6 +52,26 @@ function PhotoFrame({
 }
 
 function MapTipsOverlay({ unmount }: { unmount: () => void }) {
+  // 배경(블러)은 지도와 같은 프레임에 바로 덮고, 본문은 사진 3장 디코드가 끝난 뒤에
+  // 마운트해 한 덩어리로 내려온다 — 프레임(테두리)만 먼저 뜨는 것도, 지도가 잠깐
+  // 맨살로 보였다가 블러가 덮이는 깜빡임도 없앤다
+  const [photosReady, setPhotosReady] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const timeout = new Promise<void>((resolve) =>
+      setTimeout(resolve, PHOTOS_READY_TIMEOUT_MS)
+    )
+    void Promise.race([
+      Promise.all(TIP_PHOTOS.map(preloadImage)),
+      timeout,
+    ]).then(() => {
+      if (!cancelled) setPhotosReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <>
       {/* 배경 — 지도가 로딩 중이어도 상관없이 그 위에 얹히는 프로스티드 글라스 (Figma Dim_white) */}
@@ -55,48 +90,54 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
         aria-label="지도 사용 안내"
         className="fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto"
       >
-        <div className="m-auto flex w-[204px] flex-col items-center gap-5 py-10">
-          <div className="flex w-full flex-col items-center gap-4">
-            <div className="flex w-full items-center gap-4">
-              <img
-                src={iconCameraAddSrc}
-                alt=""
-                className="size-8 shrink-0 brightness-0"
-              />
-              <div className="flex flex-col gap-1 whitespace-nowrap">
-                <p className="text-h8-1 text-neutral-500">여행지를 선택하고</p>
-                <p className="text-h5 text-fg-neutral-bold">
-                  여행을 기록해주세요!
-                </p>
+        {/* 문구·사진·버튼이 한 덩어리로 위에서 아래로 내려오며 페이드인 —
+            transform·opacity만 움직이고 will-change로 합성 레이어에 올려 지도 타일 로딩 중에도 끊기지 않게 */}
+        {photosReady && (
+          <div className="m-auto flex w-[204px] animate-in flex-col items-center gap-5 py-10 duration-700 ease-out will-change-[transform,opacity] fade-in-0 slide-in-from-top-3">
+            <div className="flex w-full flex-col items-center gap-4">
+              <div className="flex w-full items-center gap-4">
+                <img
+                  src={iconCameraAddSrc}
+                  alt=""
+                  className="size-8 shrink-0 brightness-0"
+                />
+                <div className="flex flex-col gap-1 whitespace-nowrap">
+                  <p className="text-h8-1 text-neutral-500">
+                    여행지를 선택하고
+                  </p>
+                  <p className="text-h5 text-fg-neutral-bold">
+                    여행을 기록해주세요!
+                  </p>
+                </div>
               </div>
+              {/* 예시 사진 3장 부채꼴 배치 (Figma 1893-13526, 컨테이너 204×60) */}
+              <span className="relative block h-[60px] w-[204px]">
+                <PhotoFrame
+                  src={photoPohangSrc}
+                  cropPosition="50% 60%"
+                  className="top-[2px] left-[122px] rotate-4"
+                />
+                <PhotoFrame
+                  src={photoSeoulSrc}
+                  cropPosition="50% 58%"
+                  className="top-[2px] left-[30px]"
+                />
+                <PhotoFrame
+                  src={photoYangyangSrc}
+                  cropPosition="48% 70%"
+                  className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
+                />
+              </span>
             </div>
-            {/* 예시 사진 3장 부채꼴 배치 (Figma 1893-13526, 컨테이너 204×60) */}
-            <span className="relative block h-[60px] w-[204px]">
-              <PhotoFrame
-                src={photoPohangSrc}
-                cropPosition="50% 60%"
-                className="top-[2px] left-[122px] rotate-4"
-              />
-              <PhotoFrame
-                src={photoSeoulSrc}
-                cropPosition="50% 58%"
-                className="top-[2px] left-[30px]"
-              />
-              <PhotoFrame
-                src={photoYangyangSrc}
-                cropPosition="48% 70%"
-                className="top-[2px] left-1/2 -translate-x-1/2 -rotate-4"
-              />
-            </span>
+            <button
+              type="button"
+              onClick={unmount}
+              className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
+            >
+              시작하기
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={unmount}
-            className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
-          >
-            시작하기
-          </button>
-        </div>
+        )}
       </div>
     </>
   )

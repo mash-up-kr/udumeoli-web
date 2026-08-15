@@ -223,9 +223,14 @@ export function SignupPage() {
   // StrictMode/리렌더로 두 번 열리는 것 방지 (1회만)
   const permissionShown = React.useRef(false)
   React.useEffect(() => {
-    if (permissionShown.current) return
-    permissionShown.current = true
-    openPermissionFlow()
+    // 페이지 첫 페인트와 같은 프레임에 열면 무거운 초기 렌더에 등장 애니메이션이 먹혀
+    // '팍' 뜬다 — 화면이 자리 잡은 뒤 한 박자 늦게 연다 (다른 모달과 같은 모션이 되게)
+    const id = window.setTimeout(() => {
+      if (permissionShown.current) return
+      permissionShown.current = true
+      openPermissionFlow()
+    }, 200)
+    return () => window.clearTimeout(id)
   }, [])
 
   // 가입 완료 팝업·온보딩은 /signup에 머문 채로 표시 — 먼저 /map-google로 이동해두면
@@ -305,10 +310,16 @@ export function SignupPage() {
             // 확인 → 첫 진입 간단 온보딩 시작 (1회만 노출)
             close()
             openOnboardingOverlay({
-              onComplete: () => {
-                // replace — 가입 폼은 완료 후 뒤로가기로 되돌아갈 대상이 아니다
-                void router.navigate({ to: "/map-google", replace: true })
-              },
+              // 이동이 끝난 뒤 오버레이가 걷히도록 navigate Promise를 돌려준다
+              onComplete: () =>
+                // replace — 가입 폼은 완료 후 뒤로가기로 되돌아갈 대상이 아니다.
+                // 신규 가입자는 팟이 없으니 지도 대신 팟 시작 화면으로 바로 간다 — 지도를
+                // 거치면 myParties 응답 대기 스플래시가 깜빡인 뒤 pot-start로 튕긴다.
+                // (목 가입은 시드 팟이 있어 지도로)
+                router.navigate({
+                  to: USE_MOCK ? "/map-google" : "/pot-start",
+                  replace: true,
+                }),
             })
           }}
         />

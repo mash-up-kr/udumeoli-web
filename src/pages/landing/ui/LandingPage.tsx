@@ -5,6 +5,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { API_BASE_URL, USE_MOCK } from "@/shared/api/client"
 import { RedirectIfAuthed } from "@/features/auth"
 import iconKakaoSrc from "@/shared/assets/icon-kakao.svg"
+import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 export function LandingPage() {
   const router = useRouter()
@@ -12,10 +13,9 @@ export function LandingPage() {
     <RedirectIfAuthed>
       {/* Figma 스플래시: padding 24/16/32/16, CTA(343)는 홈 인디케이터 바로 위 */}
       <MobileLayout className="relative flex h-dvh flex-col items-start gap-4 px-4 pt-6 pb-[34px]">
-        {/* 텍스트 로고 — 워드마크 에셋(구 PHOTATO) 교체분이 나오면 이미지로 되돌린다 */}
-        <span className="flex h-[60px] items-center font-eng text-[40px] text-fg-neutral-bold">
-          Pinnnned
-        </span>
+        <div className="flex h-[60px] items-center">
+          <img src={logoSrc} alt="Pinnned" className="h-7" />
+        </div>
 
         <p className="text-h3-1 whitespace-pre-line text-fg-neutral-bold">
           {"로그인하고\n서비스를 사용해 보세요"}

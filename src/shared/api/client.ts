@@ -3,7 +3,8 @@ import { ClientError, GraphQLClient } from "graphql-request"
 import { authFetch } from "./auth-fetch"
 import { getAccessToken } from "./token-storage"
 
-// 목↔실서버 전환 단일 지점. 기본: 목 ON.
+// 목↔실서버 전환 단일 지점. 기본: dev 서버(localhost)는 목 ON, 프로덕션 빌드는 실서버.
+// VITE_USE_MOCK="true"/"false"로 강제할 수 있고,
 // dev에선 좌하단 MockToggle 버튼(localStorage 오버라이드)이 env 설정보다 우선한다.
 const MOCK_FLAG_KEY = "udumeoli:mock"
 
@@ -17,7 +18,10 @@ function readMockOverride(): boolean | null {
 
 export const USE_MOCK = (() => {
   const override = readMockOverride()
-  return override ?? import.meta.env.VITE_USE_MOCK !== "false"
+  if (override !== null) return override
+  const flag = import.meta.env.VITE_USE_MOCK
+  // 배포본에 목데이터(여행 100번 등)가 섞이지 않도록 env 미설정 시 프로덕션은 실서버
+  return flag ? flag === "true" : import.meta.env.DEV
 })()
 
 /** dev 전용 — 목 플래그 토글 후 새로고침 (캐시·store 잔재까지 리셋). */

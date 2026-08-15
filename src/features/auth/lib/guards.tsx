@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 
 import { useMe, useSessionStore } from "@/entities/user"
 import { USE_MOCK } from "@/shared/api/client"
+import { getRefreshToken } from "@/shared/api/token-storage"
 import { AppSplash } from "@/shared/ui/app-splash"
 
 // persist 미들웨어가 localStorage에서 세션을 복원하기 전엔 isAuthenticated가
@@ -54,7 +55,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       return
     }
 
-    if (meQuery.isError && !isAuthenticated) {
+    // me 실패: 로컬 세션도 없거나, 세션은 남았는데 토큰이 없으면(refresh 실패로 폐기됨)
+    // 재로그인 대상 — 토큰이 있는 단순 네트워크 오류는 persist 세션으로 버틴다
+    if (meQuery.isError && (!isAuthenticated || !getRefreshToken())) {
       logout()
       router.navigate({ to: "/" })
     }
@@ -85,16 +88,20 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useSessionStore((s) => s.isAuthenticated)
   const hydrated = useSessionHydrated()
   const router = useRouter()
+  // 자동 로그인: persist 세션이 있으면 랜딩을 건너뛴다. 실서버에선 토큰까지 있어야 한다 —
+  // 로그아웃·refresh 실패로 토큰이 폐기된 세션은 카카오 로그인부터 다시 타야 한다.
+  // 토큰 유효성은 지도의 RequireAuth(me 조회)가 검증하고 실패 시 "/"로 되돌린다.
+  const shouldRedirect =
+    isAuthenticated && (USE_MOCK || getRefreshToken() !== null)
 
   React.useEffect(() => {
-    if (!hydrated) return
-    if (!USE_MOCK) return
+    if (!hydrated || !shouldRedirect) return
 
     // replace — push하면 "/"가 히스토리에 남아 지도에서 뒤로가기 시 "/"로 갔다가
     // 다시 인증됨→지도로 튕기는 왕복이 반복돼 뒤로가기가 아무 일도 안 하는 것처럼 느껴진다
-    if (isAuthenticated) router.navigate({ to: "/map-google", replace: true })
-  }, [hydrated, isAuthenticated, router])
+    router.navigate({ to: "/map-google", replace: true })
+  }, [hydrated, shouldRedirect, router])
 
-  if (!hydrated || (USE_MOCK && isAuthenticated)) return <AppSplash />
+  if (!hydrated || shouldRedirect) return <AppSplash />
   return <>{children}</>
 }

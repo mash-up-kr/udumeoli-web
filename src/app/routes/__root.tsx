@@ -22,9 +22,12 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { title: "Pinnnned" },
+      { title: "Pinnned" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+    ],
     scripts: [{ children: CLARITY_SNIPPET }],
   }),
   notFoundComponent: () => (
