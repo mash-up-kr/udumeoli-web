@@ -1,4 +1,5 @@
 import { MobileLayout } from "./mobile-layout"
+import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 /**
  * 라우트 진입 판정 중(세션·팟 persist 복원, me/myParties 응답 대기, 리다이렉트 직전)에
@@ -9,9 +10,7 @@ export function AppSplash() {
   return (
     <MobileLayout className="flex h-dvh flex-col items-center justify-center">
       {/* 랜딩과 같은 워드마크 — 별도 스피너 에셋 없이 브랜드로 대기 상태를 채운다 */}
-      <span className="animate-pulse font-eng text-[40px] text-fg-neutral-bold">
-        Pinnnned
-      </span>
+      <img src={logoSrc} alt="Pinnned" className="h-7 animate-pulse" />
     </MobileLayout>
   )
 }

@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from "react"
 
 import { cn } from "@/shared/lib/utils"
 import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
+import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 /**
  * 브랜드/홈 헤더 (시안 1745-38063). 배경 투명, 1줄 구조: [로고 · 여행팟 선택].
@@ -24,10 +25,10 @@ function AppHeader({
       )}
       {...props}
     >
-      {/* 텍스트 로고 — 워드마크 에셋(구 PHOTATO) 교체분이 나오면 이미지로 되돌린다 */}
-      <span className="flex h-[60px] items-center font-eng text-[40px] text-fg-neutral-bold">
-        Pinnnned
-      </span>
+      {/* 로고 (시안 2386-16530, 120×28) */}
+      <div className="flex h-[60px] items-center">
+        <img src={logoSrc} alt="Pinnned" className="h-7" />
+      </div>
 
       {potSelector ? (
         <div className="pointer-events-auto">{potSelector}</div>
