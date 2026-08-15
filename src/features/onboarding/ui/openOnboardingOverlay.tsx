@@ -196,8 +196,12 @@ function OnboardingOverlay({
   const finish = async () => {
     // 이동이 끝난 뒤 페이드아웃 — 먼저 걷으면 아래 깔린 이전 화면이 잠깐 비치고,
     // 그냥 걷으면 다음 화면이 '확' 나타난다
-    await onFinish()
-    setClosing(true)
+    try {
+      await onFinish()
+    } finally {
+      // 이동이 실패(reject)해도 오버레이는 걷는다 — 안 그러면 화면을 영구히 덮는다
+      setClosing(true)
+    }
   }
 
   return (
