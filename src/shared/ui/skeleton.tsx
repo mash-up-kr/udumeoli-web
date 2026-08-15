@@ -2,7 +2,10 @@ import type { ComponentProps } from "react"
 
 import { cn } from "@/shared/lib/utils"
 
-function Skeleton({ className, ...props }: ComponentProps<"div">) {
+function Skeleton({
+  className,
+  ...props
+}: Omit<ComponentProps<"div">, "children">) {
   return (
     <div
       data-slot="skeleton"
