@@ -19,6 +19,10 @@ function preloadImage(src: string): Promise<void> {
   return img.decode().catch(() => {})
 }
 
+// 디코드가 이 시간 안에 안 끝나면(네트워크 정체 등) 사진 없이라도 본문을 띄운다 —
+// 배경만 덮인 채 닫을 수단이 없는 상태로 사용자를 막아두지 않기 위한 상한
+const PHOTOS_READY_TIMEOUT_MS = 1500
+
 // 예시 사진 카드 — 56px · radius 16 · 3px 다크 테두리 (Figma 1893-13526 image Frame)
 function PhotoFrame({
   src,
@@ -54,7 +58,13 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
   const [photosReady, setPhotosReady] = useState(false)
   useEffect(() => {
     let cancelled = false
-    void Promise.all(TIP_PHOTOS.map(preloadImage)).then(() => {
+    const timeout = new Promise<void>((resolve) =>
+      setTimeout(resolve, PHOTOS_READY_TIMEOUT_MS)
+    )
+    void Promise.race([
+      Promise.all(TIP_PHOTOS.map(preloadImage)),
+      timeout,
+    ]).then(() => {
       if (!cancelled) setPhotosReady(true)
     })
     return () => {
