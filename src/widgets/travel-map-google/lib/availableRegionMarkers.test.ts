@@ -3,53 +3,36 @@ import { describe, expect, it } from "vitest"
 import { canShowAvailableRegionMarker } from "./availableRegionMarkers"
 
 describe("canShowAvailableRegionMarker", () => {
-  it("2단계에서는 인기지역만 [+] 버튼을 먼저 노출한다", () => {
+  it("2단계에서는 인기지역도 [+] 버튼을 노출하지 않는다", () => {
     expect(
       canShowAvailableRegionMarker({
-        name: "강릉시",
         zoomStage: 2,
-        hasFill: false,
-        hasPhoto: false,
-      })
-    ).toBe(true)
-
-    expect(
-      canShowAvailableRegionMarker({
-        name: "영월군",
-        zoomStage: 2,
-        hasFill: false,
-        hasPhoto: false,
-      })
-    ).toBe(false)
-  })
-
-  it("3단계에서는 모든 미등록 지역의 [+] 버튼을 노출한다", () => {
-    expect(
-      canShowAvailableRegionMarker({
-        name: "영월군",
-        zoomStage: 3,
-        hasFill: false,
-        hasPhoto: false,
-      })
-    ).toBe(true)
-  })
-
-  it("색칠이나 사진이 있는 지역은 줌 단계와 무관하게 제외한다", () => {
-    expect(
-      canShowAvailableRegionMarker({
-        name: "강릉시",
-        zoomStage: 3,
-        hasFill: true,
-        hasPhoto: false,
+        hasIncompleteTrip: false,
       })
     ).toBe(false)
 
     expect(
       canShowAvailableRegionMarker({
-        name: "강릉시",
+        zoomStage: 1,
+        hasIncompleteTrip: false,
+      })
+    ).toBe(false)
+  })
+
+  it("3단계에서는 진행 중인 여행이 없는 지역의 [+] 버튼을 노출한다", () => {
+    expect(
+      canShowAvailableRegionMarker({
         zoomStage: 3,
-        hasFill: false,
-        hasPhoto: true,
+        hasIncompleteTrip: false,
+      })
+    ).toBe(true)
+  })
+
+  it("진행 중인 여행이 있는 지역은 협업 액션 마커가 담당하므로 제외한다", () => {
+    expect(
+      canShowAvailableRegionMarker({
+        zoomStage: 3,
+        hasIncompleteTrip: true,
       })
     ).toBe(false)
   })

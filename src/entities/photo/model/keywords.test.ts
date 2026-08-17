@@ -18,4 +18,14 @@ describe("TRAVEL_KEYWORDS", () => {
       ["CITY", "사진"],
     ])
   })
+
+  it("지도 핀 컬러는 Figma 여행 지도 핀 정책과 일치한다", () => {
+    expect(TRAVEL_KEYWORD_OPTIONS.map((k) => [k.label, k.mapColor])).toEqual([
+      ["맛집", "#614F44"],
+      ["디저트", "#FA3343"],
+      ["힐링", "#479C46"],
+      ["액티비티", "#E87545"],
+      ["사진", "#20201F"],
+    ])
+  })
 })

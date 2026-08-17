@@ -61,7 +61,7 @@ export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
     emojiSrc: mapStickerActivitySrc,
     mapStickerSrc: mapStickerActivitySrc,
     mapPinSrc: mapPinActivitySrc,
-    mapColor: "#F37C13",
+    mapColor: "#E87545",
     mapStickerFit: "cover",
     fill: "#fff0b1",
     stroke: "#dbb71f",

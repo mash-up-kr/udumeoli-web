@@ -12,6 +12,7 @@ import {
   APIProvider,
   AdvancedMarker,
   AdvancedMarkerAnchorPoint,
+  CollisionBehavior,
   Map as GoogleMap,
   useMap,
 } from "@vis.gl/react-google-maps"
@@ -89,9 +90,9 @@ const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
 const PARTY_ZOOM = 9.5
-// 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
-const PARTY_ZOOM_EPSILON = 0.01
-const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
+// 시 레벨에서 조금 더 줌인하면 + 버튼·단순 스티커 상세 단계로 전환한다.
+// maxZoom(9.5)까지 기다리면 등록 진입점이 너무 늦게 보인다.
+const DETAIL_ENTER_ZOOM = 9
 // 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(4.8)는 국가(0단계)에서 시작한다.
 // 6 → 5: 도 단위 집계(1단계) 화면을 더 오래 유지하기 위해 한 단계 낮췄다
 const NATION_MIN_ZOOM = 5
@@ -107,10 +108,15 @@ const RECORD_CAMERA_DURATION_MS = 420
 // 마커의 onClick·title이 담당한다.
 const MARKER_CONTENT =
   "flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
+// Figma 2466-8293: 상세 줌에서는 [+] 버튼·협업 액션·스티커가 가까이 있어도 동시에 보여야 한다.
+const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
+const DETAIL_STICKER_Z_INDEX = 30
+const DETAIL_ACTION_Z_INDEX = 40
+const DETAIL_TOOLTIP_Z_INDEX = 50
 const CATEGORY_PIN_BADGE =
   "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const CATEGORY_PIN_COUNT_BADGE =
-  "absolute -top-1 -right-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
+  "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
   { x: -18, y: -12, rotate: -17 },
   { x: 18, y: 12, rotate: 9 },
@@ -146,6 +152,8 @@ type CollaborationProgressMarker = Centroid & { trip: CollaborationTrip }
 type TripPinMarker = {
   trip: CollaborationTrip
   keyword: TravelKeyword
+  baseLat: number
+  baseLng: number
   pinLat: number
   pinLng: number
   rotate: number
@@ -250,7 +258,7 @@ function CategoryMapPin({
     <div className="relative flex w-[46px] flex-col items-center gap-[6px]">
       {topBadge ? (
         <span
-          aria-label={`${topBadge}번째 여행`}
+          aria-label={`여행 ${topBadge}회`}
           className={CATEGORY_PIN_COUNT_BADGE}
           style={badgeStyle}
         >
@@ -383,6 +391,8 @@ const RegionAddMarkers = React.memo(function RegionAddMarkerLayer({
           key={`centroid-${name}`}
           position={{ lat, lng }}
           anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          collisionBehavior={DETAIL_MARKER_COLLISION}
+          zIndex={DETAIL_ACTION_Z_INDEX}
           // 클릭·접근성은 마커 자체가 처리한다 (MARKER_CONTENT 참고).
           // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 클릭도 안 먹는다
           clickable
@@ -418,6 +428,8 @@ const CollaborationProgressMarkers = React.memo(
             key={`collaboration-${trip.key}`}
             position={{ lat, lng }}
             anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            collisionBehavior={DETAIL_MARKER_COLLISION}
+            zIndex={DETAIL_ACTION_Z_INDEX}
             clickable
             title={`${formatRegionName(name)} 여행 기록`}
             onClick={() => onRegionClick(name)}
@@ -499,6 +511,8 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
           key={`trip-${p.trip.key}`}
           position={{ lat: p.pinLat, lng: p.pinLng }}
           anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          collisionBehavior={DETAIL_MARKER_COLLISION}
+          zIndex={DETAIL_STICKER_Z_INDEX}
           clickable
           title={`${formatRegionName(p.trip.region)} 여행 기록하기`}
           onClick={() => onTripClick(p.trip)}
@@ -511,7 +525,7 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
               <MapStickerGraphic
                 keyword={p.keyword}
                 alt=""
-                className="size-[72px] drop-shadow-[0_4px_10px_rgba(35,41,54,0.18)]"
+                className="size-16 drop-shadow-[0_4px_10px_rgba(35,41,54,0.18)]"
               />
             </div>
           ) : (
@@ -531,10 +545,10 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
   )
 })
 
-// Figma 줌인 기준(1959-6730): 0 국가(대표 스티커 1개) / 1 전국(도 단위 집계) /
-// 2 시군구(다녀온 지역 색칠 + 스티커) / 3 상세(+지역명·추가 버튼·팟 진행 상태)
+// Figma 줌인 기준(2466-8921): 0 국가 / 1 도 / 2 시(핀 유지) /
+// 3 상세(+지역명·추가 버튼·64px 스티커)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
-  if (zoom >= PARTY_ENTER) return 3
+  if (zoom >= DETAIL_ENTER_ZOOM) return 3
   if (zoom >= BOUNDARY_ZOOM) return 2
   if (zoom >= NATION_MIN_ZOOM) return 1
   return 0
@@ -853,8 +867,6 @@ function MapController({
           incompleteRegions: incompleteRegionSetRef.current,
         })
 
-        let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
-
         const syncViewport = () => {
           const next = visibleCentroidsInMap(map, centroidsRef.current)
           // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
@@ -862,32 +874,41 @@ function MapController({
             isSameCentroidList(prev, next) ? prev : next
           )
         }
+        let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
+        const syncStage = (stage: 0 | 1 | 2 | 3) => {
+          if (stage !== syncedVisualStage) {
+            syncVisualsForStage(stage)
+            syncedVisualStage = stage
+          }
+          setZoomStage(stage)
+          syncBoundaryLayers(stage)
+        }
 
         listeners.push(
           map.addListener("zoom_changed", () => {
-            // 제스처 중에는 경계선 minzoom 게이팅만 실시간 반영 (경계 통과 시에만 재계산)
-            dataLayer?.syncZoom(map.getZoom() ?? KOREA_VIEW.zoom)
+            const zoom = map.getZoom() ?? KOREA_VIEW.zoom
+            // 경계선 minzoom 게이팅은 경계 통과 시에만 전체 재계산한다.
+            dataLayer?.syncZoom(zoom)
+            const stage = getZoomStage(zoom)
+            if (stage !== syncedVisualStage) {
+              // 마커/색칠 전환은 idle까지 기다리면 [+] 버튼이 늦게 뜨는 체감이 커서,
+              // 줌 단계 경계를 통과한 순간 한 번만 반영한다.
+              syncStage(stage)
+              syncViewport()
+            }
           })
         )
         listeners.push(
           map.addListener("idle", () => {
-            // 줌 스테이지 갱신(마커 수십 개 mount/unmount)은 제스처가 끝난 뒤로 미룬다 —
-            // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
             const stage = getZoomStage(zoom)
-            if (stage !== syncedVisualStage) {
-              syncVisualsForStage(stage)
-              syncedVisualStage = stage
-            }
-            setZoomStage(stage)
-            syncBoundaryLayers(stage)
+            syncStage(stage)
             syncViewport()
             overlay?.draw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
-        setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
-        syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
+        syncStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncViewport()
 
         // 여기서부터 지역 폴리곤이 그려진 상태 — 래퍼가 스켈레톤을 내려도 된다
@@ -1016,6 +1037,21 @@ const EMPTY_COLLABORATION_PROGRESS_MARKERS: Array<CollaborationProgressMarker> =
   []
 const EMPTY_PROVINCE_AGGREGATES: Array<ProvinceAggregate> = []
 const EMPTY_TRIP_PIN_MARKERS: Array<TripPinMarker> = []
+
+function cityStagePins(pins: Array<TripPinMarker>): Array<TripPinMarker> {
+  const byRegion = new Map<string, TripPinMarker>()
+  for (const pin of pins) {
+    const prev = byRegion.get(pin.trip.region)
+    if (prev && prev.visitCount >= pin.visitCount) continue
+    byRegion.set(pin.trip.region, {
+      ...pin,
+      pinLat: pin.baseLat,
+      pinLng: pin.baseLng,
+      rotate: 0,
+    })
+  }
+  return [...byRegion.values()]
+}
 
 function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
@@ -1217,10 +1253,6 @@ function TravelMapGoogleInner({
     ? centroidMap.get(decorating)
     : undefined
 
-  const photoRegionSet = React.useMemo(
-    () => new Set(photos.map((p) => p.region)),
-    [photos]
-  )
   const visualPhotoRegionSet = React.useMemo(
     () => new Set(visualTrips.map((trip) => trip.region)),
     [visualTrips]
@@ -1474,15 +1506,14 @@ function TravelMapGoogleInner({
 
   const availableRegionMarkers = React.useMemo<Array<Centroid>>(() => {
     if (decorating) return EMPTY_CENTROIDS
-    return viewportCentroids.filter(({ name }) =>
-      canShowAvailableRegionMarker({
-        name,
+    return viewportCentroids.filter(({ name }) => {
+      const latestTrip = latestTripsByRegion.get(name)
+      return canShowAvailableRegionMarker({
         zoomStage,
-        hasFill: Object.hasOwn(mapFills, name),
-        hasPhoto: photoRegionSet.has(name),
+        hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
       })
-    )
-  }, [decorating, mapFills, photoRegionSet, viewportCentroids, zoomStage])
+    })
+  }, [decorating, latestTripsByRegion, viewportCentroids, zoomStage])
 
   const handleStartRegionMarkerClick = React.useCallback(
     (name: string) => startDecorateRef.current(name),
@@ -1522,6 +1553,8 @@ function TravelMapGoogleInner({
         {
           trip,
           keyword,
+          baseLat,
+          baseLng,
           // 화면 y축은 아래로 갈수록 위도 감소, 위도 px 밀도는 메르카토르 보정(cos)
           pinLat:
             baseLat -
@@ -1541,13 +1574,11 @@ function TravelMapGoogleInner({
     [handleRegionAction]
   )
 
-  const visibleTripPins = React.useMemo<Array<TripPinMarker>>(
-    () =>
-      zoomStage >= 2 && !decorating ? visiblePins : EMPTY_TRIP_PIN_MARKERS,
-    [decorating, visiblePins, zoomStage]
-  )
-  const showStickerOnlyPins =
-    zoomStage >= 3 || availableRegionMarkers.length > 0
+  const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
+    if (zoomStage < 2 || decorating) return EMPTY_TRIP_PIN_MARKERS
+    return zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
+  }, [decorating, visiblePins, zoomStage])
+  const showStickerOnlyPins = zoomStage >= 3
 
   const collaborationMarkers = React.useMemo<
     Array<CollaborationProgressMarker>
@@ -1601,7 +1632,7 @@ function TravelMapGoogleInner({
           onReady={handleMapReady}
         />
 
-        {/* 2단계는 인기지역만, 3단계는 전체 미등록 지역 [+] 버튼 (Figma 1319-13186) */}
+        {/* 3단계부터 진행 중인 여행이 없는 지역의 [+] 버튼 (Figma 2466-8293) */}
         <RegionAddMarkers
           markers={availableRegionMarkers}
           onStartDecorate={handleStartRegionMarkerClick}
@@ -1621,7 +1652,7 @@ function TravelMapGoogleInner({
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              bottomBadge={`대한민국+${countryVisitCount}`}
+              bottomBadge={`전국+${countryVisitCount}`}
             />
           </AdvancedMarker>
         ) : null}
@@ -1637,6 +1668,8 @@ function TravelMapGoogleInner({
               lng: visibleRecordTip.center.lng,
             }}
             anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+            collisionBehavior={DETAIL_MARKER_COLLISION}
+            zIndex={DETAIL_TOOLTIP_Z_INDEX}
             clickable
             title={
               zoomStage >= 3
@@ -1654,7 +1687,7 @@ function TravelMapGoogleInner({
                   "탭해서 기록하기"
                 ) : (
                   <span className="flex items-center gap-1">
-                    ‘{formatRegionName(visibleRecordTip.trip.region)}’ 기록하기
+                    {`‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`}
                     <span className="flex size-4 items-center justify-center rounded-full bg-bg-neutral-weak text-fg-neutral-bold">
                       <ArrowRight className="size-3" />
                     </span>
@@ -1680,7 +1713,7 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {/* 시/군별 기록 마커는 2단계부터 — [+] 버튼 노출 구간에서는 72px 스티커로 전환 */}
+        {/* 시/군별 기록 마커는 2단계부터 핀 유지, 3단계부터 64px 스티커로 전환 */}
         <TripStickerMarkers
           pins={visibleTripPins}
           stickerOnly={showStickerOnlyPins}
