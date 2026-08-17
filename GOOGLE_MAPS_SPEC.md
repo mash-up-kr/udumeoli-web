@@ -96,11 +96,11 @@ getZoomStage(z): 0(<5) / 1(≥5) / 2(≥7.5) / 3(≥PARTY_ENTER)
 
 ### 2.4 "+" 꾸미기 버튼 (#79 신규 디자인·필터)
 
-- 노출: `zoomStage ≥ 1 && !selectedRegion && !decorating`, 뷰포트 내 centroid만
-- 필터: 색칠 없음 && 사진 없음 && `(zoomStage ≥ 2 || POPULAR_REGIONS.has(name))`
-  — 줌 1단계(7.5~8.5)는 관광지 상위 30개만, 2단계(8.5+)부터 전 지역
-- **Google 구현 변경(Figma 1959-6730)**: 3단계(≥PARTY_ENTER)에서만 노출,
-  POPULAR_REGIONS 필터 미사용 — 2단계는 "시/군별 스티커만"
+- 노출: `zoomStage ≥ 2 && !selectedRegion && !decorating`, 뷰포트 내 centroid만
+- 필터: 색칠 없음 && 사진 없음 && `(zoomStage ≥ 3 || POPULAR_REGIONS.has(name))`
+  — 줌 2단계(7.5~9.49)는 관광지 상위 30개만, 3단계(9.49+)부터 전 지역
+- **Google 구현 변경(Figma 1959-6730)**: 0~3단계 재정의 후 현재 기준은
+  `zoomStage 2`에서 `POPULAR_REGIONS`만 먼저 노출, `zoomStage 3`부터 전 지역 노출
 - 디자인: 28px(size-7) 원형 흰 배경(white/70) + `border-[2.5px] border-stroke-neutral-bold` + `icon-add.svg`(size-5), 아래 `formatRegionName` 라벨 `text-h9 [text-shadow:0_0_8px_white]`
 - 클릭: `startDecorate(name)` — 등록 플로우 진입
 
@@ -270,7 +270,7 @@ Google `Data`엔 feature-state·data-driven expression이 없다. 대체 설계:
 `.env` 키 세팅 → `pnpm dev` → 로그인 → `/map-google`:
 
 1. 초기 뷰: 전국 + 사진 핀(지역당 1개·60px·짧은 지역명 칩) + 하단 캐러셀
-2. 줌인 7.5+: 경계선 + "+" 버튼 (상위 30 지역만) / 8.5+: 전 지역 "+"
+2. 줌인 7.5+: 경계선 + "+" 버튼 (상위 30 지역만) / 9.49+: 전 지역 "+"
 3. "+" 클릭 → 등록 플로우: 잠금·fitBounds·지역명(text-h2)·스와치 탭 즉시 색 미리보기(채움+강조선)
 4. 플로우 완주(색→날짜→사진→확인) → 색칠 반영 + 지역 상세 자동 복귀 + 완료 토스트
 5. 가본 지역 폴리곤/사진 핀 클릭 → 지역 상세 (파티 슬롯 피그마 배치, 내 슬롯 우하단)

@@ -29,10 +29,10 @@ describe("buildMapFills", () => {
       incompleteRegionFill: incompleteFill,
     })
 
-    expect(fills.강릉시).toEqual({ type: "color", value: nature.fill })
+    expect(fills.강릉시).toEqual({ type: "color", value: nature.mapColor })
   })
 
-  it("최신 미완성 여행 표시가 과거 저장 색보다 우선한다", () => {
+  it("내가 아직 기록하지 않은 최신 미완성 여행은 과거 저장 색을 숨긴다", () => {
     const fills = buildMapFills({
       baseFills: {
         강릉시: { type: "color", value: food.fill },
@@ -42,6 +42,22 @@ describe("buildMapFills", () => {
           region: "강릉시",
           keyword: "NATURE",
           hasMine: false,
+          isComplete: false,
+        },
+      ],
+      incompleteRegionFill: incompleteFill,
+    })
+
+    expect(fills.강릉시).toBeUndefined()
+  })
+
+  it("내가 기록한 미완성 여행은 키워드가 없을 때만 미완성 상태 색을 쓴다", () => {
+    const fills = buildMapFills({
+      baseFills: {},
+      trips: [
+        {
+          region: "강릉시",
+          hasMine: true,
           isComplete: false,
         },
       ],
@@ -71,6 +87,28 @@ describe("buildMapFills", () => {
     })
 
     expect(fills.강릉시).toBe(imageFill)
+  })
+
+  it("내가 아직 기록하지 않은 최신 여행은 사진 채움도 숨긴다", () => {
+    const imageFill: RegionFill = {
+      type: "image",
+      imageId: "image-1",
+      dataUrl: "data:image/png;base64,test",
+    }
+    const fills = buildMapFills({
+      baseFills: { 강릉시: imageFill },
+      trips: [
+        {
+          region: "강릉시",
+          keyword: "NATURE",
+          hasMine: false,
+          isComplete: false,
+        },
+      ],
+      incompleteRegionFill: incompleteFill,
+    })
+
+    expect(fills.강릉시).toBeUndefined()
   })
 
   it("목 데모처럼 모든 멤버가 기록한 여행은 모두 키워드 색으로 칠한다", () => {
@@ -125,8 +163,8 @@ describe("buildDisplayFills", () => {
     })
 
     expect(fills).toEqual({
-      강릉시: { type: "color", value: healing.fill },
-      속초시: { type: "color", value: healing.fill },
+      강릉시: { type: "color", value: healing.mapColor },
+      속초시: { type: "color", value: healing.mapColor },
     })
   })
 
@@ -152,14 +190,14 @@ describe("buildDisplayFills", () => {
     })
 
     expect(fills).toEqual({
-      강릉시: { type: "color", value: food.fill },
+      강릉시: { type: "color", value: food.mapColor },
       속초시: imageFill,
     })
   })
 
   it("2단계 이상은 지역별 지도 채움을 그대로 쓴다", () => {
     const mapFills: Record<string, RegionFill> = {
-      강릉시: { type: "color", value: nature.fill },
+      강릉시: { type: "color", value: nature.mapColor },
     }
     const fills = buildDisplayFills({
       zoomStage: 2,

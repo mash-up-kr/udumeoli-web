@@ -71,6 +71,9 @@ function MapGooglePageContent() {
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
+  const [mapZoomStage, setMapZoomStage] = React.useState<0 | 1 | 2 | 3>(0)
+  const showMapChrome = !decorating && detailRegion === null
+  const showPersistentMapActions = showMapChrome && mapZoomStage < 3
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
 
@@ -85,29 +88,34 @@ function MapGooglePageContent() {
           className="absolute inset-0"
           onAlbumAvailabilityChange={setCanOpenAlbum}
           onRegionDetailChange={setDetailRegion}
+          onZoomStageChange={setMapZoomStage}
         />
 
-        {!decorating && detailRegion === null ? (
+        {showMapChrome ? (
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
               {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
                   빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
               <AppHeader potSelector={<PotSelector />} />
-              {/* RECAP 버튼 — 시안 1745-38063 로고 아래 좌측 */}
-              <div className="px-4">
-                <RecapButton className="pointer-events-auto" />
-              </div>
+              {showPersistentMapActions ? (
+                <div className="px-4">
+                  {/* RECAP 버튼 — 시안 1745-38063 로고 아래 좌측 */}
+                  <RecapButton className="pointer-events-auto" />
+                </div>
+              ) : null}
             </div>
 
-            {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움 */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
-              <BottomNav
-                className="pointer-events-auto"
-                albumDisabled={!canOpenAlbum}
-                onAlbumClick={openAlbum}
-                onMyPageClick={() => router.navigate({ to: "/my-page" })}
-              />
-            </div>
+            {showPersistentMapActions ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
+                {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움 */}
+                <BottomNav
+                  className="pointer-events-auto"
+                  albumDisabled={!canOpenAlbum}
+                  onAlbumClick={openAlbum}
+                  onMyPageClick={() => router.navigate({ to: "/my-page" })}
+                />
+              </div>
+            ) : null}
           </>
         ) : null}
       </main>

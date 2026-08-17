@@ -30,14 +30,19 @@ export function buildMapFills({
   const next: Record<string, RegionFill> = { ...baseFills }
 
   for (const trip of trips) {
+    if (!trip.hasMine) {
+      delete next[trip.region]
+      continue
+    }
+
     const existing = Object.hasOwn(next, trip.region)
       ? next[trip.region]
       : undefined
     if (existing && existing.type === "image") continue
 
     const keyword = findKeyword(trip.keyword)
-    if (keyword && (trip.hasMine || trip.isComplete)) {
-      next[trip.region] = { type: "color", value: keyword.fill }
+    if (keyword) {
+      next[trip.region] = { type: "color", value: keyword.mapColor }
     } else if (!trip.isComplete) {
       next[trip.region] = { type: "color", value: incompleteRegionFill }
     }
@@ -62,7 +67,7 @@ export function buildDisplayFills({
   if (zoomStage === 0 && countryKeyword && centroids.length > 0) {
     const next: Record<string, RegionFill> = {}
     for (const { name } of centroids) {
-      next[name] = { type: "color", value: countryKeyword.fill }
+      next[name] = { type: "color", value: countryKeyword.mapColor }
     }
     return next
   }
@@ -73,7 +78,7 @@ export function buildDisplayFills({
   for (const aggregate of provinceAggregates) {
     for (const region of aggregate.regions) {
       if (Object.hasOwn(next, region) && next[region].type === "image") continue
-      next[region] = { type: "color", value: aggregate.keyword.fill }
+      next[region] = { type: "color", value: aggregate.keyword.mapColor }
     }
   }
 

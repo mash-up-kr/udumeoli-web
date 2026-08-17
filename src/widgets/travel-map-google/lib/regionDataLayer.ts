@@ -7,6 +7,7 @@
 // `data.overrideStyle(feature, style)`로 통째로 덮어쓰는 방식으로 동일 효과를 낸다.
 
 const BOUNDARY_ZOOM = 7.5
+const KEYWORD_FILL_OPACITY = 0.4
 
 export type RegionVisualState = {
   hasColor: boolean
@@ -29,7 +30,7 @@ function computeStyle(
   const fillOpacity = state.active
     ? 0.15
     : hasColor
-      ? 0.6
+      ? KEYWORD_FILL_OPACITY
       : state.hasPhoto
         ? 0.08
         : 0
