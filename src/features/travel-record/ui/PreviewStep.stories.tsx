@@ -1,7 +1,7 @@
 import { PreviewStep } from "./PreviewStep"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
-import { TRAVEL_KEYWORDS } from "@/entities/photo"
+import { TRAVEL_KEYWORD_OPTIONS } from "@/entities/photo"
 
 const meta: Meta<typeof PreviewStep> = {
   component: PreviewStep,
@@ -19,7 +19,7 @@ const meta: Meta<typeof PreviewStep> = {
 export default meta
 type Story = StoryObj<typeof PreviewStep>
 
-const firstKeyword = TRAVEL_KEYWORDS[0]
+const firstKeyword = TRAVEL_KEYWORD_OPTIONS[0]
 
 /** 기간 여행 + 코멘트 있음 (시안 케이스) */
 export const Default: Story = {
@@ -45,7 +45,7 @@ export const SingleDayNoComment: Story = {
   render: () => (
     <div className="relative h-dvh w-full max-w-md bg-gradient-to-br from-blue-200 to-green-100">
       <PreviewStep
-        keyword={TRAVEL_KEYWORDS[4]}
+        keyword={TRAVEL_KEYWORD_OPTIONS[4]}
         startDate="2026-08-01"
         photoUrl="https://picsum.photos/seed/record-preview-2/600/800"
         comment=""

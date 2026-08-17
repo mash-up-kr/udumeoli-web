@@ -494,6 +494,7 @@
     }
 
     .record-preview-sticker-img {
+        object-fit: contain;
         filter:
             drop-shadow(1.5px 0 0 white)
             drop-shadow(-1.5px 0 0 white)
