@@ -31,6 +31,7 @@ import {
   markCompletionTipSeen,
   markCompletionTipShown,
 } from "../lib/completionTips"
+import { buildDisplayFills, buildMapFills } from "../lib/mapFills"
 import {
   createBoundaryLayer,
   createRegionDataLayer,
@@ -582,6 +583,7 @@ function MapController({
   decoratePreview,
   recordedProvinces,
   hasNationRecord,
+  syncVisualsForStage,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
@@ -605,6 +607,8 @@ function MapController({
   recordedProvinces: Set<string>
   /** 전국 기록 존재 여부 — 0단계 국가 외곽선 노출 조건 (단일 색칠과 동일 게이트) */
   hasNationRecord: boolean
+  /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
+  syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
@@ -727,6 +731,8 @@ function MapController({
           incompleteRegions: incompleteRegionSetRef.current,
         })
 
+        let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
+
         const syncViewport = () => {
           const next = visibleCentroidsInMap(map, centroidsRef.current)
           // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
@@ -746,8 +752,13 @@ function MapController({
             // 줌 스테이지 갱신(마커 수십 개 mount/unmount)은 제스처가 끝난 뒤로 미룬다 —
             // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
-            setZoomStage(getZoomStage(zoom))
-            syncBoundaryLayers(getZoomStage(zoom))
+            const stage = getZoomStage(zoom)
+            if (stage !== syncedVisualStage) {
+              syncVisualsForStage(stage)
+              syncedVisualStage = stage
+            }
+            setZoomStage(stage)
+            syncBoundaryLayers(stage)
             syncViewport()
             overlay?.draw()
           })
@@ -798,6 +809,7 @@ function MapController({
     setCentroids,
     setViewportCentroids,
     setZoomStage,
+    syncVisualsForStage,
   ])
 
   // 기록 변화(기록 있는 도 추가/삭제 등) 시 경계선 노출을 즉시 재평가
@@ -847,7 +859,9 @@ function MapController({
             RECORD_CAMERA_DURATION_MS,
             cameraRafRef,
             () => {
-              setZoomStage(getZoomStage(target.zoom))
+              const stage = getZoomStage(target.zoom)
+              syncVisualsForStage(stage)
+              setZoomStage(stage)
               const next = visibleCentroidsInMap(map, centroidsRef.current)
               setViewportCentroids((prev) =>
                 isSameCentroidList(prev, next) ? prev : next
@@ -860,7 +874,15 @@ function MapController({
       map.setOptions({ gestureHandling: "greedy" })
       dataLayerRef.current?.sync({ decorateRegion: null })
     }
-  }, [decorating, map, dataLayerRef, geojsonRef, centroidsRef, cameraRafRef])
+  }, [
+    decorating,
+    map,
+    dataLayerRef,
+    geojsonRef,
+    centroidsRef,
+    cameraRafRef,
+    syncVisualsForStage,
+  ])
 
   return null
 }
@@ -960,23 +982,15 @@ function TravelMapGoogleInner({
       ),
     [collaborationTrips]
   )
-  const mapFills = React.useMemo<Record<string, RegionFill>>(() => {
-    const next: Record<string, RegionFill> = { ...fills }
-    for (const trip of latestTripsByRegion.values()) {
-      if (
-        Object.hasOwn(next, trip.region) &&
-        next[trip.region].type === "image"
-      )
-        continue
-      const keyword = findKeyword(trip.keyword)
-      if (keyword && (trip.hasMine || trip.isComplete)) {
-        next[trip.region] ??= { type: "color", value: keyword.fill }
-      } else if (!trip.isComplete) {
-        next[trip.region] ??= { type: "color", value: INCOMPLETE_REGION_FILL }
-      }
-    }
-    return next
-  }, [fills, latestTripsByRegion])
+  const mapFills = React.useMemo(
+    () =>
+      buildMapFills({
+        baseFills: fills,
+        trips: latestTripsByRegion.values(),
+        incompleteRegionFill: INCOMPLETE_REGION_FILL,
+      }),
+    [fills, latestTripsByRegion]
+  )
 
   // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
   // 동수면 최근 여행)와 등록 지역 수를 모아 도 전체 색칠 + 스티커/[+N] 뱃지에 쓴다
@@ -1033,34 +1047,33 @@ function TravelMapGoogleInner({
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
-  const displayFills = React.useMemo<Record<string, RegionFill>>(() => {
-    // 0단계(국가 뷰) — 기록이 있으면 대한민국 전체를 전국 대표 키워드 색 하나로 칠한다
-    if (zoomStage === 0 && countryKeyword && centroids.length > 0) {
-      const next: Record<string, RegionFill> = {}
-      for (const { name } of centroids) {
-        next[name] = { type: "color", value: countryKeyword.fill }
-      }
-      return next
-    }
-    if (zoomStage >= 2 || provinceAggregates.length === 0) return mapFills
-    const next: Record<string, RegionFill> = { ...mapFills }
-    for (const agg of provinceAggregates) {
-      for (const region of agg.regions) {
-        // 사진 채움(image)은 유지 — 색만 도 대표 색으로 통일
-        if (Object.hasOwn(next, region) && next[region].type === "image") {
-          continue
-        }
-        next[region] = { type: "color", value: agg.keyword.fill }
-      }
-    }
-    return next
-  }, [zoomStage, mapFills, provinceAggregates, countryKeyword, centroids])
+  const displayFills = React.useMemo(
+    () =>
+      buildDisplayFills({
+        zoomStage,
+        mapFills,
+        provinceAggregates,
+        countryKeyword,
+        centroids,
+      }),
+    [zoomStage, mapFills, provinceAggregates, countryKeyword, centroids]
+  )
 
   // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
   const fillsRef = React.useRef(displayFills)
-  React.useEffect(() => {
-    fillsRef.current = displayFills
-  }, [displayFills])
+  fillsRef.current = displayFills
+  const displayFillInputsRef = React.useRef({
+    mapFills,
+    provinceAggregates,
+    countryKeyword,
+    centroids,
+  })
+  displayFillInputsRef.current = {
+    mapFills,
+    provinceAggregates,
+    countryKeyword,
+    centroids,
+  }
 
   // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
   const [seenTips, setSeenTips] = React.useState(false)
@@ -1078,6 +1091,24 @@ function TravelMapGoogleInner({
     () => new Set(photos.map((p) => p.region)),
     [photos]
   )
+  const photoRegionSetRefForVisuals = React.useRef(photoRegionSet)
+  photoRegionSetRefForVisuals.current = photoRegionSet
+  const incompleteRegionSetRefForVisuals = React.useRef(incompleteRegionSet)
+  incompleteRegionSetRefForVisuals.current = incompleteRegionSet
+  const syncVisualsForStage = React.useCallback((stage: 0 | 1 | 2 | 3) => {
+    const nextFills = buildDisplayFills({
+      zoomStage: stage,
+      ...displayFillInputsRef.current,
+    })
+    fillsRef.current = nextFills
+    dataLayerRef.current?.sync({
+      fills: nextFills,
+      hasPhotoRegions: photoRegionSetRefForVisuals.current,
+      incompleteRegions: incompleteRegionSetRefForVisuals.current,
+    })
+    overlayRef.current?.loadPendingImages(() => overlayRef.current?.draw())
+    overlayRef.current?.draw()
+  }, [])
 
   React.useEffect(() => {
     onAlbumAvailabilityChange?.(photos.length > 0)
@@ -1181,7 +1212,9 @@ function TravelMapGoogleInner({
       const map = mapRef.current
       if (!map) return
       animateCamera(map, target, duration, cameraRafRef, () => {
-        setZoomStage(getZoomStage(target.zoom))
+        const stage = getZoomStage(target.zoom)
+        syncVisualsForStage(stage)
+        setZoomStage(stage)
         const next = visibleCentroidsInMap(map, centroidsRef.current)
         setViewportCentroids((prev) =>
           isSameCentroidList(prev, next) ? prev : next
@@ -1196,7 +1229,7 @@ function TravelMapGoogleInner({
         }
       })
     },
-    []
+    [syncVisualsForStage]
   )
 
   const mapTipsOpenedRef = React.useRef(false)
@@ -1409,6 +1442,7 @@ function TravelMapGoogleInner({
           decoratePreview={decoratePreview}
           recordedProvinces={recordedProvinces}
           hasNationRecord={Boolean(countryKeyword)}
+          syncVisualsForStage={syncVisualsForStage}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}

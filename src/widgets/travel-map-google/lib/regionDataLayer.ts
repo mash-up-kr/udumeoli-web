@@ -116,7 +116,8 @@ export function createRegionDataLayer(
     onFeatureClick: (name: string, feature: google.maps.Data.Feature) => void
   }
 ): RegionDataLayer {
-  const data = new google.maps.Data({ map })
+  const data = new google.maps.Data()
+  data.setStyle({ clickable: true, fillOpacity: 0, strokeOpacity: 0 })
   data.addGeoJson(geojson)
 
   const nameToFeature = new Map<string, google.maps.Data.Feature>()
@@ -150,6 +151,7 @@ export function createRegionDataLayer(
   }
 
   applyAll()
+  data.setMap(map)
 
   // 색칠/사진 지역 수만큼만 유지 — sync가 매번 이 name들만 재계산하면 되므로
   // 전체 ~250개 지역을 매번 순회하는 비용을 피한다
@@ -158,8 +160,6 @@ export function createRegionDataLayer(
   let prevIncompleteNames = new Set<string>()
   let prevActiveName: string | null = null
   let prevDecorateName: string | null = null
-
-  data.setStyle({ clickable: true, fillOpacity: 0, strokeOpacity: 0 })
 
   // 배경 클릭 판정과 충돌 방지용 — 같은 클릭 이벤트가 map에도 전파되는지 불확실해 플래그로 방어
   data.addListener("click", (e: google.maps.Data.MouseEvent) => {
