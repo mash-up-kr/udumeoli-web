@@ -51,7 +51,7 @@ import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { showToast } from "@/shared/ui/toast"
-import { hasSeenMapTips } from "@/features/onboarding"
+import { hasSeenMapTips, openMapTipsOverlay } from "@/features/onboarding"
 import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
@@ -264,7 +264,8 @@ function animateCamera(
   map: google.maps.Map,
   target: { lat: number; lng: number; zoom: number },
   duration: number,
-  rafRef: React.MutableRefObject<number | null>
+  rafRef: React.MutableRefObject<number | null>,
+  onComplete?: () => void
 ) {
   if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
   const startCenter = map.getCenter()
@@ -283,9 +284,27 @@ function animateCamera(
       },
       zoom: startZoom + (target.zoom - startZoom) * e,
     })
-    rafRef.current = t < 1 ? requestAnimationFrame(step) : null
+    if (t < 1) {
+      rafRef.current = requestAnimationFrame(step)
+      return
+    }
+    rafRef.current = null
+    onComplete?.()
   }
   rafRef.current = requestAnimationFrame(step)
+}
+
+function visibleCentroidsInMap(
+  map: google.maps.Map,
+  centroids: Array<Centroid>
+): Array<Centroid> {
+  const bounds = map.getBounds()
+  if (!bounds) return []
+  return centroids.filter(({ lng, lat }) => bounds.contains({ lat, lng }))
+}
+
+function isSameCentroidList(a: Array<Centroid>, b: Array<Centroid>): boolean {
+  return a.length === b.length && a.every((centroid, i) => centroid === b[i])
 }
 
 export type TravelMapImplProps = {
@@ -481,16 +500,10 @@ function MapController({
         })
 
         const syncViewport = () => {
-          const bounds = map.getBounds()
-          if (!bounds) return
-          const next = centroidsRef.current.filter(({ lng, lat }) =>
-            bounds.contains({ lat, lng })
-          )
+          const next = visibleCentroidsInMap(map, centroidsRef.current)
           // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
           setViewportCentroids((prev) =>
-            prev.length === next.length && prev.every((c, i) => c === next[i])
-              ? prev
-              : next
+            isSameCentroidList(prev, next) ? prev : next
           )
         }
 
@@ -664,6 +677,11 @@ function TravelMapGoogleInner({
   >([])
   const [collaborationRecordDraft, setCollaborationRecordDraft] =
     React.useState<CollaborationRecordDraft | null>(null)
+  const [mapReady, setMapReady] = React.useState(false)
+  const handleMapReady = React.useCallback(() => {
+    setMapReady(true)
+    onReady?.()
+  }, [onReady])
 
   const decorating = useRecordStore((s) => s.region)
   const decoratePreview = useRecordStore((s) => s.preview)
@@ -920,10 +938,34 @@ function TravelMapGoogleInner({
     (target: { lat: number; lng: number; zoom: number }, duration: number) => {
       const map = mapRef.current
       if (!map) return
-      animateCamera(map, target, duration, cameraRafRef)
+      animateCamera(map, target, duration, cameraRafRef, () => {
+        setZoomStage(getZoomStage(target.zoom))
+        const next = visibleCentroidsInMap(map, centroidsRef.current)
+        setViewportCentroids((prev) =>
+          isSameCentroidList(prev, next) ? prev : next
+        )
+        const center = map.getCenter()
+        if (center) {
+          lastCameraSnapshot = {
+            lat: center.lat(),
+            lng: center.lng(),
+            zoom: map.getZoom() ?? target.zoom,
+          }
+        }
+      })
     },
     []
   )
+
+  const mapTipsOpenedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!mapReady || mapTipsOpenedRef.current || hasSeenMapTips()) return
+    mapTipsOpenedRef.current = true
+    const opened = openMapTipsOverlay({
+      onStart: () => runCameraMove(GANGWON_VIEW, 600),
+    })
+    if (opened) setSeenTips(true)
+  }, [mapReady, runCameraMove])
 
   const startCollaborationRecord = React.useCallback(
     (trip: CollaborationTrip) => {
@@ -1102,7 +1144,7 @@ function TravelMapGoogleInner({
           setViewportCentroids={setViewportCentroids}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
-          onReady={onReady}
+          onReady={handleMapReady}
         />
 
         {/* 지역명 + [+] 버튼은 3단계에서만 — 2단계는 "시/군별 스티커만" (Figma 줌인 기준 2·3단계) */}

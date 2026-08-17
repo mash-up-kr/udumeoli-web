@@ -9,7 +9,6 @@ import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { AppSplash } from "@/shared/ui/app-splash"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
-import { openMapTipsOverlay } from "@/features/onboarding"
 import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
@@ -55,11 +54,6 @@ function MapGooglePageContent() {
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
-
-  // 팟과 함께 지도에 처음 진입했을 때 지도 사용법 안내 (줌인/사진 업로드) 1회 노출
-  React.useEffect(() => {
-    if (ready && hasPot) openMapTipsOverlay()
-  }, [hasPot, ready])
 
   // 팟 판정 전(persist 복원 + myParties 응답)과 pot-start 리다이렉트 대기 구간 —
   // 빈 화면 대신 스플래시로 채운다
