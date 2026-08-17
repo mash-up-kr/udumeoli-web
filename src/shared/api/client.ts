@@ -37,8 +37,13 @@ const endpoint =
   rawEndpoint.startsWith("/") && typeof window !== "undefined"
     ? window.location.origin + rawEndpoint
     : rawEndpoint
-/** 백엔드 origin — OAuth 시작처럼 브라우저를 직접 이동시킬 때만 사용. API 호출은 프록시 경유 상대경로. */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ""
+/**
+ * 백엔드 origin — OAuth 시작처럼 브라우저를 직접 이동시킬 때만 사용. API 호출은 프록시 경유 상대경로.
+ * env 미설정 시 vite.config.ts 프록시 타깃과 같은 실서버로 폴백 — 비어 있으면 상대경로가 돼
+ * 카카오 로그인 시작이 프론트 도메인(/oauth2/...)으로 가서 404가 났다.
+ */
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://pinnnned.duckdns.org"
 
 // 인증: Authorization Bearer. 만료(401) 시 authFetch가 refresh 후 1회 재시도한다.
 export const gqlClient = new GraphQLClient(endpoint, {
