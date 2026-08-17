@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest"
 import { formatTripRange, groupTrips } from "./trips"
 import type { Photo } from "../model/types"
 
-function photo(id: string, date: string, uploaderId = "user-1"): Photo {
+function photo(
+  id: string,
+  date: string,
+  uploaderId = "user-1",
+  extra: Partial<Photo> = {}
+): Photo {
   return {
     id,
     date,
@@ -13,6 +18,7 @@ function photo(id: string, date: string, uploaderId = "user-1"): Photo {
     lat: 0,
     lng: 0,
     thumbnailUrl: "",
+    ...extra,
   }
 }
 
@@ -29,6 +35,41 @@ describe("groupTrips", () => {
       ["2026-05-02", "2026-05-02"],
     ])
     expect(trips[0].photos).toHaveLength(3)
+  })
+
+  it("tripId가 있으면 연속된 날짜라도 다른 방문으로 분리한다", () => {
+    const trips = groupTrips([
+      photo("first-me", "2026-07-01", "user-1", {
+        tripId: "trip-1",
+        endDate: "2026-07-02",
+      }),
+      photo("first-other", "2026-07-01", "user-2", {
+        tripId: "trip-1",
+        endDate: "2026-07-02",
+      }),
+      photo("second", "2026-07-03", "user-1", {
+        tripId: "trip-2",
+      }),
+    ])
+
+    expect(trips.map((t) => [t.tripId, t.startDate, t.endDate])).toEqual([
+      ["trip-2", "2026-07-03", "2026-07-03"],
+      ["trip-1", "2026-07-01", "2026-07-02"],
+    ])
+  })
+
+  it("tripId가 없는 기간 사진도 endDate를 방문 종료일로 사용한다", () => {
+    const trips = groupTrips([
+      photo("range", "2026-08-01", "user-1", {
+        endDate: "2026-08-03",
+      }),
+    ])
+
+    expect(trips).toHaveLength(1)
+    expect(trips[0]).toMatchObject({
+      startDate: "2026-08-01",
+      endDate: "2026-08-03",
+    })
   })
 })
 
