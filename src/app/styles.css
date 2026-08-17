@@ -374,22 +374,20 @@
     }
 
     /* 여행 기록 미리보기 진입 연출 — 사진과 키워드 스티커가 지도 위로 터져 붙는 느낌 */
-    --animate-record-preview-photo-in: record-preview-photo-in 0.58s
+    --animate-record-preview-photo-in: record-preview-photo-in 0.44s
         cubic-bezier(0.16, 1, 0.3, 1) both;
-    --animate-record-preview-sticker-pop: record-preview-sticker-pop 0.76s
+    --animate-record-preview-sticker-pop: record-preview-sticker-pop 0.58s
         cubic-bezier(0.16, 1, 0.3, 1) both;
-    --animate-record-preview-particle: record-preview-particle 0.82s ease-out
+    --animate-record-preview-particle: record-preview-particle 0.56s ease-out
         both;
 
     @keyframes record-preview-photo-in {
         0% {
             opacity: 0;
-            filter: blur(2px);
             transform: translateY(20px) scale(0.94);
         }
         58% {
             opacity: 1;
-            filter: blur(0);
             transform: translateY(-3px) scale(1.025);
         }
         78% {
@@ -397,7 +395,6 @@
         }
         100% {
             opacity: 1;
-            filter: blur(0);
             transform: translateY(0) scale(1);
         }
     }
@@ -493,6 +490,7 @@
     .animate-record-preview-sticker-pop,
     .animate-record-preview-particle {
         animation-delay: var(--record-preview-delay, 0ms);
+        will-change: transform, opacity;
     }
 
     .record-preview-sticker-img {

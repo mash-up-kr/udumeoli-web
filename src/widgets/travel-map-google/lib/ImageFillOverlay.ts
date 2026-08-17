@@ -14,6 +14,9 @@
 type RegionFill =
   | { type: "color"; value: string }
   | { type: "image"; imageId: string; dataUrl: string }
+type ImageRegionFill = Extract<RegionFill, { type: "image" }>
+type ImageFillEntry = [string, ImageRegionFill]
+const MAX_CANVAS_DPR = 2
 
 // `extends google.maps.OverlayView`는 클래스 선언 시점에 `google.maps`를 평가하는데,
 // APIProvider가 Maps JS SDK 스크립트를 비동기로 넣기 전에 이 모듈이 import되면
@@ -33,6 +36,8 @@ export function createImageFillOverlay(
     private canvas = document.createElement("canvas")
     private imgCache = new Map<string, HTMLImageElement>()
     private geomCache = new Map<string, RegionGeom | null>()
+    private imageFillEntries: Array<ImageFillEntry> = []
+    private imageFillSignature = ""
     private hasDrawn = false
 
     constructor() {
@@ -49,13 +54,27 @@ export function createImageFillOverlay(
       this.canvas.remove()
     }
 
+    private getImageFillEntries(): Array<ImageFillEntry> {
+      const fills = getFills()
+      const entries: Array<ImageFillEntry> = []
+      const signatureParts: Array<string> = []
+      for (const [region, fill] of Object.entries(fills)) {
+        if (fill.type !== "image") continue
+        entries.push([region, fill])
+        signatureParts.push(`${region}:${fill.imageId}`)
+      }
+      const signature = signatureParts.join("|")
+      if (signature === this.imageFillSignature) return this.imageFillEntries
+      this.imageFillSignature = signature
+      this.imageFillEntries = entries
+      return entries
+    }
+
     /** fills에 새 이미지가 추가되면 로드해서 캐시, 완료 후 재드로우 */
     loadPendingImages(onLoaded: () => void) {
-      const fills = getFills()
-      const pending = Object.values(fills).filter(
-        (f): f is Extract<RegionFill, { type: "image" }> =>
-          f.type === "image" && !this.imgCache.has(f.imageId)
-      )
+      const pending = this.getImageFillEntries()
+        .map(([, fill]) => fill)
+        .filter((fill) => !this.imgCache.has(fill.imageId))
       if (pending.length === 0) return
       Promise.all(
         pending.map(
@@ -109,10 +128,7 @@ export function createImageFillOverlay(
     }
 
     override draw() {
-      const imageFills = Object.entries(getFills()).filter(
-        (entry): entry is [string, Extract<RegionFill, { type: "image" }>] =>
-          entry[1].type === "image"
-      )
+      const imageFills = this.getImageFillEntries()
       if (imageFills.length === 0) {
         if (this.hasDrawn) {
           this.canvas
@@ -150,7 +166,7 @@ export function createImageFillOverlay(
       this.canvas.style.left = `${bottomLeft.x}px`
       this.canvas.style.top = `${topRight.y}px`
 
-      const dpr = window.devicePixelRatio || 1
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
       const bufWidth = Math.round(cssWidth * dpr)
       const bufHeight = Math.round(cssHeight * dpr)
       const ctx = this.canvas.getContext("2d")

@@ -82,22 +82,6 @@ const FANFARE_PARTICLES = [
     rotate: "116deg",
     delay: "75ms",
   },
-  {
-    id: "p5",
-    className: "size-[9px]",
-    x: "-160px",
-    y: "94px",
-    rotate: "-88deg",
-    delay: "95ms",
-  },
-  {
-    id: "p6",
-    className: "size-[11px]",
-    x: "74px",
-    y: "154px",
-    rotate: "42deg",
-    delay: "120ms",
-  },
 ]
 
 function previewMotionStyle({
@@ -153,7 +137,7 @@ export function PreviewStep({
   return (
     <div className="pointer-events-auto absolute inset-0 z-30 flex flex-col overflow-x-hidden overflow-y-auto">
       {/* 지도가 비치는 프로스티드 글라스 — 키워드 색 미리보기(지역 폴리곤)가 아래 깔린다 */}
-      <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-[12px]" />
 
       {/* 장식 스티커 — 콘텐츠보다 아래, 배경보다 위 */}
       {keyword

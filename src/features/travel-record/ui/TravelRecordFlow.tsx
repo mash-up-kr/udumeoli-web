@@ -232,7 +232,7 @@ export function TravelRecordFlow({
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col">
       {/* 지도를 흐리게 깔고 상·하단은 흰 그라디언트로 덮어 글자 가독성 확보 */}
-      <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-[12px]" />
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-transparent" />
 
