@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 
+import { ALBUM_POT, TRIP_100_POT } from "../api/pot.mock"
 import {
+  clearAutoDemoPotsOnly,
   getMemberPots,
   selectCurrentPotMembers,
   usePotStore,
@@ -50,6 +52,33 @@ describe("resetPots", () => {
     const state = usePotStore.getState()
     expect(state.pots).toHaveLength(0)
     expect(state.currentPotId).toBe("")
+  })
+})
+
+describe("clearAutoDemoPotsOnly", () => {
+  it("자동 데모 팟만 남은 persist 상태는 신규 유저 상태로 비운다", () => {
+    const state = clearAutoDemoPotsOnly({
+      pots: [TRIP_100_POT, ALBUM_POT],
+      currentPotId: TRIP_100_POT.id,
+    })
+
+    expect(state).toEqual({ pots: [], currentPotId: "" })
+  })
+
+  it("사용자가 만든 팟이 섞인 상태는 유지한다", () => {
+    const userPot = {
+      id: "pot-user",
+      name: "내 팟",
+      inviteCode: "abc123",
+      members: [{ id: "user-1", nickname: "정민", profileImageUrl: null }],
+    }
+    const state = clearAutoDemoPotsOnly({
+      pots: [userPot, ALBUM_POT],
+      currentPotId: userPot.id,
+    })
+
+    expect(state.pots.map((pot) => pot.id)).toEqual([userPot.id, ALBUM_POT.id])
+    expect(state.currentPotId).toBe(userPot.id)
   })
 })
 

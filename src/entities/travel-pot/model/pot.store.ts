@@ -6,6 +6,7 @@ import {
   ALBUM_POT,
   JOIN_ERROR_CODES,
   JOIN_PREVIEW,
+  TRIP_100_POT,
   UT_POTS,
   makeInviteCode,
 } from "../api/pot.mock"
@@ -32,6 +33,7 @@ interface PotState {
 // 새 배열을 만들면 useSyncExternalStore가 무한 리렌더에 빠진다
 const EMPTY_MEMBERS: Array<PotMember> = []
 const POT_CAPACITY = 6
+const AUTO_DEMO_POT_IDS = new Set([TRIP_100_POT.id, ALBUM_POT.id])
 
 function todayStamp(): string {
   const d = new Date()
@@ -55,6 +57,16 @@ export function getMemberPots(
 ): Array<TravelPot> {
   if (!memberId) return []
   return pots.filter((pot) => potHasMember(pot, memberId))
+}
+
+export function clearAutoDemoPotsOnly<
+  T extends Pick<PotState, "pots" | "currentPotId">,
+>(state: T): T {
+  const hasOnlyAutoDemoPots =
+    state.pots.length > 0 &&
+    state.pots.every((pot) => AUTO_DEMO_POT_IDS.has(pot.id))
+
+  return hasOnlyAutoDemoPots ? { ...state, pots: [], currentPotId: "" } : state
 }
 
 /** 현재 선택된 팟의 멤버 목록 (팟이 없으면 안정된 빈 배열) */
@@ -216,10 +228,12 @@ export const usePotStore = create<PotState>()(
       name: USE_MOCK ? "photato-pots-mock" : "photato-pots",
       // 목 모드 한정: 온보딩을 마친(팟이 하나라도 있는) 유저에게 앨범 목데이터용
       // 4인 팟(우두머리)을 1회 주입한다. 빈 상태에는 넣지 않아 신규 유저의
-      // /pot-start 온보딩 흐름은 그대로 유지되고, 기존 선택(예: 가입 시 주입되는
-      // 여행 100번)은 빼앗지 않는다.
+      // /pot-start 온보딩 흐름은 그대로 유지되고, 기존 선택은 빼앗지 않는다.
       merge: (persisted, current) => {
-        const state = { ...current, ...(persisted as Partial<PotState>) }
+        const state = clearAutoDemoPotsOnly({
+          ...current,
+          ...(persisted as Partial<PotState>),
+        })
         if (
           USE_MOCK &&
           state.pots.length > 0 &&

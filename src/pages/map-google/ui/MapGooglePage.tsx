@@ -8,19 +8,29 @@ import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { AppSplash } from "@/shared/ui/app-splash"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
 import { photoKeys, seedUtPhotos } from "@/entities/photo"
-import { useMyPots, usePotStore, usePotsHydrated } from "@/entities/travel-pot"
+import {
+  TRIP_100_POT,
+  useMyPots,
+  usePotStore,
+  usePotsHydrated,
+} from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
 function MapGooglePageContent() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const isUtPreview =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("ut") === "1"
+  const searchParams =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search)
+  const isUtPreview = searchParams?.get("ut") === "1"
+  const isTrip100Demo = USE_MOCK && searchParams?.get("demo") === "100"
+  const isSeededPreview = isUtPreview || isTrip100Demo
   // pots가 localStorage에서 복원되기 전엔 항상 빈 배열이라, 복원 전 순간을 "팟 없음"으로
   // 오판해 기존 팟 보유 유저까지 잘못 리다이렉트하지 않도록 복원 완료를 기다린다
   const hydrated = usePotsHydrated()
@@ -29,10 +39,12 @@ function MapGooglePageContent() {
   // 다시 이 페이지로 왔다가 팟이 여전히 없어 즉시 pot-start로 튕기는 무한 루프가 생긴다
   const seedUtPots = usePotStore((s) => s.seedUtPots)
   const seededUtPreviewRef = React.useRef(false)
+  const confirmJoin = usePotStore((s) => s.confirmJoin)
+  const seededTrip100DemoRef = React.useRef(false)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
-  // UT 프리뷰는 시드된 store만 본다 — 서버 목록을 덮어써 미리보기가 사라지면 안 된다
+  // 시드 프리뷰는 시드된 store만 본다 — 서버 목록을 덮어써 미리보기가 사라지면 안 된다
   const { hasPot, isPending } = useMyPots(currentUserId, {
-    enabled: hydrated && !isUtPreview,
+    enabled: hydrated && !isSeededPreview,
   })
   const ready = hydrated && !isPending
 
@@ -45,9 +57,16 @@ function MapGooglePageContent() {
   }, [hydrated, isUtPreview, queryClient, seedUtPots])
 
   React.useEffect(() => {
-    if (ready && !hasPot && !isUtPreview)
+    if (!hydrated || !isTrip100Demo || seededTrip100DemoRef.current) return
+    seededTrip100DemoRef.current = true
+    confirmJoin(TRIP_100_POT)
+    void queryClient.invalidateQueries({ queryKey: photoKeys.all })
+  }, [confirmJoin, hydrated, isTrip100Demo, queryClient])
+
+  React.useEffect(() => {
+    if (ready && !hasPot && !isSeededPreview)
       router.navigate({ to: "/pot-start", replace: true })
-  }, [hasPot, isUtPreview, ready, router])
+  }, [hasPot, isSeededPreview, ready, router])
 
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)

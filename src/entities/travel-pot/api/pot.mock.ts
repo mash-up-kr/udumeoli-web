@@ -34,8 +34,8 @@ export const MOCK_POTS: Array<TravelPot> = Array.from(
   })
 )
 
-// 신규 가입(목) 첫 진입 데모용 5인 팟 — photo.mock STICKER_DEMO_PHOTOS(전국 100개
-// 지역 스티커 시드)가 이 팟에 매인다. 가입 완료 시 SignupPage가 store에 주입·선택한다.
+// 지도 디버그 데모용 5인 팟 — photo.mock STICKER_DEMO_PHOTOS(전국 100개
+// 지역 스티커 시드)가 이 팟에 매인다. 신규 가입 플로우에는 자동 주입하지 않는다.
 export const TRIP_100_POT: TravelPot = {
   id: "pot-trip-100-1",
   name: "여행 100번",
