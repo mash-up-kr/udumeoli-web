@@ -22,7 +22,7 @@ jobs:
       - name: Run Gemini Code Review
         uses: petarzarkov/gemini-code-review-action@v1.1.3
         with:
-          model: gemini-2.0-flash-lite
+          model: gemini-3.5-flash-lite
           enable_conversation_context: true
           skip_draft_prs: true
           language: Korean
