@@ -1,0 +1,32 @@
+name: Gemini Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run Gemini Code Review
+        uses: petarzarkov/gemini-code-review-action@v1.1.3
+        with:
+          model: gemini-2.0-flash-lite
+          enable_conversation_context: true
+          skip_draft_prs: true
+          language: Korean
+          exclude: "*.md,**/*.md,*.json,**/*.json,*.yml,**/*.yml,*.yaml,**/*.yaml,*.lock,**/*.lock,pnpm-lock.yaml,package-lock.json,yarn.lock,**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/*.stories.ts,**/*.stories.tsx,**/__tests__/**,test/**,tests/**,dist/**,build/**,.output/**,storybook-static/**"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
