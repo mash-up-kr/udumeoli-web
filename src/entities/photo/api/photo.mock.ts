@@ -417,7 +417,7 @@ const ALBUM_REGION_CENTERS: Record<string, { lat: number; lng: number }> = {
 // (ALBUM_SEEDS의 창원시·대전광역시·강릉시, 이름이 중복되는 고성군은 제외)
 // 데모가 끝나면 이 블록과 photo.api의 STICKER_DEMO_PHOTOS 스프레드만 지우면 된다.
 
-// 신규 가입 데모 팟 — pot.mock TRIP_100_POT(여행 100번)과 일치해야 한다
+// 지도 디버그 데모 팟 — pot.mock TRIP_100_POT(여행 100번)과 일치해야 한다
 export const TRIP_100_POT_ID = "pot-trip-100-1"
 
 // TRIP_100_POT 멤버 전원 — 5명 모두 업로드해야 여행이 완료(색칠) 상태가 된다

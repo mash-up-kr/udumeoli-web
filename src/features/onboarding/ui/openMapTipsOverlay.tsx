@@ -51,7 +51,13 @@ function PhotoFrame({
   )
 }
 
-function MapTipsOverlay({ unmount }: { unmount: () => void }) {
+function MapTipsOverlay({
+  onStart,
+  unmount,
+}: {
+  onStart?: () => void
+  unmount: () => void
+}) {
   // 배경(블러)은 지도와 같은 프레임에 바로 덮고, 본문은 사진 3장 디코드가 끝난 뒤에
   // 마운트해 한 덩어리로 내려온다 — 프레임(테두리)만 먼저 뜨는 것도, 지도가 잠깐
   // 맨살로 보였다가 블러가 덮이는 깜빡임도 없앤다
@@ -131,7 +137,10 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
             </div>
             <button
               type="button"
-              onClick={unmount}
+              onClick={() => {
+                unmount()
+                onStart?.()
+              }}
               className="rounded-full bg-bg-neutral-inverse px-3 py-1 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]"
             >
               시작하기
@@ -148,12 +157,17 @@ function MapTipsOverlay({ unmount }: { unmount: () => void }) {
  * 지도가 로딩 중이어도 그 위에 블러 배경으로 얹혀 상관없이 보인다.
  * "시작하기" 클릭 시 닫힘.
  */
-export function openMapTipsOverlay(): void {
+export function openMapTipsOverlay(options?: {
+  onStart?: () => void
+}): boolean {
   // 한 번이라도 노출되면 확인한 것으로 처리 — 재접속 시 다시 노출되지 않음
-  if (localStorage.getItem(SEEN_KEY) !== null) return
+  if (localStorage.getItem(SEEN_KEY) !== null) return false
   localStorage.setItem(SEEN_KEY, "true")
 
-  overlay.open(({ unmount }) => <MapTipsOverlay unmount={unmount} />)
+  overlay.open(({ unmount }) => (
+    <MapTipsOverlay onStart={options?.onStart} unmount={unmount} />
+  ))
+  return true
 }
 
 /**

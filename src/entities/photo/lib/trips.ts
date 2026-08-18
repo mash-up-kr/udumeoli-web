@@ -2,6 +2,8 @@ import type { Photo } from "../model/types"
 
 /** 한 지역의 방문 1회 — 연속된 사진 날짜 묶음 (여행 앨범 단위) */
 export interface Trip {
+  /** 서버 Trip id — 있으면 날짜 휴리스틱보다 우선하는 방문 단위 */
+  tripId?: string
   startDate: string
   endDate: string
   /** 이 방문 기간에 업로드된 사진 (날짜 오름차순) */
@@ -10,28 +12,81 @@ export interface Trip {
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
+function dateValue(date: string): number {
+  const time = Date.parse(date)
+  return Number.isFinite(time) ? time : 0
+}
+
+function photoEndDate(photo: Photo): string {
+  return photo.endDate ?? photo.date
+}
+
+function maxDate(a: string, b: string): string {
+  return dateValue(a) >= dateValue(b) ? a : b
+}
+
+function sortPhotosByDate(photos: Array<Photo>): Array<Photo> {
+  return photos
+    .map((photo) => ({ photo, time: dateValue(photo.date) }))
+    .sort((a, b) => a.time - b.time)
+    .map(({ photo }) => photo)
+}
+
 /**
  * 같은 지역 사진들을 방문(여행) 단위로 그룹핑 — 최신 방문이 먼저 온다.
- * ponytail: 서버가 여행 단위를 내려주기 전까지의 휴리스틱 — 연속된 날짜(1일
- * 간격)를 방문 1회로 묶는다. 하루 걸러 찍은 여행은 방문 2회로 나뉜다.
+ * 서버 Trip id가 있으면 그 단위를 우선하고, 없는 목/레거시 사진만 연속 날짜 휴리스틱으로 묶는다.
  */
 export function groupTrips(photos: Array<Photo>): Array<Trip> {
-  const sorted = [...photos].sort((a, b) => (a.date < b.date ? -1 : 1))
-  const trips: Array<Trip> = []
-  for (const photo of sorted) {
-    const last = trips.at(-1)
-    if (last && Date.parse(photo.date) - Date.parse(last.endDate) <= DAY_MS) {
-      last.endDate = photo.date
+  const byTripId = new Map<string, Array<Photo>>()
+  const withoutTripId: Array<Photo> = []
+  for (const photo of photos) {
+    if (photo.tripId) {
+      const tripPhotos = byTripId.get(photo.tripId)
+      if (tripPhotos) {
+        tripPhotos.push(photo)
+      } else {
+        byTripId.set(photo.tripId, [photo])
+      }
+    } else {
+      withoutTripId.push(photo)
+    }
+  }
+
+  const keyedTrips: Array<Trip> = []
+  for (const [tripId, tripPhotos] of byTripId) {
+    const sorted = sortPhotosByDate(tripPhotos)
+    const startDate = sorted[0]?.date
+    if (!startDate) continue
+    keyedTrips.push({
+      tripId,
+      startDate,
+      endDate: sorted.reduce(
+        (endDate, photo) => maxDate(endDate, photoEndDate(photo)),
+        startDate
+      ),
+      photos: sorted,
+    })
+  }
+
+  const legacyTrips: Array<Trip> = []
+  for (const photo of sortPhotosByDate(withoutTripId)) {
+    const last = legacyTrips.at(-1)
+    if (last && dateValue(photo.date) - dateValue(last.endDate) <= DAY_MS) {
+      last.endDate = maxDate(last.endDate, photoEndDate(photo))
       last.photos.push(photo)
     } else {
-      trips.push({
+      legacyTrips.push({
         startDate: photo.date,
-        endDate: photo.date,
+        endDate: photoEndDate(photo),
         photos: [photo],
       })
     }
   }
-  return trips.reverse()
+  return [...keyedTrips, ...legacyTrips].sort(
+    (a, b) =>
+      dateValue(b.endDate) - dateValue(a.endDate) ||
+      dateValue(b.startDate) - dateValue(a.startDate)
+  )
 }
 
 /** 방문 기간 표기 — "2026년 7월 20일 ~ 7월 22일" (해가 다르면 종료일에도 연도) */

@@ -12,6 +12,7 @@ import {
   APIProvider,
   AdvancedMarker,
   AdvancedMarkerAnchorPoint,
+  CollisionBehavior,
   Map as GoogleMap,
   useMap,
 } from "@vis.gl/react-google-maps"
@@ -26,11 +27,13 @@ import {
   resolveRegionAction,
   visibleStickerTrips,
 } from "../lib/collaboration"
+import { canShowAvailableRegionMarker } from "../lib/availableRegionMarkers"
 import {
   canShowCompletionTip,
   markCompletionTipSeen,
   markCompletionTipShown,
 } from "../lib/completionTips"
+import { buildDisplayFills, buildMapFills } from "../lib/mapFills"
 import {
   createBoundaryLayer,
   createRegionDataLayer,
@@ -51,7 +54,7 @@ import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { showToast } from "@/shared/ui/toast"
-import { hasSeenMapTips } from "@/features/onboarding"
+import { hasSeenMapTips, openMapTipsOverlay } from "@/features/onboarding"
 import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
@@ -67,8 +70,8 @@ const GOOGLE_MAP_ID =
   (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined) ||
   "DEMO_MAP_ID"
 
-// 중심을 북서쪽에 둬서 화면상 대한민국이 우측·하단에 놓이게 한다
-const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 6.7 }
+// 국가 단일 핀 화면에서 시작하고, 한 번 줌인하면 도 단위 집계로 넘어간다
+const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 4.8 }
 
 // 기록 시작 기본 위치 — 여름 휴가 데이터가 몰리는 강원도 (Figma 1836-15911 #2).
 // zoom은 [+ 지역] 버튼이 보이는 3단계(PARTY_ZOOM)로 바로 진입해 지역을 고를 수 있게 한다.
@@ -87,23 +90,33 @@ const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
 const PARTY_ZOOM = 9.5
-// 관성 줌이 maxZoom 직전(9.4999…)에서 멈춰도 3단계로 인정하는 여유치 (MapLibre 구현과 동일)
-const PARTY_ZOOM_EPSILON = 0.01
-const PARTY_ENTER = PARTY_ZOOM - PARTY_ZOOM_EPSILON
-// 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(6.7)는 1단계에 들고,
-// 한반도를 훌쩍 넘어 동아시아 권역이 보일 정도로 줌아웃해야 국가(0단계) 뷰가 된다.
+// 시 레벨에서 조금 더 줌인하면 + 버튼·단순 스티커 상세 단계로 전환한다.
+// maxZoom(9.5)까지 기다리면 등록 진입점이 너무 늦게 보인다.
+const DETAIL_ENTER_ZOOM = 9
+// 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(4.8)는 국가(0단계)에서 시작한다.
 // 6 → 5: 도 단위 집계(1단계) 화면을 더 오래 유지하기 위해 한 단계 낮췄다
 const NATION_MIN_ZOOM = 5
 // 0단계(국가 뷰) 대표 스티커 위치 — 남한 내륙 중앙부 부근 고정
 const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
+const RECORD_CAMERA_PADDING = { top: 170, bottom: 330, left: 48, right: 48 }
+const RECORD_CAMERA_DURATION_MS = 420
 // AdvancedMarkerElement는 clickable이면 마커 자체가 포커스 대상이 되고, 그 안의
 // 포커스 가능한 자식(button/a/input)은 "not supported"로 경고하며 탭 순서·포커스 링
 // 관리가 깨진다. 그래서 마커 콘텐츠는 전부 div/span으로 두고, 클릭과 접근성 이름은
 // 마커의 onClick·title이 담당한다.
 const MARKER_CONTENT =
   "flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
+// Figma 2466-8293: 상세 줌에서는 [+] 버튼·협업 액션·스티커가 가까이 있어도 동시에 보여야 한다.
+const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
+const DETAIL_STICKER_Z_INDEX = 30
+const DETAIL_ACTION_Z_INDEX = 40
+const DETAIL_TOOLTIP_Z_INDEX = 50
+const CATEGORY_PIN_BADGE =
+  "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
+const CATEGORY_PIN_COUNT_BADGE =
+  "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
   { x: -18, y: -12, rotate: -17 },
   { x: 18, y: 12, rotate: 9 },
@@ -127,17 +140,58 @@ type ProvinceAggregate = {
   keyword: TravelKeyword
   /** 도 소속 전체 지역명 — 1단계에서 도 전체를 색칠할 때 사용 */
   regions: Array<string>
-  /**
-   * 도 안에서 기록이 있는 지역 수 — [+N] 뱃지 (Figma 1959-6730 1단계).
-   * 여행 횟수가 아니라 지역 수다: 강릉 2번 + 동해 1번 → +2
-   */
-  recordedRegionCount: number
+  /** 도 안의 여행 횟수 — 최신 지도 핀 하단 뱃지의 +N */
+  visitCount: number
   lat: number
   lng: number
 }
 
 type CollaborationRecordDraft = CollaborationRecordSeed &
   Pick<CollaborationTrip, "key" | "region">
+type CollaborationProgressMarker = Centroid & { trip: CollaborationTrip }
+type TripPinMarker = {
+  trip: CollaborationTrip
+  keyword: TravelKeyword
+  baseLat: number
+  baseLng: number
+  pinLat: number
+  pinLng: number
+  rotate: number
+  visitCount: number
+}
+type FeatureBBox = [[number, number], [number, number]]
+type CameraPadding = {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+const PROVINCE_BADGE_LABELS: Record<string, string> = {
+  서울특별시: "서울",
+  부산광역시: "부산",
+  대구광역시: "대구",
+  인천광역시: "인천",
+  광주광역시: "광주",
+  대전광역시: "대전",
+  울산광역시: "울산",
+  세종특별자치시: "세종",
+  경기도: "경기",
+  강원도: "강원",
+  강원특별자치도: "강원",
+  충청북도: "충북",
+  충청남도: "충남",
+  전라북도: "전북",
+  전북특별자치도: "전북",
+  전라남도: "전남",
+  경상북도: "경북",
+  경상남도: "경남",
+  제주특별자치도: "제주",
+}
+
+function formatProvinceBadgeName(province: string): string {
+  return PROVINCE_BADGE_LABELS[province] ?? formatRegionName(province)
+}
 
 function formatShortTripRange(startDate: string, endDate: string): string {
   const [startYear, startMonth, startDay] = startDate.split("-")
@@ -151,6 +205,85 @@ function formatShortTripRange(startDate: string, endDate: string): string {
     return `${yy}.${startMonth}.${startDay}~${endDay}`
   }
   return `${yy}.${startMonth}.${startDay}~${endMonth}.${endDay}`
+}
+
+function MapStickerGraphic({
+  keyword,
+  alt,
+  className,
+}: {
+  keyword: TravelKeyword
+  alt: string
+  className: string
+}) {
+  if (keyword.mapStickerFit === "food") {
+    return (
+      <span className={cn("relative block overflow-hidden", className)}>
+        <img
+          src={keyword.mapStickerSrc}
+          alt={alt}
+          className="pointer-events-none absolute top-[3.06%] left-[-19.13%] h-[100.94%] w-[134.59%] max-w-none"
+        />
+      </span>
+    )
+  }
+
+  return (
+    <img
+      src={keyword.mapStickerSrc}
+      alt={alt}
+      className={cn(
+        "pointer-events-none max-w-none",
+        keyword.mapStickerFit === "bottom" ? "object-bottom" : "object-cover",
+        className
+      )}
+    />
+  )
+}
+
+function CategoryMapPin({
+  keyword,
+  imageAlt,
+  bottomBadge,
+  topBadge,
+}: {
+  keyword: TravelKeyword
+  imageAlt: string
+  bottomBadge?: string
+  topBadge?: string
+}) {
+  const badgeStyle = { backgroundColor: keyword.mapColor }
+
+  return (
+    <div className="relative flex w-[46px] flex-col items-center gap-[6px]">
+      {topBadge ? (
+        <span
+          aria-label={`여행 ${topBadge}회`}
+          className={CATEGORY_PIN_COUNT_BADGE}
+          style={badgeStyle}
+        >
+          {topBadge}
+        </span>
+      ) : null}
+      <span className="relative h-[46px] w-[46px]">
+        <img
+          src={keyword.mapPinSrc}
+          alt=""
+          className="pointer-events-none absolute top-[-2.5px] left-[0.5px] h-[51px] w-[45px] max-w-none"
+        />
+        <MapStickerGraphic
+          keyword={keyword}
+          alt={imageAlt}
+          className="absolute top-1/2 left-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
+        />
+      </span>
+      {bottomBadge ? (
+        <span className={CATEGORY_PIN_BADGE} style={badgeStyle}>
+          {bottomBadge}
+        </span>
+      ) : null}
+    </div>
+  )
 }
 
 function MapPillTooltip({
@@ -244,10 +377,178 @@ function RecordTripConfirmContent({
   )
 }
 
-// Figma 줌인 기준(1959-6730): 0 국가(대표 스티커 1개) / 1 전국(도 단위 집계) /
-// 2 시군구(다녀온 지역 색칠 + 스티커) / 3 상세(+지역명·추가 버튼·팟 진행 상태)
+const RegionAddMarkers = React.memo(function RegionAddMarkerLayer({
+  markers,
+  onStartDecorate,
+}: {
+  markers: Array<Centroid>
+  onStartDecorate: (name: string) => void
+}) {
+  return (
+    <>
+      {markers.map(({ name, lng, lat }) => (
+        <AdvancedMarker
+          key={`centroid-${name}`}
+          position={{ lat, lng }}
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          collisionBehavior={DETAIL_MARKER_COLLISION}
+          zIndex={DETAIL_ACTION_Z_INDEX}
+          // 클릭·접근성은 마커 자체가 처리한다 (MARKER_CONTENT 참고).
+          // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 클릭도 안 먹는다
+          clickable
+          title={`${name} 꾸미기`}
+          onClick={() => onStartDecorate(name)}
+        >
+          <div className={MARKER_CONTENT}>
+            <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+              <img src={iconAddSrc} alt="" className="size-5" />
+            </span>
+            <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+              {formatRegionName(name)}
+            </span>
+          </div>
+        </AdvancedMarker>
+      ))}
+    </>
+  )
+})
+
+const CollaborationProgressMarkers = React.memo(
+  function CollaborationProgressMarkerLayer({
+    markers,
+    onRegionClick,
+  }: {
+    markers: Array<CollaborationProgressMarker>
+    onRegionClick: (name: string) => void
+  }) {
+    return (
+      <>
+        {markers.map(({ name, lng, lat, trip }) => (
+          <AdvancedMarker
+            key={`collaboration-${trip.key}`}
+            position={{ lat, lng }}
+            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            collisionBehavior={DETAIL_MARKER_COLLISION}
+            zIndex={DETAIL_ACTION_Z_INDEX}
+            clickable
+            title={`${formatRegionName(name)} 여행 기록`}
+            onClick={() => onRegionClick(name)}
+          >
+            <div className={MARKER_CONTENT}>
+              <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+                {trip.hasMine ? (
+                  <PenLine className="size-4 text-fg-neutral-bold" />
+                ) : (
+                  <img src={iconAddSrc} alt="" className="size-5" />
+                )}
+              </span>
+              <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+                {formatRegionName(name)}
+              </span>
+              {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
+              {trip.hasMine ? (
+                <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
+                  <UserRound className="size-3.5 text-fg-neutral-solid" />
+                  <span className="text-fg-neutral-bold">
+                    {trip.missingMemberIds.length}
+                  </span>
+                  <span className="text-fg-neutral-solid">
+                    /{trip.totalMembers}
+                  </span>
+                </span>
+              ) : null}
+            </div>
+          </AdvancedMarker>
+        ))}
+      </>
+    )
+  }
+)
+
+const ProvinceAggregateMarkers = React.memo(
+  function ProvinceAggregateMarkerLayer({
+    aggregates,
+  }: {
+    aggregates: Array<ProvinceAggregate>
+  }) {
+    return (
+      <>
+        {aggregates.map((agg) => (
+          <AdvancedMarker
+            key={`province-${agg.province}`}
+            position={{ lat: agg.lat, lng: agg.lng }}
+            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          >
+            <CategoryMapPin
+              keyword={agg.keyword}
+              imageAlt={`${formatProvinceBadgeName(agg.province)} 대표 키워드 ${
+                agg.keyword.label
+              }`}
+              bottomBadge={`${formatProvinceBadgeName(agg.province)}+${
+                agg.visitCount
+              }`}
+            />
+          </AdvancedMarker>
+        ))}
+      </>
+    )
+  }
+)
+
+const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
+  pins,
+  stickerOnly,
+  onTripClick,
+}: {
+  pins: Array<TripPinMarker>
+  stickerOnly: boolean
+  onTripClick: (trip: CollaborationTrip) => void
+}) {
+  return (
+    <>
+      {pins.map((p) => (
+        <AdvancedMarker
+          key={`trip-${p.trip.key}`}
+          position={{ lat: p.pinLat, lng: p.pinLng }}
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          collisionBehavior={DETAIL_MARKER_COLLISION}
+          zIndex={DETAIL_STICKER_Z_INDEX}
+          clickable
+          title={`${formatRegionName(p.trip.region)} 여행 기록하기`}
+          onClick={() => onTripClick(p.trip)}
+        >
+          {stickerOnly ? (
+            <div
+              className="transition-transform hover:scale-110 active:scale-95"
+              style={{ transform: `rotate(${p.rotate}deg)` }}
+            >
+              <MapStickerGraphic
+                keyword={p.keyword}
+                alt=""
+                className="size-16 drop-shadow-[0_4px_10px_rgba(35,41,54,0.18)]"
+              />
+            </div>
+          ) : (
+            <div className="transition-transform hover:scale-110 active:scale-95">
+              <CategoryMapPin
+                keyword={p.keyword}
+                imageAlt={`${formatRegionName(p.trip.region)} ${
+                  p.keyword.label
+                }`}
+                topBadge={p.visitCount > 1 ? String(p.visitCount) : undefined}
+              />
+            </div>
+          )}
+        </AdvancedMarker>
+      ))}
+    </>
+  )
+})
+
+// Figma 줌인 기준(2466-8921): 0 국가 / 1 도 / 2 시(핀 유지) /
+// 3 상세(+지역명·추가 버튼·64px 스티커)
 function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
-  if (zoom >= PARTY_ENTER) return 3
+  if (zoom >= DETAIL_ENTER_ZOOM) return 3
   if (zoom >= BOUNDARY_ZOOM) return 2
   if (zoom >= NATION_MIN_ZOOM) return 1
   return 0
@@ -264,7 +565,8 @@ function animateCamera(
   map: google.maps.Map,
   target: { lat: number; lng: number; zoom: number },
   duration: number,
-  rafRef: React.MutableRefObject<number | null>
+  rafRef: React.MutableRefObject<number | null>,
+  onComplete?: () => void
 ) {
   if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
   const startCenter = map.getCenter()
@@ -283,14 +585,94 @@ function animateCamera(
       },
       zoom: startZoom + (target.zoom - startZoom) * e,
     })
-    rafRef.current = t < 1 ? requestAnimationFrame(step) : null
+    if (t < 1) {
+      rafRef.current = requestAnimationFrame(step)
+      return
+    }
+    rafRef.current = null
+    onComplete?.()
   }
   rafRef.current = requestAnimationFrame(step)
+}
+
+const MERCATOR_MAX_LAT = 85.05112878
+
+function lngToWorldX(lng: number): number {
+  return (lng + 180) / 360
+}
+
+function latToWorldY(lat: number): number {
+  const clamped = Math.max(-MERCATOR_MAX_LAT, Math.min(MERCATOR_MAX_LAT, lat))
+  const sin = Math.sin((clamped * Math.PI) / 180)
+  return 0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)
+}
+
+function worldXToLng(x: number): number {
+  return x * 360 - 180
+}
+
+function worldYToLat(y: number): number {
+  const n = Math.PI - 2 * Math.PI * y
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
+}
+
+function cameraTargetForBounds(
+  map: google.maps.Map,
+  bbox: FeatureBBox,
+  padding: CameraPadding
+): { lat: number; lng: number; zoom: number } | null {
+  const width = map.getDiv().clientWidth
+  const height = map.getDiv().clientHeight
+  const availableWidth = width - padding.left - padding.right
+  const availableHeight = height - padding.top - padding.bottom
+  if (availableWidth <= 0 || availableHeight <= 0) return null
+
+  const [[west, south], [east, north]] = bbox
+  const westX = lngToWorldX(west)
+  const eastX = lngToWorldX(east)
+  const northY = latToWorldY(north)
+  const southY = latToWorldY(south)
+  const spanX = Math.max(eastX - westX, Number.EPSILON)
+  const spanY = Math.max(southY - northY, Number.EPSILON)
+  const zoom = Math.min(
+    PARTY_ZOOM,
+    Math.log2(availableWidth / (spanX * 256)),
+    Math.log2(availableHeight / (spanY * 256))
+  )
+  const scale = 256 * 2 ** zoom
+  const paddedCenterX = padding.left + availableWidth / 2
+  const paddedCenterY = padding.top + availableHeight / 2
+  const viewportCenterX = width / 2
+  const viewportCenterY = height / 2
+  const centerX =
+    (westX + eastX) / 2 - (paddedCenterX - viewportCenterX) / scale
+  const centerY =
+    (northY + southY) / 2 - (paddedCenterY - viewportCenterY) / scale
+
+  return {
+    lat: worldYToLat(centerY),
+    lng: worldXToLng(centerX),
+    zoom,
+  }
+}
+
+function visibleCentroidsInMap(
+  map: google.maps.Map,
+  centroids: Array<Centroid>
+): Array<Centroid> {
+  const bounds = map.getBounds()
+  if (!bounds) return []
+  return centroids.filter(({ lng, lat }) => bounds.contains({ lat, lng }))
+}
+
+function isSameCentroidList(a: Array<Centroid>, b: Array<Centroid>): boolean {
+  return a.length === b.length && a.every((centroid, i) => centroid === b[i])
 }
 
 export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
+  onZoomStageChange?: (stage: 0 | 1 | 2 | 3) => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
   onReady?: () => void
 }
@@ -325,6 +707,7 @@ export function TravelMapGoogleImpl(props: TravelMapImplProps) {
  */
 function MapController({
   mapRef,
+  cameraRafRef,
   geojsonRef,
   dataLayerRef,
   overlayRef,
@@ -336,6 +719,7 @@ function MapController({
   decoratePreview,
   recordedProvinces,
   hasNationRecord,
+  syncVisualsForStage,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
@@ -344,6 +728,7 @@ function MapController({
   onReady,
 }: {
   mapRef: React.MutableRefObject<google.maps.Map | null>
+  cameraRafRef: React.MutableRefObject<number | null>
   geojsonRef: React.MutableRefObject<GeoJSON.FeatureCollection | null>
   dataLayerRef: React.MutableRefObject<RegionDataLayer | null>
   overlayRef: React.MutableRefObject<ImageFillOverlay | null>
@@ -358,6 +743,8 @@ function MapController({
   recordedProvinces: Set<string>
   /** 전국 기록 존재 여부 — 0단계 국가 외곽선 노출 조건 (단일 색칠과 동일 게이트) */
   hasNationRecord: boolean
+  /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
+  syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
@@ -481,39 +868,47 @@ function MapController({
         })
 
         const syncViewport = () => {
-          const bounds = map.getBounds()
-          if (!bounds) return
-          const next = centroidsRef.current.filter(({ lng, lat }) =>
-            bounds.contains({ lat, lng })
-          )
+          const next = visibleCentroidsInMap(map, centroidsRef.current)
           // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
           setViewportCentroids((prev) =>
-            prev.length === next.length && prev.every((c, i) => c === next[i])
-              ? prev
-              : next
+            isSameCentroidList(prev, next) ? prev : next
           )
+        }
+        let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
+        const syncStage = (stage: 0 | 1 | 2 | 3) => {
+          if (stage !== syncedVisualStage) {
+            syncVisualsForStage(stage)
+            syncedVisualStage = stage
+          }
+          setZoomStage(stage)
+          syncBoundaryLayers(stage)
         }
 
         listeners.push(
           map.addListener("zoom_changed", () => {
-            // 제스처 중에는 경계선 minzoom 게이팅만 실시간 반영 (경계 통과 시에만 재계산)
-            dataLayer?.syncZoom(map.getZoom() ?? KOREA_VIEW.zoom)
+            const zoom = map.getZoom() ?? KOREA_VIEW.zoom
+            // 경계선 minzoom 게이팅은 경계 통과 시에만 전체 재계산한다.
+            dataLayer?.syncZoom(zoom)
+            const stage = getZoomStage(zoom)
+            if (stage !== syncedVisualStage) {
+              // 마커/색칠 전환은 idle까지 기다리면 [+] 버튼이 늦게 뜨는 체감이 커서,
+              // 줌 단계 경계를 통과한 순간 한 번만 반영한다.
+              syncStage(stage)
+              syncViewport()
+            }
           })
         )
         listeners.push(
           map.addListener("idle", () => {
-            // 줌 스테이지 갱신(마커 수십 개 mount/unmount)은 제스처가 끝난 뒤로 미룬다 —
-            // zoom_changed마다 하면 스테이지 경계(7.5/8.5/9.5) 통과 순간 줌 애니메이션이 끊긴다
             const zoom = map.getZoom() ?? KOREA_VIEW.zoom
-            setZoomStage(getZoomStage(zoom))
-            syncBoundaryLayers(getZoomStage(zoom))
+            const stage = getZoomStage(zoom)
+            syncStage(stage)
             syncViewport()
             overlay?.draw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
-        setZoomStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
-        syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
+        syncStage(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
         syncViewport()
 
         // 여기서부터 지역 폴리곤이 그려진 상태 — 래퍼가 스켈레톤을 내려도 된다
@@ -557,6 +952,7 @@ function MapController({
     setCentroids,
     setViewportCentroids,
     setZoomStage,
+    syncVisualsForStage,
   ])
 
   // 기록 변화(기록 있는 도 추가/삭제 등) 시 경계선 노출을 즉시 재평가
@@ -588,7 +984,7 @@ function MapController({
     })
   }, [decorating, decoratePreview, dataLayerRef])
 
-  // 등록 플로우 진입/이탈 — 제스처 잠금 + fitBounds
+  // 등록 플로우 진입/이탈 — 제스처 잠금 + 부드러운 bounds 이동
   React.useEffect(() => {
     if (!map) return
     if (decorating) {
@@ -598,32 +994,69 @@ function MapController({
       )
       const bbox = feature ? computeFeatureBBox(feature) : null
       if (bbox) {
-        // Google fitBounds는 애니메이션 옵션이 없어 즉시 이동 (MapLibre 대비 gap)
-        map.fitBounds(
-          {
-            south: bbox[0][1],
-            west: bbox[0][0],
-            north: bbox[1][1],
-            east: bbox[1][0],
-          },
-          { top: 170, bottom: 330, left: 48, right: 48 }
-        )
+        const target = cameraTargetForBounds(map, bbox, RECORD_CAMERA_PADDING)
+        if (target) {
+          animateCamera(
+            map,
+            target,
+            RECORD_CAMERA_DURATION_MS,
+            cameraRafRef,
+            () => {
+              const stage = getZoomStage(target.zoom)
+              syncVisualsForStage(stage)
+              setZoomStage(stage)
+              const next = visibleCentroidsInMap(map, centroidsRef.current)
+              setViewportCentroids((prev) =>
+                isSameCentroidList(prev, next) ? prev : next
+              )
+            }
+          )
+        }
       }
     } else {
       map.setOptions({ gestureHandling: "greedy" })
       dataLayerRef.current?.sync({ decorateRegion: null })
     }
-  }, [decorating, map, dataLayerRef, geojsonRef])
+  }, [
+    decorating,
+    map,
+    dataLayerRef,
+    geojsonRef,
+    centroidsRef,
+    cameraRafRef,
+    syncVisualsForStage,
+  ])
 
   return null
 }
 
 // 아직 꾸미기 이력이 없는 팟의 안정 참조 — 셀렉터가 매번 새 객체를 만들지 않도록
 const EMPTY_FILLS: Record<string, RegionFill> = {}
+const EMPTY_CENTROIDS: Array<Centroid> = []
+const EMPTY_COLLABORATION_PROGRESS_MARKERS: Array<CollaborationProgressMarker> =
+  []
+const EMPTY_PROVINCE_AGGREGATES: Array<ProvinceAggregate> = []
+const EMPTY_TRIP_PIN_MARKERS: Array<TripPinMarker> = []
+
+function cityStagePins(pins: Array<TripPinMarker>): Array<TripPinMarker> {
+  const byRegion = new Map<string, TripPinMarker>()
+  for (const pin of pins) {
+    const prev = byRegion.get(pin.trip.region)
+    if (prev && prev.visitCount >= pin.visitCount) continue
+    byRegion.set(pin.trip.region, {
+      ...pin,
+      pinLat: pin.baseLat,
+      pinLng: pin.baseLng,
+      rotate: 0,
+    })
+  }
+  return [...byRegion.values()]
+}
 
 function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
+  onZoomStageChange,
   onReady,
 }: TravelMapImplProps) {
   const router = useRouter()
@@ -658,12 +1091,20 @@ function TravelMapGoogleInner({
   React.useEffect(() => {
     zoomStageRef.current = zoomStage
   }, [zoomStage])
+  React.useEffect(() => {
+    onZoomStageChange?.(zoomStage)
+  }, [onZoomStageChange, zoomStage])
   const [centroids, setCentroids] = React.useState<Array<Centroid>>([])
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
   >([])
   const [collaborationRecordDraft, setCollaborationRecordDraft] =
     React.useState<CollaborationRecordDraft | null>(null)
+  const [mapReady, setMapReady] = React.useState(false)
+  const handleMapReady = React.useCallback(() => {
+    setMapReady(true)
+    onReady?.()
+  }, [onReady])
 
   const decorating = useRecordStore((s) => s.region)
   const decoratePreview = useRecordStore((s) => s.preview)
@@ -677,6 +1118,10 @@ function TravelMapGoogleInner({
         currentUserId,
       }),
     [photos, partyMembers, currentUserId]
+  )
+  const visualTrips = React.useMemo(
+    () => collaborationTrips.filter((trip) => trip.hasMine),
+    [collaborationTrips]
   )
   const latestMissingMineTrip = React.useMemo(
     () => findLatestMissingMineTrip(collaborationTrips),
@@ -698,31 +1143,23 @@ function TravelMapGoogleInner({
     () =>
       new Set(
         collaborationTrips
-          .filter((trip) => !trip.isComplete)
+          .filter((trip) => !trip.isComplete && trip.hasMine)
           .map((trip) => trip.region)
       ),
     [collaborationTrips]
   )
-  const mapFills = React.useMemo<Record<string, RegionFill>>(() => {
-    const next: Record<string, RegionFill> = { ...fills }
-    for (const trip of latestTripsByRegion.values()) {
-      if (
-        Object.hasOwn(next, trip.region) &&
-        next[trip.region].type === "image"
-      )
-        continue
-      const keyword = findKeyword(trip.keyword)
-      if (keyword && (trip.hasMine || trip.isComplete)) {
-        next[trip.region] ??= { type: "color", value: keyword.fill }
-      } else if (!trip.isComplete) {
-        next[trip.region] ??= { type: "color", value: INCOMPLETE_REGION_FILL }
-      }
-    }
-    return next
-  }, [fills, latestTripsByRegion])
+  const mapFills = React.useMemo(
+    () =>
+      buildMapFills({
+        baseFills: fills,
+        trips: latestTripsByRegion.values(),
+        incompleteRegionFill: INCOMPLETE_REGION_FILL,
+      }),
+    [fills, latestTripsByRegion]
+  )
 
   // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
-  // 동수면 최근 여행)와 등록 지역 수를 모아 도 전체 색칠 + 스티커/[+N] 뱃지에 쓴다
+  // 동수면 최근 여행)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
   const provinceAggregates = React.useMemo<Array<ProvinceAggregate>>(() => {
     const regionsByProvince = new Map<string, Array<Centroid>>()
     const provinceOf = new Map<string, string>()
@@ -735,7 +1172,7 @@ function TravelMapGoogleInner({
     }
 
     const tripsByProvince = new Map<string, Array<CollaborationTrip>>()
-    for (const trip of collaborationTrips) {
+    for (const trip of visualTrips) {
       const province = provinceOf.get(trip.region)
       if (!province) continue
       const list = tripsByProvince.get(province) ?? []
@@ -752,15 +1189,14 @@ function TravelMapGoogleInner({
         province,
         keyword,
         regions: members.map((c) => c.name),
-        // members는 도 소속 "전체" 시군구라 뱃지에 쓰면 안 된다 — 기록이 있는 지역만 센다
-        recordedRegionCount: new Set(trips.map((trip) => trip.region)).size,
+        visitCount: trips.length,
         // 도 대표 위치 — 소속 지역 centroid 평균 (별도 도 지오메트리 없이 근사)
         lat: members.reduce((sum, c) => sum + c.lat, 0) / members.length,
         lng: members.reduce((sum, c) => sum + c.lng, 0) / members.length,
       })
     }
     return aggregates
-  }, [centroids, collaborationTrips])
+  }, [centroids, visualTrips])
 
   // 기록이 있는 도 — 1단계 시도 경계선을 이 도들에만 씌운다
   const recordedProvinces = React.useMemo(
@@ -768,42 +1204,42 @@ function TravelMapGoogleInner({
     [provinceAggregates]
   )
 
-  // 0단계(국가 뷰) 대표 스티커 — 전국에서 제일 많이 뽑힌 키워드 1개
+  // 0단계(국가 뷰) 대표 핀 — 내가 기록한 여행 중 제일 많이 뽑힌 키워드 1개
   const countryKeyword = React.useMemo(
-    () => findKeyword(mostPickedKeyword(collaborationTrips)),
-    [collaborationTrips]
+    () => findKeyword(mostPickedKeyword(visualTrips)),
+    [visualTrips]
   )
+  const countryVisitCount = visualTrips.length
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
-  const displayFills = React.useMemo<Record<string, RegionFill>>(() => {
-    // 0단계(국가 뷰) — 기록이 있으면 대한민국 전체를 전국 대표 키워드 색 하나로 칠한다
-    if (zoomStage === 0 && countryKeyword && centroids.length > 0) {
-      const next: Record<string, RegionFill> = {}
-      for (const { name } of centroids) {
-        next[name] = { type: "color", value: countryKeyword.fill }
-      }
-      return next
-    }
-    if (zoomStage >= 2 || provinceAggregates.length === 0) return mapFills
-    const next: Record<string, RegionFill> = { ...mapFills }
-    for (const agg of provinceAggregates) {
-      for (const region of agg.regions) {
-        // 사진 채움(image)은 유지 — 색만 도 대표 색으로 통일
-        if (Object.hasOwn(next, region) && next[region].type === "image") {
-          continue
-        }
-        next[region] = { type: "color", value: agg.keyword.fill }
-      }
-    }
-    return next
-  }, [zoomStage, mapFills, provinceAggregates, countryKeyword, centroids])
+  const displayFills = React.useMemo(
+    () =>
+      buildDisplayFills({
+        zoomStage,
+        mapFills,
+        provinceAggregates,
+        countryKeyword,
+        centroids,
+      }),
+    [zoomStage, mapFills, provinceAggregates, countryKeyword, centroids]
+  )
 
   // 오버레이 draw()가 항상 최신 fills를 보도록 동기화 (MapLibre 구현의 fillsRef와 동일)
   const fillsRef = React.useRef(displayFills)
-  React.useEffect(() => {
-    fillsRef.current = displayFills
-  }, [displayFills])
+  fillsRef.current = displayFills
+  const displayFillInputsRef = React.useRef({
+    mapFills,
+    provinceAggregates,
+    countryKeyword,
+    centroids,
+  })
+  displayFillInputsRef.current = {
+    mapFills,
+    provinceAggregates,
+    countryKeyword,
+    centroids,
+  }
 
   // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
   const [seenTips, setSeenTips] = React.useState(false)
@@ -813,11 +1249,32 @@ function TravelMapGoogleInner({
     () => new Map(centroids.map((c) => [c.name, c])),
     [centroids]
   )
+  const decoratingCentroid = decorating
+    ? centroidMap.get(decorating)
+    : undefined
 
-  const photoRegionSet = React.useMemo(
-    () => new Set(photos.map((p) => p.region)),
-    [photos]
+  const visualPhotoRegionSet = React.useMemo(
+    () => new Set(visualTrips.map((trip) => trip.region)),
+    [visualTrips]
   )
+  const photoRegionSetRefForVisuals = React.useRef(visualPhotoRegionSet)
+  photoRegionSetRefForVisuals.current = visualPhotoRegionSet
+  const incompleteRegionSetRefForVisuals = React.useRef(incompleteRegionSet)
+  incompleteRegionSetRefForVisuals.current = incompleteRegionSet
+  const syncVisualsForStage = React.useCallback((stage: 0 | 1 | 2 | 3) => {
+    const nextFills = buildDisplayFills({
+      zoomStage: stage,
+      ...displayFillInputsRef.current,
+    })
+    fillsRef.current = nextFills
+    dataLayerRef.current?.sync({
+      fills: nextFills,
+      hasPhotoRegions: photoRegionSetRefForVisuals.current,
+      incompleteRegions: incompleteRegionSetRefForVisuals.current,
+    })
+    overlayRef.current?.loadPendingImages(() => overlayRef.current?.draw())
+    overlayRef.current?.draw()
+  }, [])
 
   React.useEffect(() => {
     onAlbumAvailabilityChange?.(photos.length > 0)
@@ -920,10 +1377,36 @@ function TravelMapGoogleInner({
     (target: { lat: number; lng: number; zoom: number }, duration: number) => {
       const map = mapRef.current
       if (!map) return
-      animateCamera(map, target, duration, cameraRafRef)
+      animateCamera(map, target, duration, cameraRafRef, () => {
+        const stage = getZoomStage(target.zoom)
+        syncVisualsForStage(stage)
+        setZoomStage(stage)
+        const next = visibleCentroidsInMap(map, centroidsRef.current)
+        setViewportCentroids((prev) =>
+          isSameCentroidList(prev, next) ? prev : next
+        )
+        const center = map.getCenter()
+        if (center) {
+          lastCameraSnapshot = {
+            lat: center.lat(),
+            lng: center.lng(),
+            zoom: map.getZoom() ?? target.zoom,
+          }
+        }
+      })
     },
-    []
+    [syncVisualsForStage]
   )
+
+  const mapTipsOpenedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!mapReady || mapTipsOpenedRef.current || hasSeenMapTips()) return
+    mapTipsOpenedRef.current = true
+    const opened = openMapTipsOverlay({
+      onStart: () => runCameraMove(GANGWON_VIEW, 600),
+    })
+    if (opened) setSeenTips(true)
+  }, [mapReady, runCameraMove])
 
   const startCollaborationRecord = React.useCallback(
     (trip: CollaborationTrip) => {
@@ -1021,8 +1504,40 @@ function TravelMapGoogleInner({
     [handleRegionAction]
   )
 
-  const visiblePins = React.useMemo(() => {
+  const availableRegionMarkers = React.useMemo<Array<Centroid>>(() => {
+    if (decorating) return EMPTY_CENTROIDS
+    return viewportCentroids.filter(({ name }) => {
+      const latestTrip = latestTripsByRegion.get(name)
+      return canShowAvailableRegionMarker({
+        zoomStage,
+        hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
+      })
+    })
+  }, [decorating, latestTripsByRegion, viewportCentroids, zoomStage])
+
+  const handleStartRegionMarkerClick = React.useCallback(
+    (name: string) => startDecorateRef.current(name),
+    []
+  )
+
+  const visibleProvinceAggregates = React.useMemo<Array<ProvinceAggregate>>(
+    () =>
+      zoomStage === 1 && !decorating
+        ? provinceAggregates
+        : EMPTY_PROVINCE_AGGREGATES,
+    [decorating, provinceAggregates, zoomStage]
+  )
+
+  const visiblePins = React.useMemo<Array<TripPinMarker>>(() => {
     const trips = visibleStickerTrips(collaborationTrips)
+    const visitCountsByTripKey = new Map<string, number>()
+    const regionVisitCounts = new Map<string, number>()
+    for (const trip of [...collaborationTrips].reverse()) {
+      const nextCount = (regionVisitCounts.get(trip.region) ?? 0) + 1
+      regionVisitCounts.set(trip.region, nextCount)
+      visitCountsByTripKey.set(trip.key, nextCount)
+    }
+
     const regionCounts = new Map<string, number>()
     return trips.flatMap((trip) => {
       const keyword = findKeyword(trip.keyword)
@@ -1038,12 +1553,15 @@ function TravelMapGoogleInner({
         {
           trip,
           keyword,
+          baseLat,
+          baseLng,
           // 화면 y축은 아래로 갈수록 위도 감소, 위도 px 밀도는 메르카토르 보정(cos)
           pinLat:
             baseLat -
             offset.y * STICKER_DEG_PER_PX * Math.cos((baseLat * Math.PI) / 180),
           pinLng: baseLng + offset.x * STICKER_DEG_PER_PX,
           rotate: offset.rotate,
+          visitCount: visitCountsByTripKey.get(trip.key) ?? 1,
         },
       ]
     })
@@ -1056,18 +1574,25 @@ function TravelMapGoogleInner({
     [handleRegionAction]
   )
 
-  const collaborationMarkers = React.useMemo(
-    () =>
-      viewportCentroids
-        .map((centroid) => {
-          const trip = latestTripsByRegion.get(centroid.name)
-          return trip && !trip.isComplete ? { ...centroid, trip } : null
-        })
-        .filter((item): item is Centroid & { trip: CollaborationTrip } =>
-          Boolean(item)
-        ),
-    [latestTripsByRegion, viewportCentroids]
-  )
+  const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
+    if (zoomStage < 2 || decorating) return EMPTY_TRIP_PIN_MARKERS
+    return zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
+  }, [decorating, visiblePins, zoomStage])
+  const showStickerOnlyPins = zoomStage >= 3
+
+  const collaborationMarkers = React.useMemo<
+    Array<CollaborationProgressMarker>
+  >(() => {
+    if (zoomStage < 3 || decorating) return EMPTY_COLLABORATION_PROGRESS_MARKERS
+    return viewportCentroids
+      .map((centroid) => {
+        const trip = latestTripsByRegion.get(centroid.name)
+        return trip && !trip.isComplete ? { ...centroid, trip } : null
+      })
+      .filter((item): item is Centroid & { trip: CollaborationTrip } =>
+        Boolean(item)
+      )
+  }, [decorating, latestTripsByRegion, viewportCentroids, zoomStage])
 
   return (
     <div className="relative size-full">
@@ -1086,131 +1611,54 @@ function TravelMapGoogleInner({
       >
         <MapController
           mapRef={mapRef}
+          cameraRafRef={cameraRafRef}
           geojsonRef={geojsonRef}
           dataLayerRef={dataLayerRef}
           overlayRef={overlayRef}
           fills={displayFills}
           fillsRef={fillsRef}
-          photoRegionSet={photoRegionSet}
+          photoRegionSet={visualPhotoRegionSet}
           incompleteRegionSet={incompleteRegionSet}
           decorating={decorating}
           decoratePreview={decoratePreview}
           recordedProvinces={recordedProvinces}
           hasNationRecord={Boolean(countryKeyword)}
+          syncVisualsForStage={syncVisualsForStage}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
-          onReady={onReady}
+          onReady={handleMapReady}
         />
 
-        {/* 지역명 + [+] 버튼은 3단계에서만 — 2단계는 "시/군별 스티커만" (Figma 줌인 기준 2·3단계) */}
-        {zoomStage >= 3 &&
-          !decorating &&
-          viewportCentroids
-            .filter(
-              ({ name }) =>
-                !Object.hasOwn(mapFills, name) && !photoRegionSet.has(name)
-            )
-            .map(({ name, lng, lat }) => (
-              <AdvancedMarker
-                key={`centroid-${name}`}
-                position={{ lat, lng }}
-                anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-                // 클릭·접근성은 마커 자체가 처리한다 (MARKER_CONTENT 참고).
-                // clickable이 없으면 콘텐츠에 pointer-events:none이 걸려 클릭도 안 먹는다
-                clickable
-                title={`${name} 꾸미기`}
-                onClick={() => startDecorate(name)}
-              >
-                <div className={MARKER_CONTENT}>
-                  <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
-                    <img src={iconAddSrc} alt="" className="size-5" />
-                  </span>
-                  <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
-                    {formatRegionName(name)}
-                  </span>
-                </div>
-              </AdvancedMarker>
-            ))}
+        {/* 3단계부터 진행 중인 여행이 없는 지역의 [+] 버튼 (Figma 2466-8293) */}
+        <RegionAddMarkers
+          markers={availableRegionMarkers}
+          onStartDecorate={handleStartRegionMarkerClick}
+        />
 
-        {zoomStage >= 3 &&
-          !decorating &&
-          collaborationMarkers.map(({ name, lng, lat, trip }) => (
-            <AdvancedMarker
-              key={`collaboration-${trip.key}`}
-              position={{ lat, lng }}
-              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-              clickable
-              title={`${formatRegionName(name)} 여행 기록`}
-              onClick={() => handleFeatureClick(name)}
-            >
-              <div className={MARKER_CONTENT}>
-                <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
-                  {trip.hasMine ? (
-                    <PenLine className="size-4 text-fg-neutral-bold" />
-                  ) : (
-                    <img src={iconAddSrc} alt="" className="size-5" />
-                  )}
-                </span>
-                <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
-                  {formatRegionName(name)}
-                </span>
-                {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
-                {trip.hasMine ? (
-                  <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
-                    <UserRound className="size-3.5 text-fg-neutral-solid" />
-                    <span className="text-fg-neutral-bold">
-                      {trip.missingMemberIds.length}
-                    </span>
-                    <span className="text-fg-neutral-solid">
-                      /{trip.totalMembers}
-                    </span>
-                  </span>
-                ) : null}
-              </div>
-            </AdvancedMarker>
-          ))}
+        <CollaborationProgressMarkers
+          markers={collaborationMarkers}
+          onRegionClick={handleFeatureClick}
+        />
 
-        {/* 0단계(국가) — 전국에서 제일 많이 뽑힌 키워드 스티커 1개만 노출 */}
+        {/* 0단계(국가) — 전국 대표 키워드 핀 + 여행 횟수 뱃지 */}
         {zoomStage === 0 && !decorating && countryKeyword ? (
           <AdvancedMarker
             position={KOREA_STICKER_ANCHOR}
             anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
           >
-            <img
-              src={countryKeyword.emojiSrc}
-              alt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              className="size-10"
+            <CategoryMapPin
+              keyword={countryKeyword}
+              imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
+              bottomBadge={`전국+${countryVisitCount}`}
             />
           </AdvancedMarker>
         ) : null}
 
-        {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 스티커 1개 + 등록 지역 수 [+N] */}
-        {zoomStage === 1 &&
-          !decorating &&
-          provinceAggregates.map((agg) => (
-            <AdvancedMarker
-              key={`province-${agg.province}`}
-              position={{ lat: agg.lat, lng: agg.lng }}
-              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-            >
-              <div className="relative">
-                <img
-                  src={agg.keyword.emojiSrc}
-                  alt={`${agg.province} 대표 키워드 ${agg.keyword.label}`}
-                  className="size-14"
-                />
-                <span
-                  aria-label={`${agg.province} 등록 지역 ${agg.recordedRegionCount}곳`}
-                  className="absolute -top-0.5 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-bg-neutral-inverse px-1.5 text-h9 text-fg-neutral-inverse"
-                >
-                  +{agg.recordedRegionCount}
-                </span>
-              </div>
-            </AdvancedMarker>
-          ))}
+        {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 핀 + 여행 횟수 뱃지 */}
+        <ProvinceAggregateMarkers aggregates={visibleProvinceAggregates} />
 
         {/* 시군구가 보이는 2단계 이상에서만 — 도/국가 단위 뷰에선 기록하기 툴팁을 숨긴다 */}
         {zoomStage >= 2 && visibleRecordTip?.center ? (
@@ -1220,6 +1668,8 @@ function TravelMapGoogleInner({
               lng: visibleRecordTip.center.lng,
             }}
             anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+            collisionBehavior={DETAIL_MARKER_COLLISION}
+            zIndex={DETAIL_TOOLTIP_Z_INDEX}
             clickable
             title={
               zoomStage >= 3
@@ -1237,7 +1687,7 @@ function TravelMapGoogleInner({
                   "탭해서 기록하기"
                 ) : (
                   <span className="flex items-center gap-1">
-                    ‘{formatRegionName(visibleRecordTip.trip.region)}’ 기록하기
+                    {`‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`}
                     <span className="flex size-4 items-center justify-center rounded-full bg-bg-neutral-weak text-fg-neutral-bold">
                       <ArrowRight className="size-3" />
                     </span>
@@ -1248,11 +1698,11 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {decorating && centroidMap.get(decorating) ? (
+        {decorating && decoratingCentroid ? (
           <AdvancedMarker
             position={{
-              lat: centroidMap.get(decorating)!.lat,
-              lng: centroidMap.get(decorating)!.lng,
+              lat: decoratingCentroid.lat,
+              lng: decoratingCentroid.lng,
             }}
             anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
           >
@@ -1263,26 +1713,12 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {/* 시/군별 스티커는 2단계부터 — 1단계 이하는 도/국가 단위 대표 스티커로 대체 */}
-        {zoomStage >= 2 &&
-          !decorating &&
-          visiblePins.map((p) => (
-            <AdvancedMarker
-              key={`trip-${p.trip.key}`}
-              position={{ lat: p.pinLat, lng: p.pinLng }}
-              anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
-              clickable
-              title={`${formatRegionName(p.trip.region)} 여행 기록하기`}
-              onClick={() => handleTripMarkerClick(p.trip)}
-            >
-              <div
-                className="transition-transform hover:scale-110 active:scale-95"
-                style={{ transform: `rotate(${p.rotate}deg)` }}
-              >
-                <img src={p.keyword.emojiSrc} alt="" className="size-10" />
-              </div>
-            </AdvancedMarker>
-          ))}
+        {/* 시/군별 기록 마커는 2단계부터 핀 유지, 3단계부터 64px 스티커로 전환 */}
+        <TripStickerMarkers
+          pins={visibleTripPins}
+          stickerOnly={showStickerOnlyPins}
+          onTripClick={handleTripMarkerClick}
+        />
       </GoogleMap>
 
       {/* 독려·완료 툴팁은 노출 조건이 독립이라 동시에 뜰 수 있다 (Figma 1836-15926 #3).
@@ -1334,13 +1770,13 @@ function TravelMapGoogleInner({
         </button>
       ) : null}
 
-      {decorating && centroidMap.get(decorating) ? (
+      {decorating && decoratingCentroid ? (
         <TravelRecordFlow
           key={`${decorating}-${collaborationRecordDraft?.key ?? "new"}`}
           region={decorating}
           center={{
-            lat: centroidMap.get(decorating)!.lat,
-            lng: centroidMap.get(decorating)!.lng,
+            lat: decoratingCentroid.lat,
+            lng: decoratingCentroid.lng,
           }}
           collaborationTrip={
             collaborationRecordDraft?.region === decorating

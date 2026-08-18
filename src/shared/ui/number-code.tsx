@@ -2,6 +2,9 @@ import * as React from "react"
 
 import { cn } from "@/shared/lib/utils"
 
+const CODE_CELL_WIDTH_PX = 48
+const CODE_CELL_GAP_PX = 8
+
 export interface NumberCodeProps {
   length?: number
   value: string
@@ -19,8 +22,8 @@ export interface NumberCodeProps {
  * NumberCode (Figma NumberCode v1.0.0).
  *
  * 초대코드 등을 한 자리씩 입력하는 코드 인풋. 붙여넣기 지원.
- * 셀 44×60 · radius 12 · `bg-neutral-subtle`, 포커스 시 `stroke-neutral-bold` 테두리,
- * 에러 시 `stroke-danger-solid` 테두리.
+ * 셀 최대 48×60 · radius 12 · `bg-neutral-subtle`, 포커스 시 `stroke-neutral-bold` 테두리,
+ * 에러 시 `stroke-danger-solid` 테두리. 좁은 화면에서는 셀 폭만 균등하게 줄어든다.
  */
 export function NumberCode({
   length = 6,
@@ -32,6 +35,8 @@ export function NumberCode({
   className,
 }: NumberCodeProps) {
   const refs = React.useRef<Array<HTMLInputElement | null>>([])
+  const maxWidth =
+    length * CODE_CELL_WIDTH_PX + Math.max(0, length - 1) * CODE_CELL_GAP_PX
 
   const sanitize = (raw: string) =>
     mode === "alphanumeric"
@@ -73,7 +78,13 @@ export function NumberCode({
   }
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div
+      className={cn("grid w-full items-center gap-2", className)}
+      style={{
+        maxWidth,
+        gridTemplateColumns: `repeat(${length}, minmax(0, ${CODE_CELL_WIDTH_PX}px))`,
+      }}
+    >
       {Array.from({ length }, (_, i) => (
         <input
           key={i}
@@ -93,7 +104,7 @@ export function NumberCode({
           onKeyDown={readOnly ? undefined : (e) => handleKeyDown(i, e)}
           onPaste={readOnly ? undefined : handlePaste}
           className={cn(
-            "h-[60px] w-11 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
+            "h-[60px] w-full min-w-0 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
             "text-center text-b2 text-fg-neutral-bold caret-transparent",
             "outline-none focus:border-stroke-neutral-bold",
             error &&
