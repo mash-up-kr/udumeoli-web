@@ -26,7 +26,10 @@ function maxDate(a: string, b: string): string {
 }
 
 function sortPhotosByDate(photos: Array<Photo>): Array<Photo> {
-  return [...photos].sort((a, b) => dateValue(a.date) - dateValue(b.date))
+  return photos
+    .map((photo) => ({ photo, time: dateValue(photo.date) }))
+    .sort((a, b) => a.time - b.time)
+    .map(({ photo }) => photo)
 }
 
 /**
@@ -38,7 +41,12 @@ export function groupTrips(photos: Array<Photo>): Array<Trip> {
   const withoutTripId: Array<Photo> = []
   for (const photo of photos) {
     if (photo.tripId) {
-      byTripId.set(photo.tripId, [...(byTripId.get(photo.tripId) ?? []), photo])
+      const tripPhotos = byTripId.get(photo.tripId)
+      if (tripPhotos) {
+        tripPhotos.push(photo)
+      } else {
+        byTripId.set(photo.tripId, [photo])
+      }
     } else {
       withoutTripId.push(photo)
     }
