@@ -1,4 +1,5 @@
 import * as React from "react"
+import { LoaderCircle } from "lucide-react"
 import type { TravelMapImplProps } from "./TravelMapGoogleImpl"
 
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
@@ -12,14 +13,16 @@ export function TravelMapGoogle({
 }: TravelMapImplProps & { className?: string }) {
   const [Impl, setImpl] =
     React.useState<React.ComponentType<TravelMapImplProps> | null>(null)
-  // 청크·SDK가 다 와도 지역 폴리곤이 그려지기 전까진 빈 지도다 — Impl이 알려준다
-  const [mapReady, setMapReady] = React.useState(false)
+  // 지역 폴리곤과 Google 기본 타일이 모두 준비된 뒤에만 로딩 오버레이를 닫는다.
+  const [layerReady, setLayerReady] = React.useState(false)
+  const [tilesReady, setTilesReady] = React.useState(false)
   // GeoJSON은 별도로 추적한다. 실패를 여기서 잡아야 재시도 UI를 띄울 수 있다
   // (Impl 내부 실패는 콘솔에만 남고 영원히 빈 지도가 된다)
   const [geoFailed, setGeoFailed] = React.useState(false)
   const [retryCount, setRetryCount] = React.useState(0)
-  // Impl의 effect deps에 들어가므로 안정 참조 유지
-  const handleReady = React.useCallback(() => setMapReady(true), [])
+  const handleReady = React.useCallback(() => setLayerReady(true), [])
+  const handleTilesLoaded = React.useCallback(() => setTilesReady(true), [])
+  const mapReady = layerReady && tilesReady
 
   React.useEffect(() => {
     let active = true
@@ -36,7 +39,8 @@ export function TravelMapGoogle({
   React.useEffect(() => {
     let active = true
     setGeoFailed(false)
-    setMapReady(false)
+    setLayerReady(false)
+    setTilesReady(false)
     loadKoreaGeoJson().catch(() => active && setGeoFailed(true))
     return () => {
       active = false
@@ -48,16 +52,21 @@ export function TravelMapGoogle({
       {/* 재시도 시에는 지도를 통째로 새로 마운트한다 — 초기화 effect가 map 인스턴스
           기준이라, 리마운트 없이는 실패한 GeoJSON 로드를 다시 태울 방법이 없다 */}
       {Impl ? (
-        <Impl key={retryCount} {...implProps} onReady={handleReady} />
+        <Impl
+          key={retryCount}
+          {...implProps}
+          onReady={handleReady}
+          onTilesLoaded={handleTilesLoaded}
+        />
       ) : null}
 
       {/* 폴리곤이 그려지기 전까지 지도 위를 덮는다 — 회색 빈 지도가 보였다가 폴리곤이
           튀어나오는 걸 막는다. 실패 시엔 재시도 버튼 (기존엔 콘솔 에러만 찍히고
           영원히 빈 지도로 남았다).
-          펄스 없이 정지 상태로 두고 준비되면 페이드아웃 — 지도 안내 오버레이를 빨리 닫으면
-          펄스가 "배경이 서서히 흐려지는" 모션처럼 보였고, 폴리곤 완성 순간 '확' 밝아졌다 */}
+          Google 기본 타일과 폴리곤이 모두 준비되면 페이드아웃한다. */}
       <div
         aria-hidden={mapReady}
+        aria-busy={!mapReady}
         className={cn(
           // z-10 — 지도 위는 덮되 헤더·하단 내비(z-10, DOM상 뒤)는 덮지 않는다
           "absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-300",
@@ -78,7 +87,18 @@ export function TravelMapGoogle({
               다시 시도
             </Button>
           </div>
-        ) : null}
+        ) : (
+          <div
+            role="status"
+            aria-label="지도를 불러오는 중"
+            className="flex items-center justify-center"
+          >
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-6 animate-spin text-fg-neutral-subtle"
+            />
+          </div>
+        )}
       </div>
     </div>
   )

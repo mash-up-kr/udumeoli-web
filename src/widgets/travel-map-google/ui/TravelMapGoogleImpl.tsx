@@ -700,6 +700,8 @@ export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
   onZoomStageChange?: (stage: 0 | 1 | 2 | 3) => void
+  /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
+  onTilesLoaded?: () => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
   onReady?: () => void
 }
@@ -1131,6 +1133,7 @@ function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
   onZoomStageChange,
+  onTilesLoaded,
   onReady,
 }: TravelMapImplProps) {
   const router = useRouter()
@@ -1696,6 +1699,7 @@ function TravelMapGoogleInner({
         disableDefaultUI
         clickableIcons={false}
         style={{ width: "100%", height: "100%" }}
+        onTilesLoaded={onTilesLoaded}
       >
         <MapController
           mapRef={mapRef}
