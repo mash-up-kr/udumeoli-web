@@ -931,7 +931,7 @@ function MapController({
             const stage = getZoomStage(zoom)
             syncStage(stage)
             syncViewport()
-            overlay?.draw()
+            overlay?.scheduleDraw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
@@ -998,8 +998,8 @@ function MapController({
       hasPhotoRegions: photoRegionSet,
       incompleteRegions: incompleteRegionSet,
     })
-    overlay?.loadPendingImages(() => overlay.draw())
-    overlay?.draw()
+    overlay?.loadPendingImages()
+    overlay?.scheduleDraw()
   }, [fills, photoRegionSet, incompleteRegionSet, dataLayerRef, overlayRef])
 
   // 강조선·색상 미리보기 — 스와치 탭마다 fitBounds가 재실행되지 않도록 진입/이탈과 분리
@@ -1311,8 +1311,8 @@ function TravelMapGoogleInner({
       hasPhotoRegions: photoRegionSetRefForVisuals.current,
       incompleteRegions: incompleteRegionSetRefForVisuals.current,
     })
-    overlayRef.current?.loadPendingImages(() => overlayRef.current?.draw())
-    overlayRef.current?.draw()
+    overlayRef.current?.loadPendingImages()
+    overlayRef.current?.scheduleDraw()
   }, [])
 
   React.useEffect(() => {

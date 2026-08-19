@@ -39,6 +39,9 @@ export function createImageFillOverlay(
     private imageFillEntries: Array<ImageFillEntry> = []
     private imageFillSignature = ""
     private hasDrawn = false
+    private drawRaf: number | null = null
+    /** 마지막으로 그린 상태(이미지 구성 + 줌 + bounds) — 같으면 다시 그리지 않는다 */
+    private lastDrawKey = ""
 
     constructor() {
       super()
@@ -51,7 +54,23 @@ export function createImageFillOverlay(
     }
 
     override onRemove() {
+      if (this.drawRaf !== null) {
+        cancelAnimationFrame(this.drawRaf)
+        this.drawRaf = null
+      }
       this.canvas.remove()
+    }
+
+    /**
+     * 그리기 예약 — 지도 이동/줌, fills 변경, 이미지 로딩 완료가 같은 프레임에 몰려도
+     * 실제 캔버스 그리기는 한 번만 돈다. 외부 호출부는 항상 이 함수만 쓴다.
+     */
+    scheduleDraw() {
+      if (this.drawRaf !== null) return
+      this.drawRaf = requestAnimationFrame(() => {
+        this.drawRaf = null
+        this.drawNow()
+      })
     }
 
     private getImageFillEntries(): Array<ImageFillEntry> {
@@ -70,8 +89,8 @@ export function createImageFillOverlay(
       return entries
     }
 
-    /** fills에 새 이미지가 추가되면 로드해서 캐시, 완료 후 재드로우 */
-    loadPendingImages(onLoaded: () => void) {
+    /** fills에 새 이미지가 추가되면 로드해서 캐시, 완료되면 재드로우를 예약한다 */
+    loadPendingImages() {
       const pending = this.getImageFillEntries()
         .map(([, fill]) => fill)
         .filter((fill) => !this.imgCache.has(fill.imageId))
@@ -89,7 +108,11 @@ export function createImageFillOverlay(
               img.src = f.dataUrl
             })
         )
-      ).then(onLoaded)
+      ).then(() => {
+        // 로딩 완료 후 새로 캐시된 이미지를 반영해야 하므로 skip 키를 무효화한다
+        this.lastDrawKey = ""
+        this.scheduleDraw()
+      })
     }
 
     private getRegionGeom(region: string): RegionGeom | null {
@@ -127,7 +150,12 @@ export function createImageFillOverlay(
       return geom
     }
 
+    /** Google이 팬·줌 프레임마다 호출하는 훅 — 실제 그리기는 예약으로 넘긴다 */
     override draw() {
+      this.scheduleDraw()
+    }
+
+    private drawNow() {
       const imageFills = this.getImageFillEntries()
       if (imageFills.length === 0) {
         if (this.hasDrawn) {
@@ -135,6 +163,7 @@ export function createImageFillOverlay(
             .getContext("2d")
             ?.clearRect(0, 0, this.canvas.width, this.canvas.height)
           this.hasDrawn = false
+          this.lastDrawKey = ""
         }
         return
       }
@@ -151,6 +180,11 @@ export function createImageFillOverlay(
 
       const ne = bounds.getNorthEast()
       const sw = bounds.getSouthWest()
+      // 이미지 구성·줌·bounds가 그대로면 이미 그려둔 캔버스가 정답이다.
+      // (오버레이 pane은 지도와 함께 움직이므로 같은 상태면 다시 그릴 이유가 없다)
+      const drawKey = `${this.imageFillSignature}|${map.getZoom() ?? ""}|${ne.lat()},${ne.lng()},${sw.lat()},${sw.lng()}`
+      if (drawKey === this.lastDrawKey) return
+
       const topRight = projection.fromLatLngToDivPixel(
         new google.maps.LatLng(ne.lat(), ne.lng())
       )
@@ -180,6 +214,7 @@ export function createImageFillOverlay(
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, cssWidth, cssHeight)
       this.hasDrawn = true
+      this.lastDrawKey = drawKey
 
       for (const [region, fill] of imageFills) {
         const img = this.imgCache.get(fill.imageId)
