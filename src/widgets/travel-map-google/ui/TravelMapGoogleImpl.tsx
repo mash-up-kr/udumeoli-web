@@ -28,6 +28,7 @@ import {
   visibleStickerTrips,
 } from "../lib/collaboration"
 import { canShowAvailableRegionMarker } from "../lib/availableRegionMarkers"
+import { expandBox, isInsideBox, isSameBox } from "../lib/viewportBounds"
 import {
   canShowCompletionTip,
   markCompletionTipSeen,
@@ -40,6 +41,7 @@ import {
 } from "../lib/regionDataLayer"
 import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
+import type { LatLngBox } from "../lib/viewportBounds"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
@@ -656,17 +658,40 @@ function cameraTargetForBounds(
   }
 }
 
-function visibleCentroidsInMap(
-  map: google.maps.Map,
-  centroids: Array<Centroid>
-): Array<Centroid> {
+/** 뷰포트를 사방 25% 넓혀 마커를 미리 만들어둔다 — 가장자리에서 튀어나오듯 나타나는 것 방지 */
+const VIEWPORT_BUFFER_RATIO = 0.25
+
+function viewportBoxOf(map: google.maps.Map): LatLngBox | null {
   const bounds = map.getBounds()
-  if (!bounds) return []
-  return centroids.filter(({ lng, lat }) => bounds.contains({ lat, lng }))
+  if (!bounds) return null
+  const ne = bounds.getNorthEast()
+  const sw = bounds.getSouthWest()
+  return expandBox(
+    { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() },
+    VIEWPORT_BUFFER_RATIO
+  )
 }
 
 function isSameCentroidList(a: Array<Centroid>, b: Array<Centroid>): boolean {
   return a.length === b.length && a.every((centroid, i) => centroid === b[i])
+}
+
+/**
+ * 뷰포트(+버퍼) 상태 갱신 — 마커 렌더 대상을 화면 근처로 좁히는 단일 진입점.
+ * 값이 그대로면 이전 참조를 유지해 불필요한 마커 리렌더를 막는다.
+ */
+function syncViewportState(
+  map: google.maps.Map,
+  centroids: Array<Centroid>,
+  setViewportBox: React.Dispatch<React.SetStateAction<LatLngBox | null>>,
+  setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
+) {
+  const box = viewportBoxOf(map)
+  setViewportBox((prev) => (isSameBox(prev, box) ? prev : box))
+  const next = box
+    ? centroids.filter((centroid) => isInsideBox(box, centroid))
+    : EMPTY_CENTROIDS
+  setViewportCentroids((prev) => (isSameCentroidList(prev, next) ? prev : next))
 }
 
 export type TravelMapImplProps = {
@@ -723,6 +748,7 @@ function MapController({
   setZoomStage,
   setCentroids,
   setViewportCentroids,
+  setViewportBox,
   centroidsRef,
   onFeatureClick,
   onReady,
@@ -748,6 +774,7 @@ function MapController({
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
+  setViewportBox: React.Dispatch<React.SetStateAction<LatLngBox | null>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
   onFeatureClick: (name: string) => void
   onReady?: () => void
@@ -867,13 +894,13 @@ function MapController({
           incompleteRegions: incompleteRegionSetRef.current,
         })
 
-        const syncViewport = () => {
-          const next = visibleCentroidsInMap(map, centroidsRef.current)
-          // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
-          setViewportCentroids((prev) =>
-            isSameCentroidList(prev, next) ? prev : next
+        const syncViewport = () =>
+          syncViewportState(
+            map,
+            centroidsRef.current,
+            setViewportBox,
+            setViewportCentroids
           )
-        }
         let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
         const syncStage = (stage: 0 | 1 | 2 | 3) => {
           if (stage !== syncedVisualStage) {
@@ -951,6 +978,7 @@ function MapController({
     onFeatureClick,
     setCentroids,
     setViewportCentroids,
+    setViewportBox,
     setZoomStage,
     syncVisualsForStage,
   ])
@@ -1012,9 +1040,11 @@ function MapController({
               const stage = getZoomStage(target.zoom)
               syncVisualsForStage(stage)
               setZoomStage(stage)
-              const next = visibleCentroidsInMap(map, centroidsRef.current)
-              setViewportCentroids((prev) =>
-                isSameCentroidList(prev, next) ? prev : next
+              syncViewportState(
+                map,
+                centroidsRef.current,
+                setViewportBox,
+                setViewportCentroids
               )
             }
           )
@@ -1105,6 +1135,8 @@ function TravelMapGoogleInner({
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
   >([])
+  // 화면(+버퍼) 범위 — 여행 마커를 이 안쪽만 렌더한다
+  const [viewportBox, setViewportBox] = React.useState<LatLngBox | null>(null)
   const [collaborationRecordDraft, setCollaborationRecordDraft] =
     React.useState<CollaborationRecordDraft | null>(null)
   const [mapReady, setMapReady] = React.useState(false)
@@ -1388,9 +1420,11 @@ function TravelMapGoogleInner({
         const stage = getZoomStage(target.zoom)
         syncVisualsForStage(stage)
         setZoomStage(stage)
-        const next = visibleCentroidsInMap(map, centroidsRef.current)
-        setViewportCentroids((prev) =>
-          isSameCentroidList(prev, next) ? prev : next
+        syncViewportState(
+          map,
+          centroidsRef.current,
+          setViewportBox,
+          setViewportCentroids
         )
         const center = map.getCenter()
         if (center) {
@@ -1583,8 +1617,14 @@ function TravelMapGoogleInner({
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
     if (zoomStage < 2 || decorating) return EMPTY_TRIP_PIN_MARKERS
-    return zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
-  }, [decorating, visiblePins, zoomStage])
+    const staged = zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
+    // 화면(+버퍼) 밖 여행은 AdvancedMarker DOM 자체를 만들지 않는다.
+    // 좌표는 지역 centroid, 없으면 대표 사진 좌표(baseLat/baseLng) 기준
+    if (!viewportBox) return staged
+    return staged.filter((pin) =>
+      isInsideBox(viewportBox, { lat: pin.baseLat, lng: pin.baseLng })
+    )
+  }, [decorating, viewportBox, visiblePins, zoomStage])
   const showStickerOnlyPins = zoomStage >= 3
 
   const collaborationMarkers = React.useMemo<
@@ -1634,6 +1674,7 @@ function TravelMapGoogleInner({
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
+          setViewportBox={setViewportBox}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
           onReady={handleMapReady}
