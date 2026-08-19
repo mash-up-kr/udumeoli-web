@@ -28,6 +28,7 @@ import {
   visibleStickerTrips,
 } from "../lib/collaboration"
 import { canShowAvailableRegionMarker } from "../lib/availableRegionMarkers"
+import { planBoundarySync, recordedProvinceKey } from "../lib/boundarySync"
 import { expandBox, isInsideBox, isSameBox } from "../lib/viewportBounds"
 import {
   canShowCompletionTip,
@@ -41,6 +42,7 @@ import {
 } from "../lib/regionDataLayer"
 import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
+import type { BoundarySnapshot } from "../lib/boundarySync"
 import type { LatLngBox } from "../lib/viewportBounds"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
@@ -853,19 +855,35 @@ function MapController({
         // 레이어 교체를 피한다
         provinceBoundary = createBoundaryLayer(geo.provinces)
         nationBoundary = createBoundaryLayer(geo.nation)
+        let lastBoundarySnapshot: BoundarySnapshot | null = null
         const syncBoundaryLayers = (stage: 0 | 1 | 2 | 3) => {
+          const next: BoundarySnapshot = {
+            stage,
+            recordedProvinceKey: recordedProvinceKey(
+              recordedProvincesRef.current
+            ),
+            hasNationRecord: hasNationRecordRef.current,
+          }
+          // idle은 상태 변화 없이도 계속 오므로, 실제로 바뀐 게 있을 때만 레이어를 만진다
+          const plan = planBoundarySync(lastBoundarySnapshot, next)
+          if (plan.skip) return
+          lastBoundarySnapshot = next
+
           nationBoundary?.setMap(
-            stage === 0 && hasNationRecordRef.current ? map : null
+            stage === 0 && next.hasNationRecord ? map : null
           )
           const province = provinceBoundary
           if (!province) return
-          province.forEach((f) =>
-            province.overrideStyle(f, {
-              visible: recordedProvincesRef.current.has(
-                String(f.getProperty("name"))
-              ),
-            })
-          )
+          // feature 전체 순회는 기록된 도 집합이 바뀌었을 때만
+          if (plan.restyleProvinces) {
+            province.forEach((f) =>
+              province.overrideStyle(f, {
+                visible: recordedProvincesRef.current.has(
+                  String(f.getProperty("name"))
+                ),
+              })
+            )
+          }
           province.setMap(stage === 1 ? map : null)
         }
         syncBoundaryLayersRef.current = () =>

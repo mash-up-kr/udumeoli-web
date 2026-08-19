@@ -301,3 +301,58 @@ describe("mostPickedKeyword", () => {
     expect(mostPickedKeyword(trips)).toBeUndefined()
   })
 })
+
+describe("buildCollaborationTrips 성능 리팩터링 동등성", () => {
+  // 최적화 전 구현(정렬 기반)을 그대로 옮겨온 기준 — 결과가 갈리면 실패한다
+  function referenceBounds(photos: Array<Photo>) {
+    const value = (date: string) => {
+      const time = Date.parse(date)
+      return Number.isFinite(time) ? time : 0
+    }
+    const dates = photos.flatMap((p) => [p.date, p.endDate ?? p.date])
+    const sorted = [...dates].sort((a, b) => value(a) - value(b))
+    const latest = [...photos].sort((a, b) => value(b.date) - value(a.date))[0]
+    return {
+      startDate: sorted[0] ?? "",
+      endDate: sorted[sorted.length - 1] ?? "",
+      representativePhotoId: latest.id,
+    }
+  }
+
+  it("여행 100개에서 기간·대표 사진·정렬 결과가 기존 구현과 같다", () => {
+    const regions = ["강릉시", "동해시", "속초시", "양양군", "평창군"]
+    const photos: Array<Photo> = []
+    for (let i = 0; i < 100; i++) {
+      const region = regions[i % regions.length]
+      const month = String((i % 12) + 1).padStart(2, "0")
+      const day = String((i % 28) + 1).padStart(2, "0")
+      const date = `2026-${month}-${day}`
+      // 같은 여행에 여러 명이 올린 사진 — 종료일이 있는 사진도 섞는다
+      photos.push(
+        photo(`p-${i}-a`, region, date, "user-1", { endDate: date }),
+        photo(`p-${i}-b`, region, date, "m-1"),
+        photo(`p-${i}-c`, region, date, "m-2")
+      )
+    }
+
+    const trips = buildCollaborationTrips({
+      photos,
+      members,
+      currentUserId: "user-1",
+    })
+
+    expect(trips.length).toBeGreaterThan(0)
+    for (const trip of trips) {
+      const expected = referenceBounds(trip.photos)
+      expect({
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        representativePhotoId: trip.representativePhoto.id,
+      }).toEqual(expected)
+    }
+
+    // 최신 여행 우선 정렬도 그대로
+    const endValues = trips.map((trip) => Date.parse(trip.endDate))
+    expect([...endValues].sort((a, b) => b - a)).toEqual(endValues)
+  })
+})

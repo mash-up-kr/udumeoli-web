@@ -23,24 +23,55 @@ function dateValue(date: string): number {
   return Number.isFinite(time) ? time : 0
 }
 
-function tripDateBounds(photos: Array<Photo>): {
+/**
+ * 여행 그룹의 기간과 대표 사진을 한 번의 순회로 뽑는다.
+ * 정렬 없이 최소·최대만 찾으면 되고, 사진별 timestamp도 한 번씩만 계산한다.
+ */
+function summarizeTrip(photos: Array<Photo>): {
   startDate: string
   endDate: string
+  representativePhoto: Photo
 } {
-  const dates = photos.flatMap((photo) => [
-    photo.date,
-    photo.endDate ?? photo.date,
-  ])
-  const sorted = [...dates].sort((a, b) => dateValue(a) - dateValue(b))
-  if (sorted.length === 0) return { startDate: "", endDate: "" }
-  return {
-    startDate: sorted[0],
-    endDate: sorted[sorted.length - 1],
-  }
-}
+  let startDate = ""
+  let endDate = ""
+  let startValue = Infinity
+  let endValue = -Infinity
+  let representativePhoto = photos[0]
+  let representativeValue = -Infinity
 
-function latestPhoto(photos: Array<Photo>): Photo {
-  return [...photos].sort((a, b) => dateValue(b.date) - dateValue(a.date))[0]
+  for (const photo of photos) {
+    const start = photo.date
+    const end = photo.endDate ?? photo.date
+    const startAt = dateValue(start)
+    const endAt = dateValue(end)
+
+    // 기간은 사진의 시작·종료를 모두 후보로 본다 (기존 flatMap 정렬과 같은 집합).
+    // 동률일 때 시작은 먼저 만난 값, 종료는 나중에 만난 값 — 안정 정렬의 앞/뒤와 같다
+    if (startAt < startValue) {
+      startValue = startAt
+      startDate = start
+    }
+    if (endAt < startValue) {
+      startValue = endAt
+      startDate = end
+    }
+    if (startAt >= endValue) {
+      endValue = startAt
+      endDate = start
+    }
+    if (endAt >= endValue) {
+      endValue = endAt
+      endDate = end
+    }
+
+    // 대표 사진은 기존과 동일하게 photo.date 기준 최신 1장 (동률이면 먼저 만난 것)
+    if (startAt > representativeValue) {
+      representativeValue = startAt
+      representativePhoto = photo
+    }
+  }
+
+  return { startDate, endDate, representativePhoto }
 }
 
 export function makeCollaborationTripKey({
@@ -63,7 +94,10 @@ export function buildCollaborationTrips({
   const memberIds = members.map((member) => member.id)
   const byRegion = new Map<string, Array<Photo>>()
   for (const photo of photos) {
-    byRegion.set(photo.region, [...(byRegion.get(photo.region) ?? []), photo])
+    // spread로 매번 새 배열을 만들면 지역당 O(n²) — 있는 배열에 push한다
+    const regionPhotos = byRegion.get(photo.region)
+    if (regionPhotos) regionPhotos.push(photo)
+    else byRegion.set(photo.region, [photo])
   }
 
   const trips: Array<CollaborationTrip> = []
@@ -74,8 +108,9 @@ export function buildCollaborationTrips({
       const uploaders = new Set(trip.photos.map((photo) => photo.uploaderId))
       const uploadedMemberIds = memberIds.filter((id) => uploaders.has(id))
       const missingMemberIds = memberIds.filter((id) => !uploaders.has(id))
-      const { startDate, endDate } = tripDateBounds(trip.photos)
-      const representativePhoto = latestPhoto(trip.photos)
+      const { startDate, endDate, representativePhoto } = summarizeTrip(
+        trip.photos
+      )
 
       trips.push({
         key: makeCollaborationTripKey({ region, startDate, endDate }),
