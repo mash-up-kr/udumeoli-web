@@ -747,6 +747,7 @@ function MapController({
   recordedProvinces,
   hasNationRecord,
   syncVisualsForStage,
+  stageSyncedFillsRef,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
@@ -773,6 +774,7 @@ function MapController({
   hasNationRecord: boolean
   /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
   syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
+  stageSyncedFillsRef: React.MutableRefObject<Record<string, RegionFill> | null>
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
@@ -1011,6 +1013,16 @@ function MapController({
     const dataLayer = dataLayerRef.current
     const overlay = overlayRef.current
     if (!dataLayer) return
+
+    // 줌 단계 경계에서 이미 같은 fills를 즉시 반영했다면 중복 스타일링을 건너뛴다.
+    // 기록/미리보기 변경으로 fills가 달라진 경우에는 이 effect가 정상 반영한다.
+    if (stageSyncedFillsRef.current === fills) {
+      stageSyncedFillsRef.current = null
+      overlay?.loadPendingImages()
+      overlay?.scheduleDraw()
+      return
+    }
+
     dataLayer.sync({
       fills,
       hasPhotoRegions: photoRegionSet,
@@ -1018,7 +1030,14 @@ function MapController({
     })
     overlay?.loadPendingImages()
     overlay?.scheduleDraw()
-  }, [fills, photoRegionSet, incompleteRegionSet, dataLayerRef, overlayRef])
+  }, [
+    fills,
+    photoRegionSet,
+    incompleteRegionSet,
+    dataLayerRef,
+    overlayRef,
+    stageSyncedFillsRef,
+  ])
 
   // 강조선·색상 미리보기 — 스와치 탭마다 fitBounds가 재실행되지 않도록 진입/이탈과 분리
   React.useEffect(() => {
@@ -1318,12 +1337,16 @@ function TravelMapGoogleInner({
   photoRegionSetRefForVisuals.current = visualPhotoRegionSet
   const incompleteRegionSetRefForVisuals = React.useRef(incompleteRegionSet)
   incompleteRegionSetRefForVisuals.current = incompleteRegionSet
+  const stageSyncedFillsRef = React.useRef<Record<string, RegionFill> | null>(
+    null
+  )
   const syncVisualsForStage = React.useCallback((stage: 0 | 1 | 2 | 3) => {
     const nextFills = buildDisplayFills({
       zoomStage: stage,
       ...displayFillInputsRef.current,
     })
     fillsRef.current = nextFills
+    stageSyncedFillsRef.current = nextFills
     dataLayerRef.current?.sync({
       fills: nextFills,
       hasPhotoRegions: photoRegionSetRefForVisuals.current,
@@ -1638,7 +1661,7 @@ function TravelMapGoogleInner({
     const staged = zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
     // 화면(+버퍼) 밖 여행은 AdvancedMarker DOM 자체를 만들지 않는다.
     // 좌표는 지역 centroid, 없으면 대표 사진 좌표(baseLat/baseLng) 기준
-    if (!viewportBox) return staged
+    if (!viewportBox) return EMPTY_TRIP_PIN_MARKERS
     return staged.filter((pin) =>
       isInsideBox(viewportBox, { lat: pin.baseLat, lng: pin.baseLng })
     )
@@ -1689,6 +1712,7 @@ function TravelMapGoogleInner({
           recordedProvinces={recordedProvinces}
           hasNationRecord={Boolean(countryKeyword)}
           syncVisualsForStage={syncVisualsForStage}
+          stageSyncedFillsRef={stageSyncedFillsRef}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
