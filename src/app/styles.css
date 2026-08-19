@@ -486,6 +486,90 @@
 }
 
 @layer utilities {
+    /* 600px 전후의 모바일 높이에서는 폼을 축소하고, 넘치면 터치 스크롤로 보완한다. */
+    @media (min-height: 600px) {
+        .travel-record-photo-content {
+            padding-top: clamp(12px, 4dvh, 32px);
+        }
+
+        .travel-record-photo-frame {
+            height: min(382px, calc(100dvh - 410px));
+            width: auto;
+            max-width: 100%;
+        }
+
+        .travel-record-photo-input {
+            width: 100%;
+        }
+    }
+
+    @media (min-height: 600px) and (max-height: 640px) {
+        .travel-record-calendar {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .travel-record-calendar .rdp-month_caption,
+        .travel-record-calendar .rdp-nav {
+            height: 32px;
+        }
+
+        .travel-record-calendar .rdp-weeks {
+            margin-top: 4px;
+            gap: 4px;
+        }
+
+        .travel-record-calendar .rdp-week {
+            gap: 4px;
+        }
+
+        .travel-record-calendar .rdp-day,
+        .travel-record-calendar .rdp-weekday {
+            width: 32px;
+            height: 32px;
+        }
+
+        .travel-record-calendar .rdp-day_button {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    .travel-record-calendar {
+        --record-calendar-cell: clamp(
+            28px,
+            min(9.6vw, 5.3dvh),
+            36px
+        );
+        --record-calendar-row-gap: clamp(4px, 1.2dvh, 8px);
+    }
+
+    .travel-record-calendar .rdp-day,
+    .travel-record-calendar .rdp-weekday,
+    .travel-record-calendar .rdp-day_button {
+        width: var(--record-calendar-cell);
+        height: var(--record-calendar-cell);
+    }
+
+    .travel-record-calendar .rdp-weeks {
+        gap: var(--record-calendar-row-gap);
+    }
+
+    .travel-record-keyword-badge {
+        gap: clamp(6px, 2.6vw, 10px);
+        padding: clamp(6px, 2.1vw, 8px) clamp(12px, 4.3vw, 16px);
+    }
+
+    .travel-record-keyword-emoji {
+        width: clamp(32px, 10.7vw, 40px);
+        height: clamp(32px, 10.7vw, 40px);
+    }
+
+    .travel-record-keyword-label {
+        font-size: clamp(20px, 6.4vw, 24px);
+        line-height: 1.5;
+    }
+
     .animate-record-preview-photo-in,
     .animate-record-preview-sticker-pop,
     .animate-record-preview-particle {

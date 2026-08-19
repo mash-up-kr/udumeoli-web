@@ -135,7 +135,7 @@ export function PreviewStep({
   onConfirm: () => void
 }) {
   return (
-    <div className="pointer-events-auto absolute inset-0 z-30 flex flex-col overflow-x-hidden overflow-y-auto">
+    <div className="pointer-events-auto absolute inset-0 z-30 flex touch-pan-y [scrollbar-width:none] flex-col overflow-x-hidden overflow-y-auto overscroll-contain pb-6 [&::-webkit-scrollbar]:hidden">
       {/* 지도가 비치는 프로스티드 글라스 — 키워드 색 미리보기(지역 폴리곤)가 아래 깔린다 */}
       <div className="absolute inset-0 bg-white/10 backdrop-blur-[12px]" />
 
@@ -187,7 +187,7 @@ export function PreviewStep({
       </div>
 
       {/* min-h-0 없이 flex-1 — 낮은 화면에서 내용이 넘치면 잘리는 대신 루트가 스크롤된다 */}
-      <div className="relative z-20 flex flex-1 flex-col items-center px-4">
+      <div className="relative z-20 flex flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
         {/* 날짜 칩 — 키워드 stroke색 배경 (Figma Chip · H9) */}
         <span
           className="rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"

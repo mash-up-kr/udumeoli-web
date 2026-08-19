@@ -9,16 +9,31 @@ import { Calendar } from "@/shared/ui/calendar"
 export function DateStep({
   range,
   onRangeChange,
+  revisit = false,
 }: {
   range: DateRange | undefined
   onRangeChange: (range: DateRange | undefined) => void
+  revisit?: boolean
 }) {
+  if (revisit) {
+    return (
+      <Calendar
+        mode="single"
+        selected={range?.from}
+        onSelect={(date) =>
+          onRangeChange(date ? { from: date, to: undefined } : undefined)
+        }
+        classNames={{ root: "travel-record-calendar w-full" }}
+      />
+    )
+  }
+
   return (
     <Calendar
       mode="range"
       selected={range}
       onSelect={onRangeChange}
-      classNames={{ root: "w-full" }}
+      classNames={{ root: "travel-record-calendar w-full" }}
     />
   )
 }
