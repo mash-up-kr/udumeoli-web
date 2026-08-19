@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Plus } from "lucide-react"
 
 import type { TravelKeyword } from "@/entities/photo"
 import { Input } from "@/shared/ui/input"
@@ -23,32 +22,32 @@ export function PhotoStep({
 }) {
   return (
     <>
-      {/* 사진 영역 — 남는 세로 공간을 모두 차지 (낮은 화면에서도 코멘트·CTA 자리 확보) */}
-      <div className="relative min-h-0 w-full flex-1">
+      {/* 피그마 비율(330x382)을 유지하되 좁은 화면에서는 가로폭에 맞춰 축소한다. */}
+      <div className="travel-record-photo-frame relative mx-auto aspect-[330/382] w-full max-w-[330px] shrink-0">
         <button
           type="button"
           onClick={onPickPhoto}
-          className="size-full overflow-hidden rounded-[32px] bg-bg-neutral-solid/80"
+          className="size-full overflow-hidden rounded-[40px] border border-white bg-bg-neutral-solid"
         >
           {photoUrl ? (
             <img src={photoUrl} alt="" className="size-full object-cover" />
           ) : (
-            <span className="flex size-full flex-col items-center justify-center gap-1 text-fg-neutral-subtle">
-              <Plus className="size-6" />
-              <span className="text-b6">사진 추가하기</span>
+            <span className="flex size-full flex-col items-center justify-center text-fg-neutral-subtle">
+              <span className="text-h6">+</span>
+              <span className="text-h9">사진 추가하기</span>
             </span>
           )}
         </button>
 
-        {/* 키워드 스티커 — 사진 좌상단에 걸쳐 배치 */}
+        {/* 키워드 스티커 — 사진 좌상단에 살짝 기울여 걸친다 (Figma 1836-15617) */}
         {keyword ? (
-          <span className="pointer-events-none absolute -top-3 left-2 flex items-center gap-1 rounded-full bg-bg-neutral-weak px-3 py-1.5 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+          <span className="pointer-events-none absolute -top-7 -left-1 flex -rotate-6 items-center gap-2.5 rounded-[50px] bg-white/70 px-3.5 py-2">
             <img
               src={keyword.emojiSrc}
               alt=""
-              className="size-8 shrink-0 object-contain"
+              className="size-10 shrink-0 object-contain"
             />
-            <span className="text-h5 text-fg-neutral-bold">
+            <span className="text-h3 text-fg-neutral-bold">
               {keyword.label}
             </span>
           </span>
@@ -56,6 +55,7 @@ export function PhotoStep({
       </div>
 
       <Input
+        className="travel-record-photo-input mx-auto max-w-[330px]"
         value={comment}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           onCommentChange(e.target.value)

@@ -1363,9 +1363,14 @@ function TravelMapGoogleInner({
     onAlbumAvailabilityChange?.(photos.length > 0)
   }, [onAlbumAvailabilityChange, photos.length])
 
+  const [recordTipDismissed, setRecordTipDismissed] = React.useState(false)
   // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰 이하(0·1단계)일 때만 진입점을 노출
   const showRecordTip =
-    seenTips && photos.length === 0 && !decorating && zoomStage <= 1
+    seenTips &&
+    !recordTipDismissed &&
+    photos.length === 0 &&
+    !decorating &&
+    zoomStage <= 1
   const [dismissedRecordTipKey, setDismissedRecordTipKey] = React.useState<
     string | null
   >(null)
@@ -1488,7 +1493,10 @@ function TravelMapGoogleInner({
     if (!mapReady || mapTipsOpenedRef.current || hasSeenMapTips()) return
     mapTipsOpenedRef.current = true
     const opened = openMapTipsOverlay({
-      onStart: () => runCameraMove(GANGWON_VIEW, 600),
+      onStart: () => {
+        setRecordTipDismissed(true)
+        runCameraMove(GANGWON_VIEW, 600)
+      },
     })
     if (opened) setSeenTips(true)
   }, [mapReady, runCameraMove])
@@ -1852,7 +1860,10 @@ function TravelMapGoogleInner({
       {showRecordTip ? (
         <button
           type="button"
-          onClick={() => runCameraMove(GANGWON_VIEW, 600)}
+          onClick={() => {
+            setRecordTipDismissed(true)
+            runCameraMove(GANGWON_VIEW, 600)
+          }}
           className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         >
           <span className="text-b6 text-fg-neutral-inverse">

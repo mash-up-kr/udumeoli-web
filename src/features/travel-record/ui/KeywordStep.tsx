@@ -27,7 +27,7 @@ export function KeywordStep({
             aria-pressed={isSelected}
             onClick={() => onSelect(keyword.id)}
             className={cn(
-              "flex items-center gap-[10px] rounded-full px-4 py-2 transition-colors",
+              "travel-record-keyword-badge flex items-center rounded-full transition-colors",
               TILT[i],
               isSelected
                 ? "bg-bg-neutral-inverse text-fg-neutral-inverse"
@@ -37,9 +37,11 @@ export function KeywordStep({
             <img
               src={keyword.emojiSrc}
               alt=""
-              className="size-10 shrink-0 object-contain"
+              className="travel-record-keyword-emoji shrink-0 object-contain"
             />
-            <span className="text-h3 whitespace-nowrap">{keyword.label}</span>
+            <span className="travel-record-keyword-label whitespace-nowrap">
+              {keyword.label}
+            </span>
           </button>
         )
       })}

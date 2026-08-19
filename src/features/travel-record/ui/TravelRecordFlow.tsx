@@ -129,10 +129,11 @@ export function TravelRecordFlow({
       setRange(nextRange)
       if (!revisit || !nextRange?.from || revisitToastShownRef.current) return
       revisitToastShownRef.current = true
+      // 시안(1836-15756)은 캘린더 카드 위(상단 1/3 지점)에 띄운다 — 하단은 CTA·캘린더가 가린다
       showToast({
-        message: "이미 기록한 지역은 새로운 기록으로 쌓여요",
+        message: "이미 기록한 지역은 새로운 기록으로 쌓여요.",
         icon: "check",
-        className: "bottom-[106px]",
+        className: "top-1/3 bottom-auto",
       })
     },
     [revisit]
@@ -236,7 +237,7 @@ export function TravelRecordFlow({
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-transparent" />
 
-      <div className="relative flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
+      <div className="relative z-10 flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
         <ButtonIcon
           aria-label="뒤로 가기"
           onClick={handleBack}
@@ -247,12 +248,17 @@ export function TravelRecordFlow({
       </div>
 
       {/* 회차 칩 + 스텝 타이틀 */}
-      <div className="relative flex shrink-0 flex-col items-center gap-2 px-4">
+      <div className="relative z-10 flex shrink-0 flex-col items-center gap-2 px-4">
         <span className="rounded-full bg-white/40 px-3 py-1 text-h9 text-fg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
           {visitLabel(nth, regionName)}
         </span>
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-          {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
+          {/* 첫 방문은 "기간", 재방문은 "날짜" (Figma 1836-15777 / 1836-15756) */}
+          {step === "date"
+            ? revisit
+              ? "다녀온 날짜를\n선택해 주세요"
+              : "다녀온 기간을\n선택해 주세요"
+            : null}
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
           {step === "photo" && keyword ? (
             <>
@@ -276,17 +282,22 @@ export function TravelRecordFlow({
       {/* 스텝 콘텐츠 — date는 하단(캘린더), keyword는 중앙, photo는 남는 공간을 채움.
           낮은 화면에서 캘린더가 타이틀을 덮지 않도록 넘치면 스크롤한다 (justify-end 대신
           margin auto — justify-end + overflow 조합은 넘칠 때 위쪽이 잘려 접근 불가) */}
-      <div className="pointer-events-auto relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4">
+      <div className="travel-record-step-scroll pointer-events-auto relative flex min-h-0 flex-1 touch-pan-y [scrollbar-width:none] flex-col overflow-y-auto overscroll-contain px-4 pt-4 pb-6 [&::-webkit-scrollbar]:hidden">
         <div
           className={cn(
             "flex flex-col gap-3",
             step === "keyword" && "my-auto",
             step === "date" && "mt-auto",
-            step === "photo" && "min-h-0 flex-1"
+            step === "photo" &&
+              "travel-record-photo-content min-h-0 flex-1 pt-[clamp(24px,8dvh,64px)]"
           )}
         >
           {step === "date" && !isCollaboration ? (
-            <DateStep range={range} onRangeChange={handleRangeChange} />
+            <DateStep
+              range={range}
+              onRangeChange={handleRangeChange}
+              revisit={revisit}
+            />
           ) : null}
 
           {step === "keyword" && !isCollaboration ? (
