@@ -499,7 +499,7 @@
         }
 
         .travel-record-photo-input {
-            width: min(330px, calc(100dvh - 410px));
+            width: 100%;
         }
     }
 

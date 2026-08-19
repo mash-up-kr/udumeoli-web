@@ -21,9 +21,9 @@ export function PhotoStep({
   onCommentChange: (value: string) => void
 }) {
   return (
-    <>
-      {/* 피그마 비율(330x382)을 유지하되 좁은 화면에서는 가로폭에 맞춰 축소한다. */}
-      <div className="travel-record-photo-frame relative mx-auto aspect-[330/382] w-full max-w-[330px] shrink-0">
+    <div className="travel-record-photo-group mx-auto flex w-fit max-w-full flex-col gap-3">
+      {/* 피그마 비율(330x382)을 유지하고, 낮은 화면에서는 높이를 줄여 너비를 함께 축소한다. */}
+      <div className="travel-record-photo-frame relative aspect-[330/382] w-full max-w-[330px] shrink-0">
         <button
           type="button"
           onClick={onPickPhoto}
@@ -55,7 +55,7 @@ export function PhotoStep({
       </div>
 
       <Input
-        className="travel-record-photo-input mx-auto max-w-[330px]"
+        className="travel-record-photo-input w-full"
         value={comment}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           onCommentChange(e.target.value)
@@ -63,6 +63,6 @@ export function PhotoStep({
         placeholder="사진 한 줄 설명을 적고 친구와 공유해요"
         maxLength={40}
       />
-    </>
+    </div>
   )
 }

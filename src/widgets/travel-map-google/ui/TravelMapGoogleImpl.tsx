@@ -1363,11 +1363,13 @@ function TravelMapGoogleInner({
     onAlbumAvailabilityChange?.(photos.length > 0)
   }, [onAlbumAvailabilityChange, photos.length])
 
-  const [recordTipDismissed, setRecordTipDismissed] = React.useState(false)
+  // 안내 세션에서만 닫힘 상태를 유지한다. 지도를 나갔다 돌아오면 재진입 툴팁을 다시 보여준다.
+  const [recordTipDismissedForSession, setRecordTipDismissedForSession] =
+    React.useState(false)
   // 안내는 봤지만 아직 기록이 하나도 없는 상태에서, 전국 뷰 이하(0·1단계)일 때만 진입점을 노출
   const showRecordTip =
     seenTips &&
-    !recordTipDismissed &&
+    !recordTipDismissedForSession &&
     photos.length === 0 &&
     !decorating &&
     zoomStage <= 1
@@ -1494,7 +1496,7 @@ function TravelMapGoogleInner({
     mapTipsOpenedRef.current = true
     const opened = openMapTipsOverlay({
       onStart: () => {
-        setRecordTipDismissed(true)
+        setRecordTipDismissedForSession(true)
         runCameraMove(GANGWON_VIEW, 600)
       },
     })
@@ -1861,7 +1863,7 @@ function TravelMapGoogleInner({
         <button
           type="button"
           onClick={() => {
-            setRecordTipDismissed(true)
+            setRecordTipDismissedForSession(true)
             runCameraMove(GANGWON_VIEW, 600)
           }}
           className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
