@@ -220,7 +220,7 @@ export function PreviewStep({
           {/* 사진 우상단에 걸치는 대형 키워드 스티커 (시안 134px, -68°) — 진입 시 "빵!" 팝 (Figma #12) */}
           {keyword ? (
             <div
-              className="pointer-events-none absolute top-[5px] left-[231px] z-30 flex size-[174px] animate-record-preview-sticker-pop items-center justify-center"
+              className="pointer-events-none absolute top-[5px] right-[clamp(-62px,-16vw,-48px)] z-30 flex size-[clamp(132px,46vw,174px)] animate-record-preview-sticker-pop items-center justify-center"
               style={previewMotionStyle({
                 rotate: "-68deg",
                 delay: "170ms",
@@ -232,7 +232,7 @@ export function PreviewStep({
                 src={keyword.emojiSrc}
                 alt=""
                 aria-hidden
-                className="record-preview-sticker-img size-[134px]"
+                className="record-preview-sticker-img size-[77%]"
               />
             </div>
           ) : null}

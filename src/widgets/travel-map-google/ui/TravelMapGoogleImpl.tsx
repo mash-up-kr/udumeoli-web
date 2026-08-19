@@ -38,6 +38,7 @@ import {
   createBoundaryLayer,
   createRegionDataLayer,
 } from "../lib/regionDataLayer"
+import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
@@ -100,7 +101,6 @@ const NATION_MIN_ZOOM = 5
 const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
-const RECORD_CAMERA_PADDING = { top: 170, bottom: 330, left: 48, right: 48 }
 const RECORD_CAMERA_DURATION_MS = 420
 // AdvancedMarkerElement는 clickable이면 마커 자체가 포커스 대상이 되고, 그 안의
 // 포커스 가능한 자식(button/a/input)은 "not supported"로 경고하며 탭 순서·포커스 링
@@ -994,7 +994,14 @@ function MapController({
       )
       const bbox = feature ? computeFeatureBBox(feature) : null
       if (bbox) {
-        const target = cameraTargetForBounds(map, bbox, RECORD_CAMERA_PADDING)
+        const target = cameraTargetForBounds(
+          map,
+          bbox,
+          getRecordCameraPadding(
+            map.getDiv().clientWidth,
+            map.getDiv().clientHeight
+          )
+        )
         if (target) {
           animateCamera(
             map,
@@ -1726,7 +1733,7 @@ function TravelMapGoogleInner({
           4초 뒤 독려 툴팁이 사라져도 위치가 흔들리지 않게 한다 */}
       {visibleEncouragementTrip ||
       (visibleCompletionTrip && completionTipKey) ? (
-        <div className="absolute inset-x-0 bottom-[130px] z-10 flex flex-col items-center gap-2 px-4">
+        <div className="absolute inset-x-0 bottom-[clamp(112px,16dvh,130px)] z-10 flex flex-col items-center gap-2 px-4">
           {visibleEncouragementTrip ? (
             <MapPillTooltip className="pointer-events-none">
               {encouragementMessage}
@@ -1759,7 +1766,7 @@ function TravelMapGoogleInner({
         <button
           type="button"
           onClick={() => runCameraMove(GANGWON_VIEW, 600)}
-          className="absolute bottom-[130px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         >
           <span className="text-b6 text-fg-neutral-inverse">
             최근 여행을 기록해볼까요?
