@@ -28,6 +28,8 @@ import {
   visibleStickerTrips,
 } from "../lib/collaboration"
 import { canShowAvailableRegionMarker } from "../lib/availableRegionMarkers"
+import { planBoundarySync, recordedProvinceKey } from "../lib/boundarySync"
+import { expandBox, isInsideBox, isSameBox } from "../lib/viewportBounds"
 import {
   canShowCompletionTip,
   markCompletionTipSeen,
@@ -38,7 +40,10 @@ import {
   createBoundaryLayer,
   createRegionDataLayer,
 } from "../lib/regionDataLayer"
+import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
+import type { BoundarySnapshot } from "../lib/boundarySync"
+import type { LatLngBox } from "../lib/viewportBounds"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
@@ -100,7 +105,6 @@ const NATION_MIN_ZOOM = 5
 const KOREA_STICKER_ANCHOR = { lat: 36.4, lng: 127.9 }
 const COLLABORATION_TOAST_MS = 4000
 const INCOMPLETE_REGION_FILL = "#9eb8ac"
-const RECORD_CAMERA_PADDING = { top: 170, bottom: 330, left: 48, right: 48 }
 const RECORD_CAMERA_DURATION_MS = 420
 // AdvancedMarkerElement는 clickable이면 마커 자체가 포커스 대상이 되고, 그 안의
 // 포커스 가능한 자식(button/a/input)은 "not supported"로 경고하며 탭 순서·포커스 링
@@ -656,23 +660,48 @@ function cameraTargetForBounds(
   }
 }
 
-function visibleCentroidsInMap(
-  map: google.maps.Map,
-  centroids: Array<Centroid>
-): Array<Centroid> {
+/** 뷰포트를 사방 25% 넓혀 마커를 미리 만들어둔다 — 가장자리에서 튀어나오듯 나타나는 것 방지 */
+const VIEWPORT_BUFFER_RATIO = 0.25
+
+function viewportBoxOf(map: google.maps.Map): LatLngBox | null {
   const bounds = map.getBounds()
-  if (!bounds) return []
-  return centroids.filter(({ lng, lat }) => bounds.contains({ lat, lng }))
+  if (!bounds) return null
+  const ne = bounds.getNorthEast()
+  const sw = bounds.getSouthWest()
+  return expandBox(
+    { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() },
+    VIEWPORT_BUFFER_RATIO
+  )
 }
 
 function isSameCentroidList(a: Array<Centroid>, b: Array<Centroid>): boolean {
   return a.length === b.length && a.every((centroid, i) => centroid === b[i])
 }
 
+/**
+ * 뷰포트(+버퍼) 상태 갱신 — 마커 렌더 대상을 화면 근처로 좁히는 단일 진입점.
+ * 값이 그대로면 이전 참조를 유지해 불필요한 마커 리렌더를 막는다.
+ */
+function syncViewportState(
+  map: google.maps.Map,
+  centroids: Array<Centroid>,
+  setViewportBox: React.Dispatch<React.SetStateAction<LatLngBox | null>>,
+  setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
+) {
+  const box = viewportBoxOf(map)
+  setViewportBox((prev) => (isSameBox(prev, box) ? prev : box))
+  const next = box
+    ? centroids.filter((centroid) => isInsideBox(box, centroid))
+    : EMPTY_CENTROIDS
+  setViewportCentroids((prev) => (isSameCentroidList(prev, next) ? prev : next))
+}
+
 export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
   onZoomStageChange?: (stage: 0 | 1 | 2 | 3) => void
+  /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
+  onTilesLoaded?: () => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
   onReady?: () => void
 }
@@ -720,9 +749,11 @@ function MapController({
   recordedProvinces,
   hasNationRecord,
   syncVisualsForStage,
+  stageSyncedFillsRef,
   setZoomStage,
   setCentroids,
   setViewportCentroids,
+  setViewportBox,
   centroidsRef,
   onFeatureClick,
   onReady,
@@ -745,9 +776,11 @@ function MapController({
   hasNationRecord: boolean
   /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
   syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
+  stageSyncedFillsRef: React.MutableRefObject<Record<string, RegionFill> | null>
   setZoomStage: (stage: 0 | 1 | 2 | 3) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
+  setViewportBox: React.Dispatch<React.SetStateAction<LatLngBox | null>>
   centroidsRef: React.MutableRefObject<Array<Centroid>>
   onFeatureClick: (name: string) => void
   onReady?: () => void
@@ -826,19 +859,35 @@ function MapController({
         // 레이어 교체를 피한다
         provinceBoundary = createBoundaryLayer(geo.provinces)
         nationBoundary = createBoundaryLayer(geo.nation)
+        let lastBoundarySnapshot: BoundarySnapshot | null = null
         const syncBoundaryLayers = (stage: 0 | 1 | 2 | 3) => {
+          const next: BoundarySnapshot = {
+            stage,
+            recordedProvinceKey: recordedProvinceKey(
+              recordedProvincesRef.current
+            ),
+            hasNationRecord: hasNationRecordRef.current,
+          }
+          // idle은 상태 변화 없이도 계속 오므로, 실제로 바뀐 게 있을 때만 레이어를 만진다
+          const plan = planBoundarySync(lastBoundarySnapshot, next)
+          if (plan.skip) return
+          lastBoundarySnapshot = next
+
           nationBoundary?.setMap(
-            stage === 0 && hasNationRecordRef.current ? map : null
+            stage === 0 && next.hasNationRecord ? map : null
           )
           const province = provinceBoundary
           if (!province) return
-          province.forEach((f) =>
-            province.overrideStyle(f, {
-              visible: recordedProvincesRef.current.has(
-                String(f.getProperty("name"))
-              ),
-            })
-          )
+          // feature 전체 순회는 기록된 도 집합이 바뀌었을 때만
+          if (plan.restyleProvinces) {
+            province.forEach((f) =>
+              province.overrideStyle(f, {
+                visible: recordedProvincesRef.current.has(
+                  String(f.getProperty("name"))
+                ),
+              })
+            )
+          }
           province.setMap(stage === 1 ? map : null)
         }
         syncBoundaryLayersRef.current = () =>
@@ -867,13 +916,13 @@ function MapController({
           incompleteRegions: incompleteRegionSetRef.current,
         })
 
-        const syncViewport = () => {
-          const next = visibleCentroidsInMap(map, centroidsRef.current)
-          // 팬 후 멤버십이 그대로면 이전 배열을 유지해 idle마다 마커가 리렌더되는 것을 막는다
-          setViewportCentroids((prev) =>
-            isSameCentroidList(prev, next) ? prev : next
+        const syncViewport = () =>
+          syncViewportState(
+            map,
+            centroidsRef.current,
+            setViewportBox,
+            setViewportCentroids
           )
-        }
         let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
         const syncStage = (stage: 0 | 1 | 2 | 3) => {
           if (stage !== syncedVisualStage) {
@@ -904,7 +953,7 @@ function MapController({
             const stage = getZoomStage(zoom)
             syncStage(stage)
             syncViewport()
-            overlay?.draw()
+            overlay?.scheduleDraw()
           })
         )
         // 초기 줌 스테이지·뷰포트 반영
@@ -951,6 +1000,7 @@ function MapController({
     onFeatureClick,
     setCentroids,
     setViewportCentroids,
+    setViewportBox,
     setZoomStage,
     syncVisualsForStage,
   ])
@@ -965,14 +1015,31 @@ function MapController({
     const dataLayer = dataLayerRef.current
     const overlay = overlayRef.current
     if (!dataLayer) return
+
+    // 줌 단계 경계에서 이미 같은 fills를 즉시 반영했다면 중복 스타일링을 건너뛴다.
+    // 기록/미리보기 변경으로 fills가 달라진 경우에는 이 effect가 정상 반영한다.
+    if (stageSyncedFillsRef.current === fills) {
+      stageSyncedFillsRef.current = null
+      overlay?.loadPendingImages()
+      overlay?.scheduleDraw()
+      return
+    }
+
     dataLayer.sync({
       fills,
       hasPhotoRegions: photoRegionSet,
       incompleteRegions: incompleteRegionSet,
     })
-    overlay?.loadPendingImages(() => overlay.draw())
-    overlay?.draw()
-  }, [fills, photoRegionSet, incompleteRegionSet, dataLayerRef, overlayRef])
+    overlay?.loadPendingImages()
+    overlay?.scheduleDraw()
+  }, [
+    fills,
+    photoRegionSet,
+    incompleteRegionSet,
+    dataLayerRef,
+    overlayRef,
+    stageSyncedFillsRef,
+  ])
 
   // 강조선·색상 미리보기 — 스와치 탭마다 fitBounds가 재실행되지 않도록 진입/이탈과 분리
   React.useEffect(() => {
@@ -994,7 +1061,14 @@ function MapController({
       )
       const bbox = feature ? computeFeatureBBox(feature) : null
       if (bbox) {
-        const target = cameraTargetForBounds(map, bbox, RECORD_CAMERA_PADDING)
+        const target = cameraTargetForBounds(
+          map,
+          bbox,
+          getRecordCameraPadding(
+            map.getDiv().clientWidth,
+            map.getDiv().clientHeight
+          )
+        )
         if (target) {
           animateCamera(
             map,
@@ -1005,9 +1079,11 @@ function MapController({
               const stage = getZoomStage(target.zoom)
               syncVisualsForStage(stage)
               setZoomStage(stage)
-              const next = visibleCentroidsInMap(map, centroidsRef.current)
-              setViewportCentroids((prev) =>
-                isSameCentroidList(prev, next) ? prev : next
+              syncViewportState(
+                map,
+                centroidsRef.current,
+                setViewportBox,
+                setViewportCentroids
               )
             }
           )
@@ -1057,6 +1133,7 @@ function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
   onZoomStageChange,
+  onTilesLoaded,
   onReady,
 }: TravelMapImplProps) {
   const router = useRouter()
@@ -1098,6 +1175,8 @@ function TravelMapGoogleInner({
   const [viewportCentroids, setViewportCentroids] = React.useState<
     Array<Centroid>
   >([])
+  // 화면(+버퍼) 범위 — 여행 마커를 이 안쪽만 렌더한다
+  const [viewportBox, setViewportBox] = React.useState<LatLngBox | null>(null)
   const [collaborationRecordDraft, setCollaborationRecordDraft] =
     React.useState<CollaborationRecordDraft | null>(null)
   const [mapReady, setMapReady] = React.useState(false)
@@ -1261,19 +1340,23 @@ function TravelMapGoogleInner({
   photoRegionSetRefForVisuals.current = visualPhotoRegionSet
   const incompleteRegionSetRefForVisuals = React.useRef(incompleteRegionSet)
   incompleteRegionSetRefForVisuals.current = incompleteRegionSet
+  const stageSyncedFillsRef = React.useRef<Record<string, RegionFill> | null>(
+    null
+  )
   const syncVisualsForStage = React.useCallback((stage: 0 | 1 | 2 | 3) => {
     const nextFills = buildDisplayFills({
       zoomStage: stage,
       ...displayFillInputsRef.current,
     })
     fillsRef.current = nextFills
+    stageSyncedFillsRef.current = nextFills
     dataLayerRef.current?.sync({
       fills: nextFills,
       hasPhotoRegions: photoRegionSetRefForVisuals.current,
       incompleteRegions: incompleteRegionSetRefForVisuals.current,
     })
-    overlayRef.current?.loadPendingImages(() => overlayRef.current?.draw())
-    overlayRef.current?.draw()
+    overlayRef.current?.loadPendingImages()
+    overlayRef.current?.scheduleDraw()
   }, [])
 
   React.useEffect(() => {
@@ -1381,9 +1464,11 @@ function TravelMapGoogleInner({
         const stage = getZoomStage(target.zoom)
         syncVisualsForStage(stage)
         setZoomStage(stage)
-        const next = visibleCentroidsInMap(map, centroidsRef.current)
-        setViewportCentroids((prev) =>
-          isSameCentroidList(prev, next) ? prev : next
+        syncViewportState(
+          map,
+          centroidsRef.current,
+          setViewportBox,
+          setViewportCentroids
         )
         const center = map.getCenter()
         if (center) {
@@ -1576,8 +1661,14 @@ function TravelMapGoogleInner({
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
     if (zoomStage < 2 || decorating) return EMPTY_TRIP_PIN_MARKERS
-    return zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
-  }, [decorating, visiblePins, zoomStage])
+    const staged = zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
+    // 화면(+버퍼) 밖 여행은 AdvancedMarker DOM 자체를 만들지 않는다.
+    // 좌표는 지역 centroid, 없으면 대표 사진 좌표(baseLat/baseLng) 기준
+    if (!viewportBox) return EMPTY_TRIP_PIN_MARKERS
+    return staged.filter((pin) =>
+      isInsideBox(viewportBox, { lat: pin.baseLat, lng: pin.baseLng })
+    )
+  }, [decorating, viewportBox, visiblePins, zoomStage])
   const showStickerOnlyPins = zoomStage >= 3
 
   const collaborationMarkers = React.useMemo<
@@ -1608,6 +1699,7 @@ function TravelMapGoogleInner({
         disableDefaultUI
         clickableIcons={false}
         style={{ width: "100%", height: "100%" }}
+        onTilesLoaded={onTilesLoaded}
       >
         <MapController
           mapRef={mapRef}
@@ -1624,9 +1716,11 @@ function TravelMapGoogleInner({
           recordedProvinces={recordedProvinces}
           hasNationRecord={Boolean(countryKeyword)}
           syncVisualsForStage={syncVisualsForStage}
+          stageSyncedFillsRef={stageSyncedFillsRef}
           setZoomStage={setZoomStage}
           setCentroids={setCentroids}
           setViewportCentroids={setViewportCentroids}
+          setViewportBox={setViewportBox}
           centroidsRef={centroidsRef}
           onFeatureClick={handleFeatureClick}
           onReady={handleMapReady}
@@ -1726,7 +1820,7 @@ function TravelMapGoogleInner({
           4초 뒤 독려 툴팁이 사라져도 위치가 흔들리지 않게 한다 */}
       {visibleEncouragementTrip ||
       (visibleCompletionTrip && completionTipKey) ? (
-        <div className="absolute inset-x-0 bottom-[130px] z-10 flex flex-col items-center gap-2 px-4">
+        <div className="absolute inset-x-0 bottom-[clamp(112px,16dvh,130px)] z-10 flex flex-col items-center gap-2 px-4">
           {visibleEncouragementTrip ? (
             <MapPillTooltip className="pointer-events-none">
               {encouragementMessage}
@@ -1759,7 +1853,7 @@ function TravelMapGoogleInner({
         <button
           type="button"
           onClick={() => runCameraMove(GANGWON_VIEW, 600)}
-          className="absolute bottom-[130px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         >
           <span className="text-b6 text-fg-neutral-inverse">
             최근 여행을 기록해볼까요?

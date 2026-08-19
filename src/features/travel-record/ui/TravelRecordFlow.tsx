@@ -202,7 +202,7 @@ export function TravelRecordFlow({
         ? "업로드가 완료됐어요"
         : `'${regionName}' 여행 Pinned 완료!`,
       icon: "check",
-      className: "bottom-[256px]",
+      className: "bottom-[clamp(180px,32dvh,256px)]",
     })
   }
 
