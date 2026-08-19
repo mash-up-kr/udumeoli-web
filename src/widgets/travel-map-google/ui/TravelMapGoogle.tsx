@@ -1,10 +1,10 @@
 import * as React from "react"
-import { LoaderCircle } from "lucide-react"
 import type { TravelMapImplProps } from "./TravelMapGoogleImpl"
 
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/button"
+import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 // Google Maps JS API도 브라우저 전용 → 클라이언트에서만 동적 로드해 SSR 오류 회피.
 export function TravelMapGoogle({
@@ -91,12 +91,14 @@ export function TravelMapGoogle({
           <div
             role="status"
             aria-label="지도를 불러오는 중"
-            className="flex items-center justify-center"
+            className="flex flex-col items-center gap-3"
           >
-            <LoaderCircle
-              aria-hidden="true"
-              className="size-6 animate-spin text-fg-neutral-subtle"
-            />
+            <img src={logoSrc} alt="Pinnned" className="h-6 animate-pulse" />
+            <span aria-hidden="true" className="flex items-center gap-1">
+              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle [animation-delay:-0.2s]" />
+              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle [animation-delay:-0.1s]" />
+              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle" />
+            </span>
           </div>
         )}
       </div>
