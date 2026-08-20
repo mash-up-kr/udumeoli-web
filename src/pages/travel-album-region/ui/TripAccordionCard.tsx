@@ -5,6 +5,7 @@ import iconZzzSrc from "../assets/icon-zzz.svg"
 import type { Photo } from "@/entities/photo"
 import { cn } from "@/shared/lib/utils"
 import { Profile } from "@/shared/ui/profile"
+import { Skeleton } from "@/shared/ui/skeleton"
 import iconChevronDownSrc from "@/shared/assets/icon-chevron-down.svg"
 
 /** 방문 기간 카드의 멤버 행 데이터 — 나 최상단, 이후 가입 순서 (페이지에서 정렬) */
@@ -27,6 +28,7 @@ export function TripAccordionCard({
   dateRange,
   records,
   defaultOpen = false,
+  uploading = false,
   onRecord,
   onPhotoClick,
 }: {
@@ -37,6 +39,8 @@ export function TripAccordionCard({
   dateRange: string
   records: Array<MemberRecord>
   defaultOpen?: boolean
+  /** 이 방문에 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환 */
+  uploading?: boolean
   /** 내 미기록 타일의 '기록하기' CTA 클릭 */
   onRecord: () => void
   onPhotoClick: (photo: Photo) => void
@@ -76,12 +80,32 @@ export function TripAccordionCard({
             <MemberRecordTile
               key={record.memberId}
               record={record}
+              uploading={uploading}
               onRecord={onRecord}
               onPhotoClick={onPhotoClick}
             />
           ))}
         </div>
       ) : null}
+    </section>
+  )
+}
+
+/** 방문 카드 스켈레톤 — 첫 사진 목록 로딩 동안 펼친 카드 실루엣 (헤더 + 타일 2개) */
+export function TripAccordionCardSkeleton() {
+  return (
+    <section className="w-full rounded-[24px] bg-bg-neutral-weak">
+      <div className="flex items-center gap-3 p-5">
+        <Skeleton className="size-12 rounded-full" />
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-[27px] w-24" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-[10px] px-3 pt-1 pb-3">
+        <Skeleton className="aspect-square w-full rounded-2xl" />
+        <Skeleton className="aspect-square w-full rounded-2xl" />
+      </div>
     </section>
   )
 }
@@ -123,14 +147,17 @@ function MemberChip({
 
 function MemberRecordTile({
   record,
+  uploading,
   onRecord,
   onPhotoClick,
 }: {
   record: MemberRecord
+  uploading: boolean
   onRecord: () => void
   onPhotoClick: (photo: Photo) => void
 }) {
   const { photo } = record
+  const [imgLoaded, setImgLoaded] = React.useState(false)
 
   // 기록 O — 사진 + 코멘트, 클릭 시 이미지 상세 보기
   if (photo) {
@@ -140,9 +167,14 @@ function MemberRecordTile({
         onClick={() => onPhotoClick(photo)}
         className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-neutral-weak text-left"
       >
+        {/* 이미지 로드 전 pulse placeholder — 로드되면 이미지가 덮고 애니메이션 정지 */}
+        {imgLoaded ? null : (
+          <Skeleton className="absolute inset-0 rounded-none" />
+        )}
         <img
           src={photo.thumbnailUrl}
           alt={`${record.nickname}의 여행 사진`}
+          onLoad={() => setImgLoaded(true)}
           className="absolute inset-0 size-full object-cover"
         />
         {/* 칩·코멘트 가독성용 상단 그라디언트 (시안: neutral-900 50% → 투명) */}
@@ -161,11 +193,17 @@ function MemberRecordTile({
 
   // 기록 X — 회색 placeholder. 본인이면 '기록하기' CTA, 타인이면 zzZ (클릭 액션 없음)
   return (
-    <div className="relative aspect-square w-full rounded-2xl border border-stroke-neutral-weak bg-bg-neutral-solid">
+    <div
+      className={cn(
+        "relative aspect-square w-full rounded-2xl border border-stroke-neutral-weak bg-bg-neutral-solid",
+        // 내 사진 업로드 중 — 타일 전체가 pulse, CTA는 숨겨 중복 업로드 방지
+        record.isMe && uploading && "animate-pulse"
+      )}
+    >
       <span className="absolute inset-x-[13px] top-[13px] flex">
         <MemberChip record={record} onImage={false} />
       </span>
-      {record.isMe ? (
+      {record.isMe && uploading ? null : record.isMe ? (
         <button
           type="button"
           onClick={onRecord}

@@ -44,6 +44,8 @@ export function GalleryPanel({
   const currentUserId = currentUser?.id ?? null
   // 방금 업로드한 날짜 — 해당 행의 내 슬롯에 등록 팝 애니메이션
   const [poppedDate, setPoppedDate] = useState<string | null>(null)
+  // 업로드 진행 중인 날짜 — 해당 행의 내 add 슬롯이 스켈레톤으로 전환
+  const [uploadingDate, setUploadingDate] = useState<string | null>(null)
 
   // 드래그는 translate3d(GPU 컴포지터)로만 움직이고, 이동 중엔 리렌더 없이
   // ref로 transform을 직접 갱신해 프레임 드랍을 막는다. 스냅 복귀만 CSS transition.
@@ -141,6 +143,7 @@ export function GalleryPanel({
       byDate.get(date)?.find((p) => p.keyword) ?? photos.find((p) => p.keyword)
     )?.keyword
     const joined = byDate.get(date)?.find((p) => p.tripId) ?? null
+    setUploadingDate(date)
     try {
       await createPhotoMutation.mutateAsync({
         potId: currentPotId,
@@ -159,6 +162,8 @@ export function GalleryPanel({
         className: expanded ? undefined : "bottom-[256px]",
       })
       return
+    } finally {
+      setUploadingDate(null)
     }
     setPoppedDate(date)
     // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
@@ -241,6 +246,7 @@ export function GalleryPanel({
                 openPhotoViewer({ photos: [{ id: url, imageUrl: url }] })
               }
               poppedMemberId={poppedDate === date ? currentUserId : null}
+              uploading={uploadingDate === date}
             />
           ))
         )}

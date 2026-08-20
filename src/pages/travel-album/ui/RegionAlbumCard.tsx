@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib/utils"
+import { Skeleton } from "@/shared/ui/skeleton"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 
 /** 스택에 노출되는 최대 장수 — 넘치면 마지막 장에 +N 오버레이 (시안 1846-3645) */
@@ -46,7 +47,8 @@ export function RegionAlbumCard({
           <span
             key={photo.id}
             className={cn(
-              "relative block size-16 shrink-0 overflow-hidden rounded-[18px] border-[2.4px] border-neutral-0 shadow-[0px_0px_16px_0px_rgba(142,150,169,0.12)]",
+              // bg는 이미지 로드 전 흰 카드 위에서 빈 프레임으로 안 보이게 하는 placeholder
+              "relative block size-16 shrink-0 overflow-hidden rounded-[18px] border-[2.4px] border-neutral-0 bg-bg-neutral-solid shadow-[0px_0px_16px_0px_rgba(142,150,169,0.12)]",
               i > 0 && "-ml-[38px]",
               i % 2 === 0 ? "rotate-[5deg]" : "rotate-[-10deg]"
             )}
@@ -72,5 +74,29 @@ export function RegionAlbumCard({
         </span>
       ) : null}
     </button>
+  )
+}
+
+/** 지역 카드 스켈레톤 — 첫 사진 목록 로딩 동안 카드 자리 유지 (지역명 + 이미지 스택 실루엣) */
+export function RegionAlbumCardSkeleton() {
+  return (
+    <div className="flex w-full flex-col gap-2 rounded-[32px] bg-bg-neutral-weak px-5 py-4">
+      <span className="flex w-full items-center justify-between">
+        <Skeleton className="h-[27px] w-20" />
+        <Skeleton className="h-4 w-8" />
+      </span>
+      <span className="flex h-[76px] items-center">
+        {[0, 1, 2].map((i) => (
+          <Skeleton
+            key={i}
+            className={cn(
+              "size-16 shrink-0 rounded-[18px]",
+              i > 0 && "-ml-[38px]",
+              i % 2 === 0 ? "rotate-[5deg]" : "rotate-[-10deg]"
+            )}
+          />
+        ))}
+      </span>
+    </div>
   )
 }

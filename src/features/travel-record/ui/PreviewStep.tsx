@@ -121,6 +121,7 @@ export function PreviewStep({
   comment,
   nickname,
   profileImageUrl,
+  pending = false,
   onBack,
   onConfirm,
 }: {
@@ -131,6 +132,8 @@ export function PreviewStep({
   comment: string
   nickname: string
   profileImageUrl: string | null
+  /** 사진 등록 요청 진행 중 — CTA 비활성 + 라벨 전환 */
+  pending?: boolean
   onBack: () => void
   onConfirm: () => void
 }) {
@@ -271,7 +274,9 @@ export function PreviewStep({
       </div>
 
       <div className="relative z-20 shrink-0 px-4 pt-6 pb-[max(env(safe-area-inset-bottom),34px)]">
-        <ButtonCta onClick={onConfirm}>지도에 기록하기</ButtonCta>
+        <ButtonCta disabled={pending} onClick={onConfirm}>
+          {pending ? "기록 중..." : "지도에 기록하기"}
+        </ButtonCta>
       </div>
     </div>
   )

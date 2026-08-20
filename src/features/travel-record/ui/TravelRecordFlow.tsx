@@ -224,6 +224,7 @@ export function TravelRecordFlow({
         comment={comment}
         nickname={currentUser?.nickname ?? "나"}
         profileImageUrl={currentUser?.profileImageUrl ?? null}
+        pending={createPhotoMutation.isPending}
         onBack={handleBack}
         onConfirm={handleCommit}
       />

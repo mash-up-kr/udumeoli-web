@@ -1,7 +1,10 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { TripAccordionCard } from "./TripAccordionCard"
+import {
+  TripAccordionCard,
+  TripAccordionCardSkeleton,
+} from "./TripAccordionCard"
 import type { MemberRecord } from "./TripAccordionCard"
 import type { Photo, Trip } from "@/entities/photo"
 import type { PhotoViewerUploader } from "@/features/photo-gallery"
@@ -18,6 +21,7 @@ import {
   groupTrips,
   useCreatePhoto,
   useDeletePhoto,
+  usePhotos,
   useRegionAlbumPhotos,
 } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
@@ -38,6 +42,12 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
   const trips = React.useMemo(() => groupTrips(regionPhotos), [regionPhotos])
   const deletePhotoMutation = useDeletePhoto()
+  // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
+  const { isPending: isPhotosPending } = usePhotos(currentPotId)
+  // 업로드 진행 중인 방문 key — 해당 카드의 내 빈 타일이 스켈레톤으로 전환
+  const [uploadingTripKey, setUploadingTripKey] = React.useState<string | null>(
+    null
+  )
 
   // 멤버 행 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로
   const orderedMembers = React.useMemo(
@@ -69,11 +79,12 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
   // '기록하기' — 해당 방문 기간의 업로드 플로우(이미지 선택 → 등록) 진입
   const recordTrip = (trip: Trip) => {
-    if (!myId) return
+    if (!myId || createPhotoMutation.isPending) return
     pickImageFile(async (url, file) => {
       // 팟원이 먼저 기록한 방문에 합류하는 업로드 — 그 방문의 키워드를 따라간다
       const keyword = trip.photos.find((p) => p.keyword)?.keyword
       const tripId = trip.photos.find((p) => p.tripId)?.tripId
+      setUploadingTripKey(trip.tripId ?? trip.startDate)
       try {
         await createPhotoMutation.mutateAsync({
           potId: currentPotId,
@@ -91,6 +102,8 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
           message: "업로드에 실패했어요. 다시 시도해 주세요.",
           icon: "alert",
         })
+      } finally {
+        setUploadingTripKey(null)
       }
     })
   }
@@ -155,6 +168,10 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
       {/* 방문(여행) 리스트 — 최신순, 첫 카드만 펼침이 디폴트 */}
       <main className="flex flex-col gap-3 px-4 pt-1">
+        {/* 첫 로딩(캐시·세션 업로드도 없을 때)만 스켈레톤 — 데이터가 있으면 바로 카드 */}
+        {isPhotosPending && trips.length === 0 ? (
+          <TripAccordionCardSkeleton />
+        ) : null}
         {trips.map((trip, i) => {
           // 헤더 타이틀·스티커 — 여행 키워드 기반 (시안 #Keywords Header, "디저트!투어").
           // 키워드 없는 레거시 여행은 팟 이름 + 기본 아이콘 폴백
@@ -170,6 +187,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
               dateRange={formatTripRange(trip)}
               records={toRecords(trip)}
               defaultOpen={i === 0}
+              uploading={uploadingTripKey === (trip.tripId ?? trip.startDate)}
               onRecord={() => recordTrip(trip)}
               onPhotoClick={viewPhoto}
             />

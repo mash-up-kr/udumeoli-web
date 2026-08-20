@@ -3,6 +3,7 @@ import { PhotoSlot } from "./PhotoSlot"
 import type { CSSProperties } from "react"
 
 import { Tooltip } from "@/shared/ui/tooltip"
+import { Skeleton } from "@/shared/ui/skeleton"
 import { cn } from "@/shared/lib/utils"
 
 export type GallerySlot = {
@@ -21,6 +22,8 @@ type DateSectionProps = {
   onPhotoClick: (photoUrl: string) => void
   /** 방금 업로드한 멤버 — 해당 슬롯에 등록 팝 애니메이션 적용 */
   poppedMemberId?: string | null
+  /** 이 날짜에 내 사진 업로드 진행 중 — add 슬롯이 스켈레톤으로 전환 */
+  uploading?: boolean
 }
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
@@ -46,6 +49,7 @@ export function DateSection({
   onAddPhoto,
   onPhotoClick,
   poppedMemberId,
+  uploading = false,
 }: DateSectionProps) {
   const allUploaded = slots.every((s) => s.photoUrl !== null)
   const slotSize = slots.length <= 4 ? 80 : 64
@@ -128,12 +132,22 @@ export function DateSection({
                   onClick={() => onPhotoClick(photoUrl)}
                 />
               ) : isAdd ? (
-                <PhotoSlot
-                  variant="add"
-                  size={slotSize}
-                  rotate={rotate}
-                  onClick={onAddPhoto}
-                />
+                uploading ? (
+                  <Skeleton
+                    className={cn(
+                      "rounded-[24px]",
+                      rotate === 4 ? "rotate-4" : "-rotate-4"
+                    )}
+                    style={{ width: slotSize, height: slotSize }}
+                  />
+                ) : (
+                  <PhotoSlot
+                    variant="add"
+                    size={slotSize}
+                    rotate={rotate}
+                    onClick={onAddPhoto}
+                  />
+                )
               ) : (
                 <PhotoSlot
                   variant="empty"
@@ -143,7 +157,7 @@ export function DateSection({
                 />
               )}
 
-              {isAdd ? (
+              {isAdd && !uploading ? (
                 <Tooltip className="absolute top-[calc(100%-14px)] left-1/2 z-20 -translate-x-1/2">
                   사진을 올려주세요!
                 </Tooltip>
