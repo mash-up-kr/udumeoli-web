@@ -157,10 +157,13 @@ function MemberRecordTile({
   onPhotoClick: (photo: Photo) => void
 }) {
   const { photo } = record
-  const [imgLoaded, setImgLoaded] = React.useState(false)
+  // 로드가 끝난(성공/실패) src — boolean 대신 src를 기억해 사진 교체 시 placeholder가 다시 뜨고,
+  // 실패 시에도 settle 처리해 skeleton이 영구히 남지 않는다
+  const [settledSrc, setSettledSrc] = React.useState<string | null>(null)
 
   // 기록 O — 사진 + 코멘트, 클릭 시 이미지 상세 보기
   if (photo) {
+    const settle = () => setSettledSrc(photo.thumbnailUrl)
     return (
       <button
         type="button"
@@ -168,13 +171,14 @@ function MemberRecordTile({
         className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-neutral-weak text-left"
       >
         {/* 이미지 로드 전 pulse placeholder — 로드되면 이미지가 덮고 애니메이션 정지 */}
-        {imgLoaded ? null : (
+        {settledSrc === photo.thumbnailUrl ? null : (
           <Skeleton className="absolute inset-0 rounded-none" />
         )}
         <img
           src={photo.thumbnailUrl}
           alt={`${record.nickname}의 여행 사진`}
-          onLoad={() => setImgLoaded(true)}
+          onLoad={settle}
+          onError={settle}
           className="absolute inset-0 size-full object-cover"
         />
         {/* 칩·코멘트 가독성용 상단 그라디언트 (시안: neutral-900 50% → 투명) */}
