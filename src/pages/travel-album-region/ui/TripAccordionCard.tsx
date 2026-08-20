@@ -18,18 +18,22 @@ export interface MemberRecord {
 }
 
 /**
- * 지역 상세의 방문(여행) 아코디언 카드 (시안 1781-24978 · 1860-3398).
- * 헤더(팟 아이콘 + 팟 이름 + 기간) 클릭으로 접힘/펼침, 펼치면 멤버별 기록 타일.
+ * 지역 상세의 방문(여행) 아코디언 카드 (시안 1781-24978 · 1860-3398, #Keywords Header).
+ * 헤더(키워드 스티커 + "{키워드}!투어" + 기간) 클릭으로 접힘/펼침, 펼치면 멤버별 기록 타일.
  */
 export function TripAccordionCard({
-  potName,
+  title,
+  stickerSrc,
   dateRange,
   records,
   defaultOpen = false,
   onRecord,
   onPhotoClick,
 }: {
-  potName: string
+  /** 헤더 타이틀 — 키워드가 있으면 "{키워드.label}!투어", 없으면 팟 이름 폴백 */
+  title: string
+  /** 헤더 키워드 스티커 — 없으면(레거시 무키워드 여행) 기본 크루아상 아이콘 */
+  stickerSrc?: string
   dateRange: string
   records: Array<MemberRecord>
   defaultOpen?: boolean
@@ -48,9 +52,14 @@ export function TripAccordionCard({
         className="flex w-full items-center justify-between p-5"
       >
         <span className="flex items-center gap-3">
-          <img src={iconPotSrc} alt="" className="size-12" />
+          {/* 키워드 스티커 그래픽 — 지도 스티커와 동일 에셋 (시안 Sticker Graphic 48px) */}
+          <img
+            src={stickerSrc ?? iconPotSrc}
+            alt=""
+            className="size-12 object-contain"
+          />
           <span className="flex flex-col items-start gap-0.5">
-            <span className="text-h5 text-neutral-900">{potName}</span>
+            <span className="text-h5 text-neutral-900">{title}</span>
             <span className="text-b7 text-fg-neutral-solid">{dateRange}</span>
           </span>
         </span>
@@ -90,9 +99,11 @@ function MemberChip({
     <span className="flex items-center gap-1">
       <Profile
         size="xs"
+        className="shrink-0"
         {...(record.profileImageUrl ? { src: record.profileImageUrl } : {})}
         alt=""
       />
+      {/* 닉네임(최대 6자 정책)이 길어도 프로필·ME! 뱃지를 밀어내지 않게 truncate */}
       <span
         className={cn(
           "max-w-20 truncate text-h9",
@@ -102,7 +113,7 @@ function MemberChip({
         {record.nickname}
       </span>
       {record.isMe ? (
-        <span className="flex h-4 items-center justify-center rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
+        <span className="flex h-4 shrink-0 items-center justify-center rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
           ME!
         </span>
       ) : null}

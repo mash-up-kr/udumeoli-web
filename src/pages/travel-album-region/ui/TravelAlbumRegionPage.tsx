@@ -13,6 +13,7 @@ import { RequireAuth } from "@/features/auth"
 import { openPhotoViewer } from "@/features/photo-gallery"
 import { pickImageFile } from "@/features/photo-upload"
 import {
+  findKeyword,
   formatTripRange,
   groupTrips,
   useCreatePhoto,
@@ -146,7 +147,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />
           </ButtonIcon>
-          <h1 className="pointer-events-none absolute inset-x-0 text-center text-h4 text-fg-neutral-bold">
+          <h1 className="pointer-events-none absolute inset-x-0 text-center text-h4 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
             {formatRegionName(region)}
           </h1>
         </header>
@@ -154,17 +155,26 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
       {/* 방문(여행) 리스트 — 최신순, 첫 카드만 펼침이 디폴트 */}
       <main className="flex flex-col gap-3 px-4 pt-1">
-        {trips.map((trip, i) => (
-          <TripAccordionCard
-            key={`${currentPotId}-${trip.tripId ?? trip.startDate}`}
-            potName={potName}
-            dateRange={formatTripRange(trip)}
-            records={toRecords(trip)}
-            defaultOpen={i === 0}
-            onRecord={() => recordTrip(trip)}
-            onPhotoClick={viewPhoto}
-          />
-        ))}
+        {trips.map((trip, i) => {
+          // 헤더 타이틀·스티커 — 여행 키워드 기반 (시안 #Keywords Header, "디저트!투어").
+          // 키워드 없는 레거시 여행은 팟 이름 + 기본 아이콘 폴백
+          const keyword = findKeyword(
+            trip.photos.find((p) => p.keyword)?.keyword
+          )
+          return (
+            <TripAccordionCard
+              // 서버 tripId가 있으면 그것이 방문 단위 — 같은 시작일의 별개 방문끼리 key 충돌 방지
+              key={`${currentPotId}-${trip.tripId ?? trip.startDate}`}
+              title={keyword ? `${keyword.label}!투어` : potName}
+              {...(keyword ? { stickerSrc: keyword.emojiSrc } : {})}
+              dateRange={formatTripRange(trip)}
+              records={toRecords(trip)}
+              defaultOpen={i === 0}
+              onRecord={() => recordTrip(trip)}
+              onPhotoClick={viewPhoto}
+            />
+          )
+        })}
       </main>
     </MobileLayout>
   )
