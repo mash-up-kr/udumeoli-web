@@ -1,14 +1,14 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import { RegionAlbumCard } from "./RegionAlbumCard"
+import { RegionAlbumCard, RegionAlbumCardSkeleton } from "./RegionAlbumCard"
 import type { Photo } from "@/entities/photo"
 import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
-import { groupTrips, useAllPhotos } from "@/entities/photo"
+import { groupTrips, useAllPhotos, usePhotos } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
@@ -18,6 +18,8 @@ function TravelAlbumPageContent() {
   const currentPotId = usePotStore((s) => s.currentPotId)
   // 앨범 목 시드는 fetchPhotos(목)에서 병합 — 지도와 동일한 목록을 본다
   const photos = useAllPhotos(currentPotId)
+  // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
+  const { isPending: isPhotosPending } = usePhotos(currentPotId)
   const myId = useSessionStore((s) => s.currentUser?.id ?? null)
 
   // 지역별 카드 데이터 — 방문 횟수(연속 일자 그룹 수)·이미지 스택·미기록 Alert
@@ -51,6 +53,10 @@ function TravelAlbumPageContent() {
 
       {/* 지역 카드 리스트 — 하단 내비(지구본 포함)와 겹치지 않게 바닥 여백 확보 */}
       <main className="mt-2 flex flex-1 flex-col gap-3 px-4 pb-[190px]">
+        {/* 첫 로딩(캐시·세션 업로드도 없을 때)만 스켈레톤 — 데이터가 있으면 바로 카드 */}
+        {isPhotosPending && regions.length === 0
+          ? [0, 1, 2].map((i) => <RegionAlbumCardSkeleton key={i} />)
+          : null}
         {regions.map((r) => (
           <RegionAlbumCard
             key={r.region}

@@ -5,6 +5,13 @@ export {
   TRAVEL_KEYWORD_OPTIONS,
   findKeyword,
 } from "./model/keywords"
+export {
+  MAX_PHOTO_UPLOAD_MB,
+  MAX_PHOTO_UPLOAD_BYTES,
+  ALLOWED_PHOTO_TYPES,
+  ALLOWED_PHOTO_ACCEPT,
+  ALLOWED_PHOTO_LABEL,
+} from "./model/constraints"
 export type { Trip } from "./lib/trips"
 export { groupTrips, formatTripRange } from "./lib/trips"
 export {

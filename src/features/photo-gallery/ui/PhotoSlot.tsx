@@ -65,7 +65,8 @@ export function PhotoSlot({
         onClick={onClick}
         className={cn(
           base,
-          "border-stroke-neutral-inverse shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          // bg는 이미지 로드 전 빈 프레임으로 안 보이게 하는 placeholder
+          "border-stroke-neutral-inverse bg-bg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         )}
         style={{ width: size, height: size }}
       >

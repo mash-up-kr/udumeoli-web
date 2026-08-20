@@ -44,14 +44,15 @@ export const TRIP_100_POT: TravelPot = {
   joinedAt: "2026-07-15",
 }
 
-// 여행 앨범 목데이터 전용 4인 팟 — photo.mock ALBUM_PHOTOS의 uploaderId
-// (user-1, m-유지-0, m-성아-1, m-가연-2)와 일치해야 앨범/지도 슬롯에 매칭된다.
+// 여행 앨범 목데이터 전용 5인 팟 — photo.mock ALBUM_PHOTOS의 uploaderId
+// (user-1, m-유지-0, m-성아-1, m-가연-2, m-우두머리대장-3)와 일치해야 앨범/지도 슬롯에 매칭된다.
+// '우두머리대장'은 닉네임 최대 길이(6자) 표시 엣지 케이스 확인용.
 // 온보딩을 마친(팟 보유) 유저에게 pot.store가 자동 주입한다.
 export const ALBUM_POT: TravelPot = {
   id: "pot-album-1",
   name: "우두머리",
   inviteCode: "260620",
-  members: [ME, ...members(["유지", "성아", "가연"])],
+  members: [ME, ...members(["유지", "성아", "가연", "우두머리대장"])],
   joinedAt: "2026-06-20",
 }
 
