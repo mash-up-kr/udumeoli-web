@@ -10,6 +10,11 @@ import type { DateRange } from "react-day-picker"
 
 import type { TravelKeywordId } from "@/entities/photo"
 import {
+  ALLOWED_PHOTO_ACCEPT,
+  ALLOWED_PHOTO_LABEL,
+  ALLOWED_PHOTO_TYPES,
+  MAX_PHOTO_UPLOAD_BYTES,
+  MAX_PHOTO_UPLOAD_MB,
   findKeyword,
   groupTrips,
   useAllPhotos,
@@ -150,6 +155,25 @@ export function TravelRecordFlow({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    // BE 허용 포맷·용량 제한 — 초과/미지원 파일은 요청 전에 걸러 안내.
+    // value를 비워 같은 파일 재선택도 onchange가 뜨게 한다.
+    // type이 빈 파일은 업로드 시 image/jpeg 폴백(photo.api)이 있어 통과시킨다
+    if (file.type && !ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      e.target.value = ""
+      showToast({
+        message: `${ALLOWED_PHOTO_LABEL} 형식 사진만 등록할 수 있어요.`,
+        icon: "alert",
+      })
+      return
+    }
+    if (file.size > MAX_PHOTO_UPLOAD_BYTES) {
+      e.target.value = ""
+      showToast({
+        message: `사진은 최대 ${MAX_PHOTO_UPLOAD_MB}MB까지 등록할 수 있어요.`,
+        icon: "alert",
+      })
+      return
+    }
     setPhotoFile(file)
     // 재선택 시 이전 blob URL 회수 (최종 커밋된 URL은 목 사진이 계속 사용하므로 그대로 둠)
     setPhotoUrl((prev) => {
@@ -330,7 +354,7 @@ export function TravelRecordFlow({
       <input
         ref={photoInputRef}
         type="file"
-        accept="image/*"
+        accept={ALLOWED_PHOTO_ACCEPT}
         className="sr-only"
         onChange={handlePhotoUpload}
       />
