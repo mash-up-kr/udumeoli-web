@@ -156,7 +156,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
       <main className="flex flex-col gap-3 px-4 pt-1">
         {trips.map((trip, i) => (
           <TripAccordionCard
-            key={`${currentPotId}-${trip.startDate}`}
+            key={`${currentPotId}-${trip.tripId ?? trip.startDate}`}
             potName={potName}
             dateRange={formatTripRange(trip)}
             records={toRecords(trip)}
