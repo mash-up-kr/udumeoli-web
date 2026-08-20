@@ -139,13 +139,13 @@ export function PreviewStep({
       {/* 지도가 비치는 프로스티드 글라스 — 키워드 색 미리보기(지역 폴리곤)가 아래 깔린다 */}
       <div className="absolute inset-0 bg-white/10 backdrop-blur-[12px]" />
 
-      {/* 장식 스티커 — 콘텐츠보다 아래, 배경보다 위 */}
+      {/* 장식 스티커 — 파티클과 같은 최상위 레이어(z-30). 콘텐츠(z-20) 아래 두면 사진에 가려진다 */}
       {keyword
         ? DECORATIVE_STICKERS.map((sticker) => (
             <span
               key={sticker.id}
               aria-hidden
-              className={`pointer-events-none absolute z-10 flex animate-record-preview-sticker-pop items-center justify-center ${sticker.frameClassName}`}
+              className={`pointer-events-none absolute z-30 flex animate-record-preview-sticker-pop items-center justify-center ${sticker.frameClassName}`}
               style={previewMotionStyle({
                 rotate: sticker.rotate,
                 delay: sticker.delay,
