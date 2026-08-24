@@ -5,7 +5,7 @@ import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
+import { PRESET_AVATARS, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
@@ -24,14 +24,6 @@ import { openOnboardingOverlay } from "@/features/onboarding"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
-
-// 기본 아바타 후보 4종 — 현재 이미지가 1개뿐이라 동일 이미지로 채움 (추후 교체 예정)
-const DEFAULT_AVATARS = [
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-]
 
 // 유효 최대 6글자. 입력은 7글자까지 허용해 초과 시도를 감지하고 에러를 보여준다.
 const NICKNAME_MAX = 6
@@ -217,7 +209,7 @@ export function SignupPage() {
 
   const profileImage =
     customImage ??
-    (selectedAvatar != null ? DEFAULT_AVATARS[selectedAvatar] : null)
+    (selectedAvatar != null ? PRESET_AVATARS[selectedAvatar] : null)
 
   // StrictMode/리렌더로 두 번 열리는 것 방지 (1회만)
   const permissionShown = React.useRef(false)
@@ -356,7 +348,7 @@ export function SignupPage() {
 
         {/* 간격: 375px에서 16px(디자인 기준), 화면이 넓어지면 뷰포트 따라 최대 40px까지 확장 */}
         <div className="flex w-full items-center justify-center gap-[clamp(1rem,calc((100vw-311px)/4),2.5rem)]">
-          {DEFAULT_AVATARS.map((src, i) => (
+          {PRESET_AVATARS.map((src, i) => (
             <button
               key={i}
               type="button"

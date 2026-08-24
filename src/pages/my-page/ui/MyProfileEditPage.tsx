@@ -4,18 +4,12 @@ import { useRouter } from "@tanstack/react-router"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
+import { PRESET_AVATARS, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { showToast } from "@/shared/ui/toast"
 import { useSessionStore, useUpdateProfile } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
 
-const DEFAULT_AVATARS = [
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-]
 const NICKNAME_MAX = 6
 const NICKNAME_INPUT_MAX = NICKNAME_MAX + 1
 
@@ -26,8 +20,8 @@ function MyProfileEditContent() {
   const updateProfileMutation = useUpdateProfile()
 
   const originalNickname = user?.nickname ?? ""
-  const originalProfileImage = user?.profileImageUrl ?? DEFAULT_AVATARS[0]
-  const initialAvatar = DEFAULT_AVATARS.indexOf(originalProfileImage)
+  const originalProfileImage = user?.profileImageUrl ?? PRESET_AVATARS[0]
+  const initialAvatar = PRESET_AVATARS.indexOf(originalProfileImage)
 
   const [nickname, setNickname] = React.useState(originalNickname)
   const [customImage, setCustomImage] = React.useState<string | null>(
@@ -43,7 +37,7 @@ function MyProfileEditContent() {
   const profileImage =
     customImage ??
     (selectedAvatar != null
-      ? DEFAULT_AVATARS[selectedAvatar]
+      ? PRESET_AVATARS[selectedAvatar]
       : originalProfileImage)
   const changed =
     nickname.trim() !== originalNickname ||
@@ -106,7 +100,7 @@ function MyProfileEditContent() {
         </p>
 
         <div className="flex w-full items-center justify-center gap-[clamp(1rem,calc((100vw-311px)/4),2.5rem)]">
-          {DEFAULT_AVATARS.map((src, i) => (
+          {PRESET_AVATARS.map((src, i) => (
             <button
               key={i}
               type="button"
