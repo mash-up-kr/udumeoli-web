@@ -147,21 +147,21 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         />
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[18px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90" />
+        <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90 backdrop-blur-[2px]" />
       </div>
 
-      <div className="relative flex h-full flex-col pt-[calc(env(safe-area-inset-top)+54px)] pb-[max(env(safe-area-inset-bottom),33px)]">
+      <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),33px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
-        <div className="relative h-[76px] shrink-0 px-4">
+        <div className="relative h-[164px] shrink-0 px-4">
           <ButtonIcon
             aria-label="뒤로가기"
             onClick={unmount}
-            className="absolute top-[18px] left-4"
+            className="absolute top-3.5 left-4"
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />
           </ButtonIcon>
 
-          <div className="absolute top-5 left-1/2 flex w-fit -translate-x-1/2 flex-col items-center gap-4">
+          <div className="absolute top-3 left-1/2 flex w-fit -translate-x-1/2 flex-col items-center gap-4">
             <div className="flex flex-col items-center gap-1">
               <p className="text-h3 text-fg-neutral-bold">{potName}</p>
               <div className="flex items-center">
@@ -185,14 +185,18 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         </div>
 
         {/* 리캡 이미지 미리보기 — 임시 placeholder (최종 그래픽은 추후 확정, 시안 #4) */}
-        <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
+        <div className="relative min-h-0 flex-1 px-4 pb-6">
           <div
             role="img"
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="relative aspect-[270/480] h-full max-h-[480px] overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
+            className="absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-331px)] w-[min(276px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
           >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-[2px] z-20 rounded-[30px] border border-white"
+            />
             <div className="absolute inset-x-5 top-6 z-10">
               <div className="flex flex-col font-eng text-[32px] leading-9 font-normal tracking-normal text-[#141820]">
                 <div className="flex items-end gap-1 whitespace-nowrap">

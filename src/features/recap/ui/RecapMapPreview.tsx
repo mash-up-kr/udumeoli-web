@@ -9,6 +9,8 @@ import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 type Point = [number, number]
 type Project = (point: Point) => Point
 
+const MAP_SCALE = 1.06
+
 const EMPTY_GEO: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [],
@@ -35,16 +37,16 @@ function makeProject(features: Array<GeoJSON.Feature>): Project {
   const maxLat = Math.max(...lats)
   const width = Math.max(maxLng - minLng, 0.001)
   const height = Math.max(maxLat - minLat, 0.001)
-  const padding = 12
-  const scaleX = (270 - padding * 2) / width
-  const scaleY = Math.min(scaleX * 1.7, (480 - padding * 2) / height)
+  const scaleX = 270 / width
+  const scaleY = Math.min(scaleX * 1.7, 480 / height)
   const offsetX = (270 - width * scaleX) / 2
   const offsetY = (480 - height * scaleY) / 2
 
-  return ([lng, lat]) => [
-    offsetX + (lng - minLng) * scaleX,
-    offsetY + (maxLat - lat) * scaleY,
-  ]
+  return ([lng, lat]) => {
+    const x = offsetX + (lng - minLng) * scaleX
+    const y = offsetY + (maxLat - lat) * scaleY
+    return [135 + (x - 135) * MAP_SCALE, 240 + (y - 240) * MAP_SCALE]
+  }
 }
 
 function pathForFeature(feature: GeoJSON.Feature, project: Project): string {

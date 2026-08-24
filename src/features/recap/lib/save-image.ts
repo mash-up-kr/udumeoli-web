@@ -108,7 +108,7 @@ async function buildExportSvg(
   const locationIconMarkup = locationIconSource
     ? `<image href="${escapeXml(locationIconSource)}" x="230" y="15" width="18" height="21" preserveAspectRatio="xMidYMid meet"/>`
     : ""
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/><g>${mapMarkup.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/><rect x="2" y="2" width="266" height="476" rx="30" fill="none" stroke="white" stroke-width="1"/><g>${mapMarkup.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -127,7 +127,7 @@ function buildFallbackExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/>${mapMarkup}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/><rect x="2" y="2" width="266" height="476" rx="30" fill="none" stroke="white" stroke-width="1"/>${mapMarkup}${buildRecapTextMarkup(model)}</svg>`
 }
 
 async function svgToBlob(svgMarkup: string): Promise<Blob> {
