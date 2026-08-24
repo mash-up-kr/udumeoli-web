@@ -1,22 +1,25 @@
 import type { ComponentProps } from "react"
 
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
-import profileDefaultSrc from "@/shared/assets/profile-default.svg"
+import avatarCatSrc from "@/shared/assets/profile-avatar-cat.svg"
+import avatarCloudSrc from "@/shared/assets/profile-avatar-cloud.svg"
+import avatarDogSrc from "@/shared/assets/profile-avatar-dog.svg"
+import avatarHamsterSrc from "@/shared/assets/profile-avatar-hamster.svg"
 import { cn } from "@/shared/lib/utils"
-
-/** 기본 프로필 이미지 (추후 교체 예정). 번들 import라 배포 base path와 무관하게 동작. */
-export const DEFAULT_PROFILE_SRC = profileDefaultSrc
 
 /**
  * 서버 프리셋 아바타(1부터 시작하는 번호) ↔ 에셋 매핑.
- * ponytail: 아바타 4종 에셋이 아직 전부 기본 이미지 — 디자인 확정 시 배열만 교체
+ * Figma 1944-11905 기본 아바타 4종: 강아지·고양이·구름·햄스터
  */
 export const PRESET_AVATARS = [
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
-  DEFAULT_PROFILE_SRC,
+  avatarDogSrc,
+  avatarCatSrc,
+  avatarCloudSrc,
+  avatarHamsterSrc,
 ]
+
+/** 기본 프로필 이미지(프리셋 1번 강아지). 번들 import라 배포 base path와 무관하게 동작. */
+export const DEFAULT_PROFILE_SRC = avatarDogSrc
 
 /** 프리셋 번호 → 에셋 URL. 범위 밖(서버 기본값 등)은 null → UI가 기본 이미지 폴백. */
 export function presetAvatarSrc(n: number): string | null {

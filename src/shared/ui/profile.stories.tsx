@@ -1,4 +1,4 @@
-import { Profile } from "./profile"
+import { PRESET_AVATARS, Profile } from "./profile"
 import type { ProfileSize } from "./profile"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
@@ -49,6 +49,22 @@ export const Types: Story = {
       <Profile size="lg" type="default" />
       <Profile size="lg" type="selected" />
       <Profile size="lg" type="add-image" />
+    </div>
+  ),
+}
+
+/** 기본 아바타 프리셋 4종 — 강아지·고양이·구름·햄스터 (서버 프리셋 번호 1~4). */
+export const PresetAvatars: Story = {
+  render: () => (
+    <div className="flex items-center gap-4">
+      {PRESET_AVATARS.map((src, i) => (
+        <Profile
+          key={src}
+          size="lg"
+          type={i === 0 ? "selected" : "default"}
+          src={src}
+        />
+      ))}
     </div>
   ),
 }

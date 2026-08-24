@@ -13,6 +13,7 @@ import emojiShoppingBagSrc from "@/shared/assets/emoji-shopping-bag.svg"
 import emojiFerrisWheelSrc from "@/shared/assets/emoji-ferris-wheel.svg"
 import emojiCroissantSrc from "@/shared/assets/emoji-croissant.svg"
 import emojiCameraSrc from "@/shared/assets/emoji-camera.svg"
+import skyBackgroundSrc from "@/shared/assets/sky-background.png"
 import { cn } from "@/shared/lib/utils"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { ButtonCta } from "@/shared/ui/button-cta"
@@ -209,9 +210,8 @@ function OnboardingOverlay({
       role="dialog"
       aria-modal="true"
       aria-label="서비스 소개"
-      // 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응
       className={cn(
-        "fixed inset-y-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col overflow-y-auto bg-bg-neutral-subtle",
+        "fixed inset-y-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-bg-neutral-subtle",
         closing && "animate-out duration-300 fade-out-0 fill-mode-forwards"
       )}
       onAnimationEnd={(e) => {
@@ -219,62 +219,82 @@ function OnboardingOverlay({
         if (closing && e.target === e.currentTarget) unmount()
       }}
     >
-      {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
-      {step > 1 && (
-        <ButtonIcon
-          aria-label="이전 단계로"
-          className="absolute top-2 left-4 z-10"
-          onClick={() => setStep((step - 1) as Step)}
-        >
-          <ArrowLeft />
-        </ButtonIcon>
-      )}
-
-      {/* 타이틀·그래픽 — 하단 컨트롤 위 영역의 세로 중앙에 고정 */}
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-        {/* 스텝 전환 시 가볍게 페이드 인 (시안에 모션 명세 없음) */}
-        <div
-          key={step}
-          className="flex shrink-0 animate-in flex-col items-center duration-300 fade-in-0"
-        >
-          <div className="flex flex-col gap-4 px-4 text-center">
-            <h2 className="text-h3 text-fg-neutral-bold">
-              {title[0]}
-              <br />
-              {title[1]}
-            </h2>
-            <p className="text-h6-1 text-fg-neutral-subtle">{subtitle}</p>
-          </div>
-          {/* 그래픽 영역 343×320 — 시안 annotation상 추후 전부 교체 예정 */}
-          <div aria-hidden className="relative h-[320px] w-[343px]">
-            <Graphic />
-          </div>
-        </div>
-      </div>
-
-      {/* 진행 표시 — 현재 스텝은 16×8 pill, 나머지는 8px 점 */}
-      <p className="sr-only">3단계 중 {step}단계</p>
+      {/* 배경 — 하늘 사진 + 블러 그라디언트 (Figma 2632-37600·37601).
+          스크롤 컨테이너 밖에 둬서 내용이 스크롤돼도 배경은 고정된다 */}
+      <img
+        src={skyBackgroundSrc}
+        alt=""
+        className="absolute inset-0 size-full object-cover"
+      />
+      {/* 그라디언트 끝색 #66BDFF는 팔레트 밖 → 최근접 토큰 blue-500(#6CBCF9) 사용 */}
       <div
         aria-hidden
-        className="flex shrink-0 items-center justify-center gap-2"
-      >
-        {([1, 2, 3] as const).map((s) => (
-          <span
-            key={s}
-            className={cn(
-              "h-2 rounded-full",
-              s === step ? "w-4 bg-bg-neutral-inverse" : "w-2 bg-neutral-200"
-            )}
-          />
-        ))}
-      </div>
+        className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-blue-500/20 backdrop-blur-[30px]"
+      />
 
-      <div className="shrink-0 px-4 pt-10 pb-8">
-        <ButtonCta
-          onClick={step === 3 ? finish : () => setStep((step + 1) as Step)}
+      {/* 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응 */}
+      <div className="relative flex h-full flex-col overflow-y-auto">
+        {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
+        {step > 1 && (
+          <ButtonIcon
+            aria-label="이전 단계로"
+            className="absolute top-2 left-4 z-10"
+            onClick={() => setStep((step - 1) as Step)}
+          >
+            <ArrowLeft />
+          </ButtonIcon>
+        )}
+
+        {/* 타이틀·그래픽 — 하단 컨트롤 위 영역의 세로 중앙에 고정 */}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+          {/* 스텝 전환 시 가볍게 페이드 인 (시안에 모션 명세 없음) */}
+          <div
+            key={step}
+            className="flex shrink-0 animate-in flex-col items-center duration-300 fade-in-0"
+          >
+            <div className="flex flex-col gap-4 px-4 text-center">
+              {/* 텍스트 섀도 색은 neutral-400 12% (Figma z-index/50 효과) — 섀도 토큰이 없어 값 고정 */}
+              <h2 className="text-h3 text-fg-neutral-bold [text-shadow:0_0_20px_rgba(142,150,169,0.12)]">
+                {title[0]}
+                <br />
+                {title[1]}
+              </h2>
+              <p className="text-h6-1 text-fg-neutral-solid">{subtitle}</p>
+            </div>
+            {/* 그래픽 영역 343×320 — 시안 annotation상 추후 전부 교체 예정 */}
+            <div aria-hidden className="relative h-[320px] w-[343px]">
+              <Graphic />
+            </div>
+          </div>
+        </div>
+
+        {/* 진행 표시 — 현재 스텝은 16×8 pill, 나머지는 8px 점 */}
+        <p className="sr-only">3단계 중 {step}단계</p>
+        <div
+          aria-hidden
+          className="flex shrink-0 items-center justify-center gap-2"
         >
-          {cta}
-        </ButtonCta>
+          {([1, 2, 3] as const).map((s) => (
+            <span
+              key={s}
+              className={cn(
+                "h-2 rounded-full",
+                // 하늘 배경 위라 흰색 계열로 — 현재 스텝 흰색, 나머지 50% (Figma 2632-37629)
+                s === step
+                  ? "w-4 bg-bg-neutral-weak"
+                  : "w-2 bg-bg-neutral-weak/50"
+              )}
+            />
+          ))}
+        </div>
+
+        <div className="shrink-0 px-4 pt-10 pb-8">
+          <ButtonCta
+            onClick={step === 3 ? finish : () => setStep((step + 1) as Step)}
+          >
+            {cta}
+          </ButtonCta>
+        </div>
       </div>
     </div>
   )
