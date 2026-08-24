@@ -66,7 +66,7 @@ async function inlineSvgImages(svgMarkup: string): Promise<string> {
   return new XMLSerializer().serializeToString(xmlDocument.documentElement)
 }
 
-function buildRecapTextMarkup(model: RecapCardModel): string {
+export function buildRecapTextMarkup(model: RecapCardModel): string {
   const days = escapeXml(String(model.totalDays))
   const pins = escapeXml(String(model.pinCount))
   const potName = escapeXml(model.potName)
