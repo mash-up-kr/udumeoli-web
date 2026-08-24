@@ -54,6 +54,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const photos = useAllPhotos(currentPotId)
   const [mapReady, setMapReady] = React.useState(false)
   const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
+  const [isPreparing, setIsPreparing] = React.useState(false)
   const handleMapReady = React.useCallback(() => setMapReady(true), [])
   const localStats = React.useMemo(() => computeRecapStats(photos), [photos])
   const recapStatsQuery = useRecapStats(currentPotId)
@@ -92,13 +93,21 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     const element = document.querySelector<HTMLElement>("[data-recap-card]")
     if (!element) return
     let active = true
+    setPreparedBlob(null)
+    setIsPreparing(true)
     const promise = createRecapImageBlob(element, recapModel)
     void promise
       .then((blob) => {
-        if (active) setPreparedBlob(blob)
+        if (active) {
+          setPreparedBlob(blob)
+          setIsPreparing(false)
+        }
       })
       .catch(() => {
-        if (active) setPreparedBlob(null)
+        if (active) {
+          setPreparedBlob(null)
+          setIsPreparing(false)
+        }
       })
     return () => {
       active = false
@@ -209,9 +218,10 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
 
         <div className="shrink-0 px-4">
           <ButtonCta
+            disabled={!mapReady || isPreparing}
             onClick={() => void exportRecapImage(recapModel, preparedBlob)}
           >
-            이미지로 내보내기
+            {isPreparing ? "이미지 준비 중..." : "이미지로 내보내기"}
           </ButtonCta>
         </div>
       </div>
