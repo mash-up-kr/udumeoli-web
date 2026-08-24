@@ -1456,9 +1456,12 @@ function TravelMapGoogleInner({
     centroids,
   }
 
-  // 지도 안내를 이미 본 유저인지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
+  // 현재 팟에서 지도 안내를 이미 봤는지 — localStorage 접근이라 마운트 후에만 판정 (SSR 안전)
   const [seenTips, setSeenTips] = React.useState(false)
-  React.useEffect(() => setSeenTips(hasSeenMapTips()), [])
+  React.useEffect(
+    () => setSeenTips(hasSeenMapTips(currentPotId)),
+    [currentPotId]
+  )
 
   const centroidMap = React.useMemo(
     () => new Map(centroids.map((c) => [c.name, c])),
@@ -1626,18 +1629,23 @@ function TravelMapGoogleInner({
     [syncVisualsForStage]
   )
 
-  const mapTipsOpenedRef = React.useRef(false)
+  // 팟 단위 1회 노출 — 온보딩 직후 첫 진입은 물론, 지도가 떠 있는 채로 새 팟에
+  // 참여(currentPotId 변경)했을 때도 안내가 다시 뜬다. ref는 StrictMode 중복 실행 가드.
+  const mapTipsOpenedPotRef = React.useRef<string | null>(null)
   React.useEffect(() => {
-    if (!mapReady || mapTipsOpenedRef.current || hasSeenMapTips()) return
-    mapTipsOpenedRef.current = true
+    if (!mapReady || !currentPotId) return
+    if (mapTipsOpenedPotRef.current === currentPotId) return
+    if (hasSeenMapTips(currentPotId)) return
+    mapTipsOpenedPotRef.current = currentPotId
     const opened = openMapTipsOverlay({
+      potId: currentPotId,
       onStart: () => {
         setRecordTipDismissedForSession(true)
         runCameraMove(GANGWON_VIEW, 600)
       },
     })
     if (opened) setSeenTips(true)
-  }, [mapReady, runCameraMove])
+  }, [mapReady, currentPotId, runCameraMove])
 
   const startCollaborationRecord = React.useCallback(
     (trip: CollaborationTrip) => {
