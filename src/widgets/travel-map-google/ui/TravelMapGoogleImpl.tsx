@@ -35,7 +35,11 @@ import {
   markCompletionTipSeen,
   markCompletionTipShown,
 } from "../lib/completionTips"
-import { buildDisplayFills, buildMapFills } from "../lib/mapFills"
+import {
+  buildDisplayFills,
+  buildMapFills,
+  buildPartyMapFills,
+} from "../lib/mapFills"
 import {
   createBoundaryLayer,
   createRegionDataLayer,
@@ -56,7 +60,11 @@ import type {
 import type { TravelKeyword } from "@/entities/photo"
 import { findKeyword, useAllPhotos } from "@/entities/photo"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
-import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
+import {
+  selectCurrentPotMembers,
+  usePartyMapOverview,
+  usePotStore,
+} from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { showToast } from "@/shared/ui/toast"
 import { hasSeenMapTips, openMapTipsOverlay } from "@/features/onboarding"
@@ -64,6 +72,7 @@ import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
+import { REGION_NAME_BY_CODE } from "@/shared/api/region-codes"
 import { cn } from "@/shared/lib/utils"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { DialogTitle } from "@/shared/ui/dialog"
@@ -144,8 +153,12 @@ type ProvinceAggregate = {
   keyword: TravelKeyword
   /** 도 소속 전체 지역명 — 1단계에서 도 전체를 색칠할 때 사용 */
   regions: Array<string>
+  /** 도 안에서 다녀온 서로 다른 시·군·구 수 — 정책상 +N 배지 */
+  regionCount: number
   /** 도 안의 여행 횟수 — 최신 지도 핀 하단 뱃지의 +N */
   visitCount: number
+  recordedMemberCount?: number
+  memberCount?: number
   lat: number
   lng: number
 }
@@ -191,6 +204,22 @@ const PROVINCE_BADGE_LABELS: Record<string, string> = {
   경상북도: "경북",
   경상남도: "경남",
   제주특별자치도: "제주",
+}
+
+const PROVINCE_NAME_BY_CODE: Record<string, string> = {
+  "31": "경기도",
+  "32": "강원도",
+  "33": "충청북도",
+  "34": "충청남도",
+  "35": "전라북도",
+  "36": "전라남도",
+  "37": "경상북도",
+  "38": "경상남도",
+  "39": "제주특별자치도",
+}
+
+function provinceNameByCode(code: string): string | undefined {
+  return REGION_NAME_BY_CODE[code] ?? PROVINCE_NAME_BY_CODE[code]
 }
 
 function formatProvinceBadgeName(province: string): string {
@@ -488,8 +517,14 @@ const ProvinceAggregateMarkers = React.memo(
               imageAlt={`${formatProvinceBadgeName(agg.province)} 대표 키워드 ${
                 agg.keyword.label
               }`}
+              topBadge={
+                agg.recordedMemberCount !== undefined &&
+                agg.memberCount !== undefined
+                  ? `${agg.recordedMemberCount}/${agg.memberCount}`
+                  : undefined
+              }
               bottomBadge={`${formatProvinceBadgeName(agg.province)}+${
-                agg.visitCount
+                agg.regionCount
               }`}
             />
           </AdvancedMarker>
@@ -1142,6 +1177,8 @@ function TravelMapGoogleInner({
     (s) => s.pots.find((pot) => pot.id === s.currentPotId)?.name ?? "우리 팟"
   )
   const photos = useAllPhotos(currentPotId)
+  const mapOverviewQuery = usePartyMapOverview(currentPotId)
+  const mapOverview = mapOverviewQuery.data
   const fills = useRegionColorStore(
     (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
   )
@@ -1227,15 +1264,17 @@ function TravelMapGoogleInner({
       ),
     [collaborationTrips]
   )
-  const mapFills = React.useMemo(
-    () =>
-      buildMapFills({
-        baseFills: fills,
-        trips: latestTripsByRegion.values(),
-        incompleteRegionFill: INCOMPLETE_REGION_FILL,
-      }),
-    [fills, latestTripsByRegion]
-  )
+  const mapFills = React.useMemo(() => {
+    if (mapOverview) {
+      return buildPartyMapFills({ baseFills: fills, overview: mapOverview })
+    }
+
+    return buildMapFills({
+      baseFills: fills,
+      trips: latestTripsByRegion.values(),
+      incompleteRegionFill: INCOMPLETE_REGION_FILL,
+    })
+  }, [fills, latestTripsByRegion, mapOverview])
 
   // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
   // 동수면 최근 여행)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
@@ -1248,6 +1287,33 @@ function TravelMapGoogleInner({
       const list = regionsByProvince.get(c.province) ?? []
       list.push(c)
       regionsByProvince.set(c.province, list)
+    }
+
+    if (mapOverview) {
+      return mapOverview.provinces.flatMap((cell) => {
+        const province = provinceNameByCode(cell.regionCode)
+        const keyword = findKeyword(cell.keyword)
+        const members = province ? (regionsByProvince.get(province) ?? []) : []
+        if (!province || !keyword || members.length === 0) return []
+
+        return [
+          {
+            province,
+            keyword,
+            regions: members.map((member) => member.name),
+            regionCount: cell.regionCount,
+            visitCount: cell.visitCount,
+            recordedMemberCount: cell.recordedMemberCount,
+            memberCount: mapOverview.memberCount,
+            lat:
+              members.reduce((sum, member) => sum + member.lat, 0) /
+              members.length,
+            lng:
+              members.reduce((sum, member) => sum + member.lng, 0) /
+              members.length,
+          },
+        ]
+      })
     }
 
     const tripsByProvince = new Map<string, Array<CollaborationTrip>>()
@@ -1268,6 +1334,7 @@ function TravelMapGoogleInner({
         province,
         keyword,
         regions: members.map((c) => c.name),
+        regionCount: new Set(trips.map((trip) => trip.region)).size,
         visitCount: trips.length,
         // 도 대표 위치 — 소속 지역 centroid 평균 (별도 도 지오메트리 없이 근사)
         lat: members.reduce((sum, c) => sum + c.lat, 0) / members.length,
@@ -1275,20 +1342,36 @@ function TravelMapGoogleInner({
       })
     }
     return aggregates
-  }, [centroids, visualTrips])
+  }, [centroids, mapOverview, visualTrips])
 
   // 기록이 있는 도 — 1단계 시도 경계선을 이 도들에만 씌운다
   const recordedProvinces = React.useMemo(
-    () => new Set(provinceAggregates.map((agg) => agg.province)),
-    [provinceAggregates]
+    () =>
+      mapOverview
+        ? new Set(
+            mapOverview.provinces.flatMap((cell) => {
+              const province = provinceNameByCode(cell.regionCode)
+              return province ? [province] : []
+            })
+          )
+        : new Set(provinceAggregates.map((agg) => agg.province)),
+    [mapOverview, provinceAggregates]
   )
 
   // 0단계(국가 뷰) 대표 핀 — 내가 기록한 여행 중 제일 많이 뽑힌 키워드 1개
   const countryKeyword = React.useMemo(
-    () => findKeyword(mostPickedKeyword(visualTrips)),
-    [visualTrips]
+    () =>
+      mapOverview
+        ? findKeyword(mapOverview.country?.keyword)
+        : findKeyword(mostPickedKeyword(visualTrips)),
+    [mapOverview, visualTrips]
   )
-  const countryVisitCount = visualTrips.length
+  const countryRegionCount = mapOverview
+    ? (mapOverview.country?.regionCount ?? 0)
+    : new Set(visualTrips.map((trip) => trip.region)).size
+  const countryProgressBadge = mapOverview?.country
+    ? `${mapOverview.country.recordedMemberCount}/${mapOverview.memberCount}`
+    : undefined
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
@@ -1634,6 +1717,12 @@ function TravelMapGoogleInner({
     }
 
     const regionCounts = new Map<string, number>()
+    const visitCountsByRegion = new Map(
+      mapOverview?.municipalities.map((cell) => [
+        REGION_NAME_BY_CODE[cell.regionCode],
+        cell.visitCount,
+      ])
+    )
     return trips.flatMap((trip) => {
       const keyword = findKeyword(trip.keyword)
       if (!keyword) return []
@@ -1656,11 +1745,14 @@ function TravelMapGoogleInner({
             offset.y * STICKER_DEG_PER_PX * Math.cos((baseLat * Math.PI) / 180),
           pinLng: baseLng + offset.x * STICKER_DEG_PER_PX,
           rotate: offset.rotate,
-          visitCount: visitCountsByTripKey.get(trip.key) ?? 1,
+          visitCount:
+            visitCountsByRegion.get(trip.region) ??
+            visitCountsByTripKey.get(trip.key) ??
+            1,
         },
       ]
     })
-  }, [collaborationTrips, centroidMap])
+  }, [collaborationTrips, centroidMap, mapOverview])
 
   // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
@@ -1756,7 +1848,8 @@ function TravelMapGoogleInner({
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              bottomBadge={`전국+${countryVisitCount}`}
+              topBadge={countryProgressBadge}
+              bottomBadge={`전국+${countryRegionCount}`}
             />
           </AdvancedMarker>
         ) : null}

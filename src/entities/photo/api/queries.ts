@@ -56,8 +56,12 @@ export function useCreatePhoto() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createPhoto,
-    onSuccess: (photo) =>
-      queryClient.invalidateQueries({ queryKey: photoKeys.list(photo.potId) }),
+    onSuccess: (photo) => {
+      queryClient.invalidateQueries({ queryKey: photoKeys.list(photo.potId) })
+      queryClient.invalidateQueries({
+        queryKey: ["travel-pot", "map-overview", photo.potId],
+      })
+    },
   })
 }
 
@@ -76,6 +80,11 @@ export function useDeletePhoto() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (photo: Photo) => deletePhoto(photo),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
+    onSuccess: (_, photo) => {
+      queryClient.invalidateQueries({ queryKey: photoKeys.all })
+      queryClient.invalidateQueries({
+        queryKey: ["travel-pot", "map-overview", photo.potId],
+      })
+    },
   })
 }

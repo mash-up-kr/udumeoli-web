@@ -6,6 +6,7 @@ import {
   createParty,
   deleteParty,
   fetchMyParties,
+  fetchPartyMapOverview,
   joinParty,
   leaveParty,
 } from "./pot.api"
@@ -16,6 +17,8 @@ import { USE_MOCK } from "@/shared/api/client"
 export const travelPotKeys = {
   all: ["travel-pot"] as const,
   myParties: () => [...travelPotKeys.all, "my-parties"] as const,
+  mapOverview: (partyId: string) =>
+    [...travelPotKeys.all, "map-overview", partyId] as const,
 }
 
 export function useMyParties(options: QueryOptions = {}) {
@@ -23,6 +26,16 @@ export function useMyParties(options: QueryOptions = {}) {
     queryKey: travelPotKeys.myParties(),
     queryFn: fetchMyParties,
     ...options,
+  })
+}
+
+export function usePartyMapOverview(partyId: string) {
+  return useQuery({
+    queryKey: travelPotKeys.mapOverview(partyId),
+    queryFn: () => fetchPartyMapOverview(partyId),
+    enabled: Boolean(partyId) && !USE_MOCK,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   })
 }
 

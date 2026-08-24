@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest"
 
 import { buildCollaborationTrips, latestTripByRegion } from "./collaboration"
-import { buildDisplayFills, buildMapFills } from "./mapFills"
+import {
+  buildDisplayFills,
+  buildMapFills,
+  buildPartyMapFills,
+} from "./mapFills"
 import type { RegionFill } from "@/entities/region"
 import type { Photo } from "@/entities/photo"
 import { TRIP_100_POT } from "@/entities/travel-pot"
@@ -213,5 +217,59 @@ describe("buildDisplayFills", () => {
     })
 
     expect(fills).toBe(mapFills)
+  })
+})
+
+describe("buildPartyMapFills", () => {
+  const overview = {
+    memberCount: 4,
+    country: {
+      regionCode: "KR",
+      keyword: "NATURE" as const,
+      regionCount: 2,
+      visitCount: 3,
+      recordedMemberCount: 4,
+    },
+    provinces: [
+      {
+        regionCode: "32",
+        keyword: "FOOD" as const,
+        regionCount: 2,
+        visitCount: 3,
+        recordedMemberCount: 3,
+      },
+    ],
+    municipalities: [
+      {
+        regionCode: "32030",
+        keyword: "FOOD" as const,
+        regionCount: 1,
+        visitCount: 2,
+        recordedMemberCount: 2,
+      },
+    ],
+  }
+
+  it("시군구 집계는 regionCode로 해당 지역만 칠한다", () => {
+    expect(
+      buildPartyMapFills({
+        baseFills: {},
+        overview,
+      })
+    ).toEqual({ 강릉시: { type: "color", value: food.mapColor } })
+  })
+
+  it("사용자가 저장한 이미지 채움은 서버 색상보다 우선한다", () => {
+    const imageFill: RegionFill = {
+      type: "image",
+      imageId: "image-1",
+      dataUrl: "data:image/png;base64,test",
+    }
+    expect(
+      buildPartyMapFills({
+        baseFills: { 강릉시: imageFill },
+        overview,
+      }).강릉시
+    ).toBe(imageFill)
   })
 })

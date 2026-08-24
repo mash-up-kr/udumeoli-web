@@ -111,6 +111,62 @@ interface PartyPreviewResponse {
   partyPreview: { name: string; memberCount: number; members: Array<UserDto> }
 }
 
+export type MapCellKeyword =
+  | "HEALING"
+  | "ACTIVITY"
+  | "FOOD"
+  | "NATURE"
+  | "CITY"
+  | "CULTURE"
+
+export interface MapCell {
+  regionCode: string
+  keyword: MapCellKeyword
+  regionCount: number
+  visitCount: number
+  recordedMemberCount: number
+}
+
+export interface PartyMapOverview {
+  memberCount: number
+  country: MapCell | null
+  provinces: Array<MapCell>
+  municipalities: Array<MapCell>
+}
+
+const PARTY_MAP_OVERVIEW_QUERY = /* GraphQL */ `
+  query PartyMapOverview($partyId: ID!) {
+    partyMapOverview(partyId: $partyId) {
+      memberCount
+      country {
+        regionCode
+        keyword
+        regionCount
+        visitCount
+        recordedMemberCount
+      }
+      provinces {
+        regionCode
+        keyword
+        regionCount
+        visitCount
+        recordedMemberCount
+      }
+      municipalities {
+        regionCode
+        keyword
+        regionCount
+        visitCount
+        recordedMemberCount
+      }
+    }
+  }
+`
+
+interface PartyMapOverviewResponse {
+  partyMapOverview: PartyMapOverview
+}
+
 function toPotMember(dto: UserDto): PotMember {
   return {
     id: dto.id,
@@ -172,6 +228,28 @@ export async function fetchPartyPreview(
     memberCount: data.partyPreview.memberCount,
     members: data.partyPreview.members.map((member) => toPotMember(member)),
   }
+}
+
+export async function fetchPartyMapOverview(
+  partyId: string
+): Promise<PartyMapOverview> {
+  if (USE_MOCK) {
+    return mockResponse({
+      memberCount: 0,
+      country: null,
+      provinces: [],
+      municipalities: [],
+    })
+  }
+  if (!partyId) {
+    throw new Error("지도 집계를 조회하려면 팟 ID가 필요해요")
+  }
+
+  const data = await gqlClient.request<PartyMapOverviewResponse>(
+    PARTY_MAP_OVERVIEW_QUERY,
+    { partyId }
+  )
+  return data.partyMapOverview
 }
 
 /** 팟 나가기 — [정책] owner가 호출하면 OWNER_CANNOT_LEAVE 에러. */

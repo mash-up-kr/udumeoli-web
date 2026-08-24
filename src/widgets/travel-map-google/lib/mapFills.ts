@@ -1,6 +1,8 @@
 import type { RegionFill } from "@/entities/region"
+import type { PartyMapOverview } from "@/entities/travel-pot"
 import type { TravelKeyword, TravelKeywordId } from "@/entities/photo"
 import { findKeyword } from "@/entities/photo"
+import { REGION_NAME_BY_CODE } from "@/shared/api/region-codes"
 
 export type MapFillTrip = {
   region: string
@@ -16,6 +18,30 @@ export type DisplayFillProvince = {
 
 export type DisplayFillCentroid = {
   name: string
+}
+
+/** 서버 집계 코드와 프론트 GeoJSON 지역명을 연결해 현재 줌의 색칠을 만든다. */
+export function buildPartyMapFills({
+  baseFills,
+  overview,
+}: {
+  baseFills: Record<string, RegionFill>
+  overview: PartyMapOverview
+}): Record<string, RegionFill> {
+  const next: Record<string, RegionFill> = { ...baseFills }
+  const setColor = (region: string, color: string) => {
+    if (Object.hasOwn(next, region) && next[region].type === "image") return
+    next[region] = { type: "color", value: color }
+  }
+
+  for (const cell of overview.municipalities) {
+    const keyword = findKeyword(cell.keyword)
+    if (!keyword) continue
+    const region = REGION_NAME_BY_CODE[cell.regionCode]
+    if (region) setColor(region, keyword.mapColor)
+  }
+
+  return next
 }
 
 export function buildMapFills({
