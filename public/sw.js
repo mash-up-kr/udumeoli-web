@@ -2,7 +2,6 @@ const CACHE_NAME = "pinnned-shell-v1"
 const APP_SHELL = [
   "/",
   "/manifest.json",
-  "/pwa-cloud-background.png",
   "/icon-192.png",
   "/icon-512.png",
   "/favicon.svg",

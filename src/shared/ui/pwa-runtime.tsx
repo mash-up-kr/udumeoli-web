@@ -5,6 +5,7 @@ import foodSticker from "@/shared/assets/map-stickers/food.png"
 import healingSticker from "@/shared/assets/map-stickers/healing.png"
 import photoSticker from "@/shared/assets/map-stickers/photo.png"
 import logoSrc from "@/shared/assets/logo-pinnned.svg"
+import skyBackgroundSrc from "@/shared/assets/sky-background.png"
 
 const SPLASH_DURATION_MS = 3600
 
@@ -79,7 +80,10 @@ export function PwaRuntime() {
       className="pwa-splash fixed inset-y-0 left-1/2 z-[100] w-full max-w-md -translate-x-1/2 overflow-hidden bg-[#76bdf3]"
       role="status"
     >
-      <div className="pwa-splash__clouds absolute -inset-[10%] bg-cover bg-no-repeat" />
+      <div
+        className="pwa-splash__clouds absolute -inset-[10%] bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url(${skyBackgroundSrc})` }}
+      />
       <div className="absolute inset-0 flex items-center justify-center">
         {STICKERS.map((sticker) => (
           <img
@@ -100,7 +104,6 @@ export function PwaRuntime() {
       </div>
       <style>{`
         .pwa-splash__clouds {
-          background-image: url('/pwa-cloud-background.png');
           background-position: center bottom;
           transform-origin: center bottom;
           animation: pwa-splash-clouds 1000ms linear both;
