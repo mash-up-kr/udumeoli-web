@@ -1254,7 +1254,10 @@ function TravelMapGoogleInner({
   const [collaborationRecordDraft, setCollaborationRecordDraft] =
     React.useState<CollaborationRecordDraft | null>(null)
   const [mapReady, setMapReady] = React.useState(false)
+  // 팁 안내의 시작하기 콜백이 렌더 시점과 무관하게 준비 여부를 읽기 위한 ref
+  const mapReadyRef = React.useRef(false)
   const handleMapReady = React.useCallback(() => {
+    mapReadyRef.current = true
     setMapReady(true)
     onReady?.()
   }, [onReady])
@@ -1631,9 +1634,13 @@ function TravelMapGoogleInner({
 
   // 팟 단위 1회 노출 — 온보딩 직후 첫 진입은 물론, 지도가 떠 있는 채로 새 팟에
   // 참여(currentPotId 변경)했을 때도 안내가 다시 뜬다. ref는 StrictMode 중복 실행 가드.
+  // 지도 준비(mapReady)를 기다리지 않는다 — 로딩 화면이 먼저 보였다가 갑자기
+  // 안내가 덮이면 어색해서, 진입 즉시 안내를 띄우고 지도는 블러 뒤에서 로드한다.
   const mapTipsOpenedPotRef = React.useRef<string | null>(null)
+  // 지도 준비 전에 시작하기를 누른 경우 — 준비되는 시점에 카메라 이동을 이어서 실행
+  const pendingTipsCameraRef = React.useRef(false)
   React.useEffect(() => {
-    if (!mapReady || !currentPotId) return
+    if (!currentPotId) return
     if (mapTipsOpenedPotRef.current === currentPotId) return
     if (hasSeenMapTips(currentPotId)) return
     mapTipsOpenedPotRef.current = currentPotId
@@ -1641,11 +1648,18 @@ function TravelMapGoogleInner({
       potId: currentPotId,
       onStart: () => {
         setRecordTipDismissedForSession(true)
-        runCameraMove(GANGWON_VIEW, 600)
+        if (mapReadyRef.current) runCameraMove(GANGWON_VIEW, 600)
+        else pendingTipsCameraRef.current = true
       },
     })
     if (opened) setSeenTips(true)
-  }, [mapReady, currentPotId, runCameraMove])
+  }, [currentPotId, runCameraMove])
+
+  React.useEffect(() => {
+    if (!mapReady || !pendingTipsCameraRef.current) return
+    pendingTipsCameraRef.current = false
+    runCameraMove(GANGWON_VIEW, 600)
+  }, [mapReady, runCameraMove])
 
   const startCollaborationRecord = React.useCallback(
     (trip: CollaborationTrip) => {
