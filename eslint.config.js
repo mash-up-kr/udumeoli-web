@@ -81,7 +81,14 @@ const fsdBoundaries = {
 }
 
 export default [
-  { ignores: ["storybook-static/**", ".output/**", ".vercel/**"] },
+  {
+    ignores: [
+      "storybook-static/**",
+      ".output/**",
+      ".vercel/**",
+      "public/sw.js",
+    ],
+  },
   ...tanstackConfig,
   fsdBoundaries,
 ]

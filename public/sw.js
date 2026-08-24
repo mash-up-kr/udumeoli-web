@@ -1,5 +1,12 @@
 const CACHE_NAME = "pinnned-shell-v1"
-const APP_SHELL = ["/", "/manifest.json", "/pwa-splash.png", "/favicon.svg"]
+const APP_SHELL = [
+  "/",
+  "/manifest.json",
+  "/pwa-cloud-background.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/favicon.svg",
+]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -36,6 +43,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          if (!response.ok) return response
           const copy = response.clone()
           void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
