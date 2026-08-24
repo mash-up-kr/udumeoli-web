@@ -63,8 +63,9 @@ export function LogoStickerCluster({
         src={stickerHealingSrc}
         className="top-[204px] left-[269px] size-[74px] rotate-[26deg]"
       />
-      {/* 맛집(가로형 256×192) — 정사각 박스 중앙 크롭. 지도 스티커의 food fit과 같은 크롭 값 */}
-      <span className="absolute top-[204px] left-[94px] block size-[122px] -translate-x-1/2 -translate-y-1/2 overflow-hidden">
+      {/* 맛집(가로형 256×192) — 정사각 박스 중앙 크롭. 지도 스티커의 food fit과 같은 크롭 값.
+          시안(2632:37334)은 이 인스턴스만 좌우 반전(수저가 왼쪽) — 크롭 박스째 미러링 */}
+      <span className="absolute top-[204px] left-[94px] block size-[122px] -translate-x-1/2 -translate-y-1/2 -scale-x-100 overflow-hidden">
         <img
           src={stickerFoodSrc}
           alt=""
