@@ -19,7 +19,11 @@ function makePhoto(overrides: Partial<Photo> & Pick<Photo, "date">): Photo {
 
 describe("computeRecapStats", () => {
   it("사진이 없으면 0일·0개 지역", () => {
-    expect(computeRecapStats([])).toEqual({ totalDays: 0, regionCount: 0 })
+    expect(computeRecapStats([])).toEqual({
+      totalDays: 0,
+      regionCount: 0,
+      pinCount: 0,
+    })
   })
 
   it("기간 사진은 date~endDate 전체를, 겹치는 날짜는 한 번만 센다", () => {
@@ -31,6 +35,6 @@ describe("computeRecapStats", () => {
       // 떨어진 부산 당일
       makePhoto({ date: "2026-08-10", region: "부산" }),
     ])
-    expect(stats).toEqual({ totalDays: 4, regionCount: 3 })
+    expect(stats).toEqual({ totalDays: 4, regionCount: 3, pinCount: 3 })
   })
 })

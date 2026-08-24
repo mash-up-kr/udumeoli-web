@@ -1,28 +1,35 @@
 import * as React from "react"
 import { overlay } from "overlay-kit"
 
-import { saveRecapImage } from "../lib/save-image"
+import { createRecapImageBlob, saveRecapImage } from "../lib/save-image"
 import { computeRecapStats } from "../lib/stats"
+import { RecapMapPreview } from "./RecapMapPreview"
 
 import { useAllPhotos } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
+import { useSessionStore } from "@/entities/user"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { Tooltip } from "@/shared/ui/tooltip"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
+import recapLocationIconSrc from "@/shared/assets/icon-recap-location.svg"
+import photoMapSrc from "@/shared/assets/photo-map.jpg"
 
-async function exportRecapImage() {
+async function exportRecapImage(preparedBlob?: Blob | null) {
+  const element = document.querySelector<HTMLElement>("[data-recap-card]")
+  if (!element) throw new Error("리캡 카드를 찾을 수 없어요")
   try {
-    await saveRecapImage()
+    await saveRecapImage(element, preparedBlob)
     showToast({
       message: "이미지가 저장되었어요.",
       icon: "check",
       // CTA 버튼 바로 위 (시안 1745-38757)
       className: "bottom-[106px]",
     })
-  } catch {
+  } catch (error) {
+    console.error("리캡 이미지 저장 실패", error)
     showToast({
       message: "이미지 저장을 실패했어요. 다시 시도해 주세요.",
       icon: "alert",
@@ -37,10 +44,23 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     (s) => s.pots.find((p) => p.id === s.currentPotId)?.name ?? ""
   )
   const members = usePotStore(selectCurrentPotMembers)
+  const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const photos = useAllPhotos(currentPotId)
-  const { totalDays, regionCount } = React.useMemo(
+  const [mapReady, setMapReady] = React.useState(false)
+  const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
+  const handleMapReady = React.useCallback(() => setMapReady(true), [])
+  const { totalDays, pinCount } = React.useMemo(
     () => computeRecapStats(photos),
     [photos]
+  )
+  const orderedMembers = React.useMemo(
+    () =>
+      [...members].sort((a, b) => {
+        if (a.id === currentUserId) return -1
+        if (b.id === currentUserId) return 1
+        return 0
+      }),
+    [currentUserId, members]
   )
 
   React.useEffect(() => {
@@ -51,36 +71,59 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [unmount])
 
+  React.useEffect(() => {
+    if (!mapReady) return
+    const element = document.querySelector<HTMLElement>("[data-recap-card]")
+    if (!element) return
+    let active = true
+    const promise = createRecapImageBlob(element)
+    void promise
+      .then((blob) => {
+        if (active) setPreparedBlob(blob)
+      })
+      .catch(() => {
+        if (active) setPreparedBlob(null)
+      })
+    return () => {
+      active = false
+    }
+  }, [mapReady, photos, potName, orderedMembers, totalDays, pinCount])
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="여행 리캡"
-      className="fixed inset-y-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 overflow-hidden"
+      className="fixed inset-y-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 overflow-hidden bg-[#f2faff]"
     >
       {/* 배경 — 지도가 비쳐 보이는 블러(시안의 하늘색~연두색 그라데이션) + 상/하단 흰 그라데이션 */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
+        <img
+          src={photoMapSrc}
+          alt=""
+          className="absolute inset-0 size-full scale-110 object-cover object-top opacity-70 blur-[18px]"
+        />
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[18px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90" />
       </div>
 
-      <div className="relative flex h-full flex-col pt-[calc(env(safe-area-inset-top)+16px)] pb-[max(env(safe-area-inset-bottom),33px)]">
+      <div className="relative flex h-full flex-col pt-[calc(env(safe-area-inset-top)+54px)] pb-[max(env(safe-area-inset-bottom),33px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
-        <div className="relative shrink-0 px-4">
+        <div className="relative h-[76px] shrink-0 px-4">
           <ButtonIcon
             aria-label="뒤로가기"
             onClick={unmount}
-            className="absolute top-0 left-4"
+            className="absolute top-[18px] left-4"
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />
           </ButtonIcon>
 
-          <div className="mx-auto flex w-fit flex-col items-center gap-4">
+          <div className="absolute top-5 left-1/2 flex w-fit -translate-x-1/2 flex-col items-center gap-4">
             <div className="flex flex-col items-center gap-1">
               <p className="text-h3 text-fg-neutral-bold">{potName}</p>
               <div className="flex items-center">
-                {members.map((member, index) => (
+                {orderedMembers.map((member, index) => (
                   <Profile
                     key={member.id}
                     size="md"
@@ -93,25 +136,67 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             </div>
             <Tooltip>
               <span className="text-fg-brand-solid">{totalDays}일</span> 동안{" "}
-              <span className="text-fg-brand-solid">
-                {regionCount}개의 지역
-              </span>
-              을 다녀왔어요
+              <span className="text-fg-brand-solid">{pinCount}개의 핀</span>을
+              만들었어요
             </Tooltip>
           </div>
         </div>
 
         {/* 리캡 이미지 미리보기 — 임시 placeholder (최종 그래픽은 추후 확정, 시안 #4) */}
-        <div className="flex min-h-0 flex-1 items-center justify-center px-4 py-6">
+        <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
           <div
             role="img"
             aria-label="리캡 이미지 미리보기"
-            className="aspect-[270/480] h-full max-h-[480px] rounded-[32px] border border-stroke-neutral-inverse bg-neutral-600 shadow-[0px_0px_10px_0px_white]"
-          />
+            data-recap-card
+            data-recap-days={totalDays}
+            data-recap-pins={pinCount}
+            data-recap-pot-name={potName}
+            className="relative aspect-[270/480] h-full max-h-[480px] overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
+          >
+            <div className="absolute inset-x-5 top-6 z-10">
+              <div className="flex flex-col font-eng text-[32px] leading-9 font-normal tracking-normal text-[#141820]">
+                <div className="flex items-end gap-1 whitespace-nowrap">
+                  <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
+                    {totalDays}
+                  </span>
+                  <span>DAYS</span>
+                </div>
+                <div className="flex items-end gap-1 whitespace-nowrap">
+                  <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
+                    {pinCount}
+                  </span>
+                  <span>PINNNED</span>
+                </div>
+              </div>
+            </div>
+            <img
+              src={recapLocationIconSrc}
+              alt=""
+              data-recap-location-icon
+              className="absolute top-6 right-4 z-10 h-6 w-5"
+            />
+            <RecapMapPreview
+              photos={photos}
+              className="absolute inset-0"
+              onReady={handleMapReady}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
+            <div className="absolute top-[108px] left-5 z-10 flex max-w-[104px] flex-col items-start gap-1">
+              {orderedMembers.map((member) => (
+                <span
+                  key={member.id}
+                  data-recap-member={member.nickname}
+                  className="max-w-full truncate rounded-full bg-[#232936]/40 px-2 py-[2px] text-[9px] leading-[12px] whitespace-nowrap text-white backdrop-blur-[4px]"
+                >
+                  @{member.nickname}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="shrink-0 px-4">
-          <ButtonCta onClick={() => void exportRecapImage()}>
+          <ButtonCta onClick={() => void exportRecapImage(preparedBlob)}>
             이미지로 내보내기
           </ButtonCta>
         </div>
