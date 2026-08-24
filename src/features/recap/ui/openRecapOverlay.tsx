@@ -58,6 +58,22 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const [isPreparing, setIsPreparing] = React.useState(false)
   const handleMapReady = React.useCallback(() => setMapReady(true), [])
   const localStats = React.useMemo(() => computeRecapStats(photos), [photos])
+  const photoSignature = React.useMemo(
+    () =>
+      photos
+        .map((photo) =>
+          [
+            photo.id,
+            photo.region,
+            photo.keyword,
+            photo.date,
+            photo.endDate ?? "",
+            photo.thumbnailUrl,
+          ].join(":")
+        )
+        .join("|"),
+    [photos]
+  )
   const recapStatsQuery = useRecapStats(currentPotId)
   const { totalDays, pinCount } = USE_MOCK
     ? localStats
@@ -113,7 +129,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     return () => {
       active = false
     }
-  }, [mapReady, photos, recapModel])
+  }, [mapReady, photoSignature, recapModel])
 
   return (
     <div
