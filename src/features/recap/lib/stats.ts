@@ -1,8 +1,10 @@
 import type { Photo } from "@/entities/photo"
+import { groupTrips } from "@/entities/photo"
 
 export interface RecapStats {
   totalDays: number
   regionCount: number
+  pinCount: number
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -32,5 +34,14 @@ export function computeRecapStats(photos: Array<Photo>): RecapStats {
     }
   }
 
-  return { totalDays: days.size, regionCount: regions.size }
+  return {
+    totalDays: days.size,
+    regionCount: regions.size,
+    pinCount: [...regions].reduce(
+      (count, region) =>
+        count +
+        groupTrips(photos.filter((photo) => photo.region === region)).length,
+      0
+    ),
+  }
 }
