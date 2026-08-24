@@ -41,6 +41,7 @@ import {
   buildPartyMapFills,
 } from "../lib/mapFills"
 import {
+  boundaryStyle,
   createBoundaryLayer,
   createRegionDataLayer,
   isCanonicalRegionCode,
@@ -59,7 +60,11 @@ import type {
   DecoratePreview,
 } from "@/features/travel-record"
 import type { TravelKeyword } from "@/entities/photo"
-import { findKeyword, useAllPhotos } from "@/entities/photo"
+import {
+  findKeyword,
+  regionStrokeForFill,
+  useAllPhotos,
+} from "@/entities/photo"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import {
   selectCurrentPotMembers,
@@ -783,7 +788,9 @@ function MapController({
   decorating,
   decoratePreview,
   recordedProvinces,
+  provinceStrokes,
   hasNationRecord,
+  nationStroke,
   syncVisualsForStage,
   stageSyncedFillsRef,
   setZoomStage,
@@ -808,8 +815,12 @@ function MapController({
   decoratePreview: DecoratePreview | null
   /** 기록(여행)이 있는 도 — 1단계 시도 경계선을 이 도들에만 노출 */
   recordedProvinces: Set<string>
+  /** 도별 경계선 색 — 1단계 색칠과 같은 계열 진한 색 (없으면 기본 검정) */
+  provinceStrokes: Map<string, string>
   /** 전국 기록 존재 여부 — 0단계 국가 외곽선 노출 조건 (단일 색칠과 동일 게이트) */
   hasNationRecord: boolean
+  /** 0단계 국가 외곽선 색 — 전국 대표 키워드 색 계열 */
+  nationStroke: string
   /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
   syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
   stageSyncedFillsRef: React.MutableRefObject<Record<string, RegionFill> | null>
@@ -830,8 +841,12 @@ function MapController({
   incompleteRegionSetRef.current = incompleteRegionSet
   const recordedProvincesRef = React.useRef(recordedProvinces)
   recordedProvincesRef.current = recordedProvinces
+  const provinceStrokesRef = React.useRef(provinceStrokes)
+  provinceStrokesRef.current = provinceStrokes
   const hasNationRecordRef = React.useRef(hasNationRecord)
   hasNationRecordRef.current = hasNationRecord
+  const nationStrokeRef = React.useRef(nationStroke)
+  nationStrokeRef.current = nationStroke
   // 기록 변화 시 idle을 기다리지 않고 경계선 노출을 재평가하기 위한 재동기화 핸들
   const syncBoundaryLayersRef = React.useRef<(() => void) | null>(null)
   // 초기화 effect가 map만 보고 도니, 콜백은 ref 경유로 최신값을 읽는다
@@ -899,8 +914,12 @@ function MapController({
         const syncBoundaryLayers = (stage: 0 | 1 | 2 | 3) => {
           const next: BoundarySnapshot = {
             stage,
+            // 색만 바뀌어도(대표 키워드 변경) 재스타일하도록 도 이름에 색을 붙여 비교
             recordedProvinceKey: recordedProvinceKey(
-              recordedProvincesRef.current
+              [...recordedProvincesRef.current].map(
+                (name) =>
+                  `${name}:${provinceStrokesRef.current.get(name) ?? ""}:${nationStrokeRef.current}`
+              )
             ),
             hasNationRecord: hasNationRecordRef.current,
           }
@@ -909,6 +928,8 @@ function MapController({
           if (plan.skip) return
           lastBoundarySnapshot = next
 
+          // 전국 외곽선 = 대표 키워드 색 계열 (색칠과 같은 게이트로만 노출)
+          nationBoundary?.setStyle(boundaryStyle(nationStrokeRef.current))
           nationBoundary?.setMap(
             stage === 0 && next.hasNationRecord ? map : null
           )
@@ -916,13 +937,14 @@ function MapController({
           if (!province) return
           // feature 전체 순회는 기록된 도 집합이 바뀌었을 때만
           if (plan.restyleProvinces) {
-            province.forEach((f) =>
+            province.forEach((f) => {
+              const name = String(f.getProperty("name"))
               province.overrideStyle(f, {
-                visible: recordedProvincesRef.current.has(
-                  String(f.getProperty("name"))
-                ),
+                visible: recordedProvincesRef.current.has(name),
+                // 도별 경계선 = 그 도의 색칠과 같은 계열 진한 색 (집계 없으면 기본 검정)
+                strokeColor: provinceStrokesRef.current.get(name) ?? "#232936",
               })
-            )
+            })
           }
           province.setMap(stage === 1 ? map : null)
         }
@@ -1373,6 +1395,17 @@ function TravelMapGoogleInner({
     [mapOverview, provinceAggregates]
   )
 
+  // 도별 경계선 색 — 1단계 색칠(대표 키워드 mapColor)과 같은 계열 진한 색.
+  // 팔레트 페어에 없으면 채움 hex 자체를 불투명 스트로크로 (computeStyle과 동일 규칙)
+  const provinceStrokes = React.useMemo(() => {
+    const strokes = new Map<string, string>()
+    for (const agg of provinceAggregates) {
+      const fill = agg.keyword.mapColor
+      strokes.set(agg.province, regionStrokeForFill(fill) ?? fill)
+    }
+    return strokes
+  }, [provinceAggregates])
+
   // 0단계(국가 뷰) 대표 핀 — 내가 기록한 여행 중 제일 많이 뽑힌 키워드 1개
   const countryKeyword = React.useMemo(
     () =>
@@ -1381,6 +1414,11 @@ function TravelMapGoogleInner({
         : findKeyword(mostPickedKeyword(visualTrips)),
     [mapOverview, visualTrips]
   )
+  // 전국 외곽선 색 — 0단계 색칠(대표 키워드 mapColor)과 같은 계열 진한 색
+  const nationStroke = countryKeyword
+    ? (regionStrokeForFill(countryKeyword.mapColor) ?? countryKeyword.mapColor)
+    : "#232936"
+
   const countryRegionCount = mapOverview
     ? (mapOverview.country?.regionCount ?? 0)
     : new Set(visualTrips.map((trip) => trip.region)).size
@@ -1831,7 +1869,9 @@ function TravelMapGoogleInner({
           decorating={decorating}
           decoratePreview={decoratePreview}
           recordedProvinces={recordedProvinces}
+          provinceStrokes={provinceStrokes}
           hasNationRecord={Boolean(countryKeyword)}
+          nationStroke={nationStroke}
           syncVisualsForStage={syncVisualsForStage}
           stageSyncedFillsRef={stageSyncedFillsRef}
           setZoomStage={setZoomStage}

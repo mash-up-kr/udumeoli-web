@@ -79,6 +79,14 @@ function computeStyle(
     strokeColor,
     strokeWeight,
     strokeOpacity,
+    // 색 테두리 지역을 이웃 폴리곤 위로 — 안 올리면 나중에 그려진 이웃의 회색
+    // 테두리가 공유 경계 구간을 덮어 색 테두리가 군데군데 끊겨 보인다
+    zIndex:
+      state.active || state.decorateColor
+        ? 3
+        : hasColor || state.incomplete
+          ? 2
+          : 1,
     clickable: true,
     // 완전 투명 지역을 visible:false로 빼는 최적화는 하지 않는다 — 줌 제스처마다
     // BOUNDARY_ZOOM(7.5) 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
@@ -111,18 +119,25 @@ export type RegionDataLayer = {
  * 기록 지역 테두리(#232936)와 같은 짙은 톤 — 기본 경계선(#aaaaaa 0.65)은 축소 뷰에서
  * 흐려 보인다. 노출 제어는 호출부가 setMap으로 한다.
  */
+/** 경계선 기본 스타일 — 색만 바꿔 재사용 (도별·전국 대표색 테두리) */
+export function boundaryStyle(
+  strokeColor = "#232936"
+): google.maps.Data.StyleOptions {
+  return {
+    clickable: false,
+    fillOpacity: 0,
+    strokeColor,
+    strokeWeight: 1,
+    strokeOpacity: 1,
+  }
+}
+
 export function createBoundaryLayer(
   geojson: GeoJSON.FeatureCollection | GeoJSON.Feature
 ): google.maps.Data {
   const layer = new google.maps.Data()
   layer.addGeoJson(geojson)
-  layer.setStyle({
-    clickable: false,
-    fillOpacity: 0,
-    strokeColor: "#232936",
-    strokeWeight: 1,
-    strokeOpacity: 1,
-  })
+  layer.setStyle(boundaryStyle())
   return layer
 }
 
