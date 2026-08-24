@@ -66,6 +66,25 @@ async function inlineSvgImages(svgMarkup: string): Promise<string> {
   return new XMLSerializer().serializeToString(xmlDocument.documentElement)
 }
 
+function buildRecapTextMarkup(model: RecapCardModel): string {
+  const days = escapeXml(String(model.totalDays))
+  const pins = escapeXml(String(model.pinCount))
+  const potName = escapeXml(model.potName)
+  const labels = model.members
+    .map((member, index) => {
+      const column = index % 3
+      const row = Math.floor(index / 3)
+      const x = 16 + column * 48
+      const y = 420 + row * 14
+      return `<rect x="${x}" y="${y}" width="42" height="13" rx="6.5" fill="#232936" fill-opacity=".4"/><text x="${x + 21}" y="${y + 9}" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="7" font-weight="500">@${escapeXml(member)}</text>`
+    })
+    .join("")
+  const potWidth = Math.min(Math.max(potName.length * 7 + 16, 42), 238)
+  const potMarkup = `<rect x="16" y="394" width="${potWidth}" height="18" rx="9" fill="#232936"/><text x="${16 + potWidth / 2}" y="406" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="9" font-weight="600">${potName}</text>`
+
+  return `${potMarkup}<text x="16" y="48" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="28" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${days}</tspan><tspan dx="4" fill="#232936">DAYS</tspan></text><text x="16" y="84" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="28" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${pins}</tspan><tspan dx="4" fill="#232936">PINNNED</tspan></text>${labels}`
+}
+
 async function buildExportSvg(
   element: HTMLElement,
   model: RecapCardModel
@@ -73,10 +92,6 @@ async function buildExportSvg(
   const map = element.querySelector<SVGSVGElement>("[data-recap-map] svg")
   if (!map) throw new Error("리캡 지도를 찾을 수 없어요")
 
-  const days = escapeXml(String(model.totalDays))
-  const pins = escapeXml(String(model.pinCount))
-  const potName = escapeXml(model.potName)
-  const members = model.members.map(escapeXml)
   const locationIcon = element.querySelector<HTMLImageElement>(
     "[data-recap-location-icon]"
   )
@@ -90,26 +105,17 @@ async function buildExportSvg(
     .replaceAll('href="/', `href="${window.location.origin}/`)
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
 
-  const labels = members
-    .map((member, index) => {
-      const column = index % 3
-      const row = Math.floor(index / 3)
-      const x = 16 + column * 48
-      const y = 420 + row * 14
-      return `<rect x="${x}" y="${y}" width="42" height="13" rx="6.5" fill="#232936" fill-opacity=".4"/><text x="${x + 21}" y="${y + 9}" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="7" font-weight="500">@${escapeXml(member)}</text>`
-    })
-    .join("")
-
-  const potWidth = Math.min(Math.max(potName.length * 7 + 16, 42), 238)
-  const potMarkup = `<rect x="16" y="394" width="${potWidth}" height="18" rx="9" fill="#232936"/><text x="${16 + potWidth / 2}" y="406" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="9" font-weight="600">${potName}</text>`
   const locationIconMarkup = locationIconSource
     ? `<image href="${escapeXml(locationIconSource)}" x="230" y="15" width="18" height="21" preserveAspectRatio="xMidYMid meet"/>`
     : ""
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/><g>${mapMarkup.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>${locationIconMarkup}<text x="16" y="48" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="28" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${days}</tspan><tspan dx="4" fill="#232936">DAYS</tspan></text><text x="16" y="84" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="28" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${pins}</tspan><tspan dx="4" fill="#232936">PINNNED</tspan></text>${potMarkup}${labels}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/><g>${mapMarkup.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
-function buildFallbackExportSvg(element: HTMLElement): string {
+function buildFallbackExportSvg(
+  element: HTMLElement,
+  model: RecapCardModel
+): string {
   const map = element.querySelector<SVGSVGElement>("[data-recap-map] svg")
   if (!map) throw new Error("리캡 지도를 찾을 수 없어요")
 
@@ -121,7 +127,7 @@ function buildFallbackExportSvg(element: HTMLElement): string {
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/>${mapMarkup}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><rect width="270" height="480" rx="32" fill="#79d5e6"/>${mapMarkup}${buildRecapTextMarkup(model)}</svg>`
 }
 
 async function svgToBlob(svgMarkup: string): Promise<Blob> {
@@ -176,7 +182,7 @@ export async function saveRecapImage(
     svg = await buildExportSvg(element, model)
   } catch (error) {
     console.error("리캡 SVG 구성 실패, 지도 원본으로 저장을 시도합니다", error)
-    svg = buildFallbackExportSvg(element)
+    svg = buildFallbackExportSvg(element, model)
   }
   let blob: Blob
   try {
