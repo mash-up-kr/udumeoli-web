@@ -25,7 +25,7 @@ function AppHeader({
       )}
       {...props}
     >
-      {/* 로고 (시안 2386-16530, 120×28) */}
+      {/* 로고 (시안 2473-16862, 112.6×25.2) */}
       <div className="flex h-[60px] items-center">
         <img src={logoSrc} alt="Pinnned" className="h-7" />
       </div>
