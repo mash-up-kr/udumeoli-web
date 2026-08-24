@@ -1,3 +1,4 @@
+import * as React from "react"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
@@ -6,6 +7,7 @@ import { OverlayProvider } from "overlay-kit"
 import appCss from "../styles.css?url"
 import { QueryProvider } from "@/shared/api/QueryProvider"
 import { MockToggle } from "@/shared/ui/mock-toggle"
+import { PwaRuntime } from "@/shared/ui/pwa-runtime"
 
 // Microsoft Clarity 사용자 행동 분석 스니펫
 const CLARITY_SNIPPET = `(function(c,l,a,r,i,t,y){
@@ -23,10 +25,24 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "Pinnned" },
+      {
+        name: "theme-color",
+        content: "#76bdf3",
+      },
+      {
+        name: "apple-mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "default",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/favicon.svg" },
     ],
     scripts: [{ children: CLARITY_SNIPPET }],
   }),
@@ -46,6 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <PwaRuntime />
         <QueryProvider>
           <OverlayProvider>{children}</OverlayProvider>
         </QueryProvider>
