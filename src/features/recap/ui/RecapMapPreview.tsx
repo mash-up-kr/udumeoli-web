@@ -112,7 +112,12 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     for (const photo of photos) {
       const code = regionCode(photo)
       if (!code) continue
-      grouped.set(code, [...(grouped.get(code) ?? []), photo])
+      const regionPhotos = grouped.get(code)
+      if (regionPhotos) {
+        regionPhotos.push(photo)
+      } else {
+        grouped.set(code, [photo])
+      }
     }
     return grouped
   }, [photos])
