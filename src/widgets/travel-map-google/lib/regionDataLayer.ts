@@ -6,6 +6,8 @@
 // JS 메모리(Map)에 직접 들고 있다가, 상태가 바뀔 때마다 전체 스타일을 계산해
 // `data.overrideStyle(feature, style)`로 통째로 덮어쓰는 방식으로 동일 효과를 낸다.
 
+import { regionStrokeForFill } from "@/entities/photo"
+
 const BOUNDARY_ZOOM = 7.5
 const KEYWORD_FILL_OPACITY = 0.4
 
@@ -37,13 +39,18 @@ function computeStyle(
   const fillColor =
     state.previewColor ?? (state.hasColor && state.color ? state.color : accent)
 
+  // 색칠 지역 테두리 = 채움색과 같은 계열의 진한 색 (Figma 1959-6293).
+  // 팔레트 100→500 페어에 없는 채움색은 채움색 자체를 불투명하게 써서
+  // 40% opacity 채움 대비 같은 계열의 진한 테두리로 보이게 한다.
   let strokeColor = state.incomplete
     ? "#232936"
     : state.active
       ? accent
-      : "#aaaaaa"
+      : hasColor
+        ? (regionStrokeForFill(fillColor) ?? fillColor)
+        : "#aaaaaa"
   let strokeWeight = state.active ? 2.5 : state.incomplete ? 1.4 : 0.9
-  let strokeOpacity = state.active || state.incomplete ? 1 : 0.65
+  let strokeOpacity = state.active || state.incomplete || hasColor ? 1 : 0.65
 
   if (state.decorateColor) {
     // Data API는 폴리곤 stroke에 dash pattern을 지원하지 않아 굵은 실선으로 근사
