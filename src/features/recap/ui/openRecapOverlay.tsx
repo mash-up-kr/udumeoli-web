@@ -21,10 +21,10 @@ import recapLocationIconSrc from "@/shared/assets/icon-recap-location.svg"
 import photoMapSrc from "@/shared/assets/photo-map.jpg"
 
 async function exportRecapImage(
+  element: HTMLElement | null,
   model: RecapCardModel,
   preparedBlob?: Blob | null
 ) {
-  const element = document.querySelector<HTMLElement>("[data-recap-card]")
   if (!element) throw new Error("리캡 카드를 찾을 수 없어요")
   try {
     await saveRecapImage(element, model, preparedBlob)
@@ -52,6 +52,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const members = usePotStore(selectCurrentPotMembers)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const photos = useAllPhotos(currentPotId)
+  const recapCardRef = React.useRef<HTMLDivElement>(null)
   const [mapReady, setMapReady] = React.useState(false)
   const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
   const [isPreparing, setIsPreparing] = React.useState(false)
@@ -90,7 +91,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
 
   React.useEffect(() => {
     if (!mapReady) return
-    const element = document.querySelector<HTMLElement>("[data-recap-card]")
+    const element = recapCardRef.current
     if (!element) return
     let active = true
     setPreparedBlob(null)
@@ -173,6 +174,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             role="img"
             aria-label="리캡 이미지 미리보기"
             data-recap-card
+            ref={recapCardRef}
             className="relative aspect-[270/480] h-full max-h-[480px] overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
           >
             <div className="absolute inset-x-5 top-6 z-10">
@@ -219,7 +221,13 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         <div className="shrink-0 px-4">
           <ButtonCta
             disabled={!mapReady || isPreparing}
-            onClick={() => void exportRecapImage(recapModel, preparedBlob)}
+            onClick={() =>
+              void exportRecapImage(
+                recapCardRef.current,
+                recapModel,
+                preparedBlob
+              )
+            }
           >
             {isPreparing ? "이미지 준비 중..." : "이미지로 내보내기"}
           </ButtonCta>
