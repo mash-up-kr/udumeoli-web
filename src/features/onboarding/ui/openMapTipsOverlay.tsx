@@ -140,7 +140,7 @@ function MapTipsOverlay({
               className={cn(
                 "flex w-full flex-col items-center gap-3",
                 ENTER_BLOCK,
-                "delay-[600ms]"
+                "delay-[800ms]"
               )}
             >
               <img
@@ -184,7 +184,7 @@ function MapTipsOverlay({
               className={cn(
                 "flex h-[42px] items-center justify-center rounded-full bg-bg-neutral-inverse px-3 text-h8 whitespace-nowrap text-fg-neutral-inverse shadow-[0px_0px_10px_0px_rgba(142,150,169,0.12)]",
                 ENTER_BLOCK,
-                "delay-[1200ms]"
+                "delay-[1600ms]"
               )}
             >
               시작하기
