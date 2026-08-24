@@ -98,6 +98,15 @@ export function RecapMapPreview({
   }, [onReady])
 
   const project = React.useMemo(() => makeProject(geojson.features), [geojson])
+  const projectedFeatures = React.useMemo(
+    () =>
+      geojson.features.map((feature) => ({
+        feature,
+        path: pathForFeature(feature, project),
+        center: computeCentroid(feature),
+      })),
+    [geojson, project]
+  )
   const photosByCode = React.useMemo(() => {
     const grouped = new Map<string, Array<Photo>>()
     for (const photo of photos) {
@@ -115,14 +124,13 @@ export function RecapMapPreview({
       const photo = trips[0]?.photos.at(-1)
       if (photo) byCode.set(code, { photo, count: trips.length })
     }
-    return geojson.features.flatMap((feature) => {
+    return projectedFeatures.flatMap(({ feature, center }) => {
       const code = String(feature.properties?.code ?? "")
       const item = byCode.get(code)
-      const center = computeCentroid(feature)
       if (!item || !center) return []
       return [{ ...item, position: project(center) }]
     })
-  }, [geojson, photosByCode, project])
+  }, [photosByCode, project, projectedFeatures])
 
   return (
     <div className={className} data-recap-map>
@@ -133,14 +141,14 @@ export function RecapMapPreview({
         aria-label="여행 기록 지도"
       >
         <rect width="270" height="480" fill="#79d5e6" />
-        {geojson.features.map((feature, index) => {
+        {projectedFeatures.map(({ feature, path }, index) => {
           const code = String(feature.properties?.code ?? "")
           const photo = photosByCode.get(code)?.at(-1)
           const keyword = findKeyword(photo?.keyword)
           return (
             <path
               key={`${code}-${index}`}
-              d={pathForFeature(feature, project)}
+              d={path}
               fill={keyword?.mapColor ?? "#b9efd8"}
               fillOpacity={keyword ? "0.62" : "0.86"}
               stroke={keyword?.mapColor ?? "#e8fff3"}
@@ -149,13 +157,10 @@ export function RecapMapPreview({
             />
           )
         })}
-        {geojson.features.map((feature) => {
+        {projectedFeatures.map(({ feature, center }) => {
           const code = String(feature.properties?.code ?? "")
           const name = String(feature.properties?.name ?? "")
-          const center = photosByCode.has(code)
-            ? computeCentroid(feature)
-            : null
-          if (!name || !center) return null
+          if (!name || !center || !photosByCode.has(code)) return null
           const [x, y] = project(center)
           return (
             <text
