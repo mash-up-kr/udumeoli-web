@@ -1,6 +1,6 @@
 import { Chip } from "./chip"
+import { DEFAULT_PROFILE_SRC } from "./profile"
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import profileDefaultSrc from "@/shared/assets/profile-default.svg"
 
 const meta: Meta<typeof Chip> = {
   component: Chip,
@@ -31,7 +31,7 @@ export const TextOnly: Story = {}
 
 /** 좌측 프로필 포함. */
 export const WithProfile: Story = {
-  args: { profileSrc: profileDefaultSrc },
+  args: { profileSrc: DEFAULT_PROFILE_SRC },
 }
 
 /** 두 변형 비교. */
@@ -39,7 +39,7 @@ export const Variants: Story = {
   render: () => (
     <div className="flex items-center gap-3">
       <Chip label="정선" />
-      <Chip label="정선" profileSrc={profileDefaultSrc} />
+      <Chip label="정선" profileSrc={DEFAULT_PROFILE_SRC} />
     </div>
   ),
 }
