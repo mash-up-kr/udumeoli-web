@@ -73,7 +73,7 @@ function regionCode(photo: Photo): string | undefined {
   return REGION_CODE_BY_NAME[photo.region]
 }
 
-export function RecapMapPreview({
+export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   photos,
   className,
   onReady,
@@ -236,4 +236,4 @@ export function RecapMapPreview({
       </svg>
     </div>
   )
-}
+})
