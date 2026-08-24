@@ -1,6 +1,7 @@
 import * as React from "react"
 import { overlay } from "overlay-kit"
 
+import { useRecapStats } from "../api/queries"
 import { createRecapImageBlob, saveRecapImage } from "../lib/save-image"
 import { computeRecapStats } from "../lib/stats"
 import { RecapMapPreview } from "./RecapMapPreview"
@@ -13,6 +14,7 @@ import { ButtonIcon } from "@/shared/ui/button-icon"
 import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { Tooltip } from "@/shared/ui/tooltip"
+import { USE_MOCK } from "@/shared/api/client"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import recapLocationIconSrc from "@/shared/assets/icon-recap-location.svg"
 import photoMapSrc from "@/shared/assets/photo-map.jpg"
@@ -49,10 +51,11 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const [mapReady, setMapReady] = React.useState(false)
   const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
   const handleMapReady = React.useCallback(() => setMapReady(true), [])
-  const { totalDays, pinCount } = React.useMemo(
-    () => computeRecapStats(photos),
-    [photos]
-  )
+  const localStats = React.useMemo(() => computeRecapStats(photos), [photos])
+  const recapStatsQuery = useRecapStats(currentPotId)
+  const { totalDays, pinCount } = USE_MOCK
+    ? localStats
+    : (recapStatsQuery.data ?? localStats)
   const orderedMembers = React.useMemo(
     () =>
       [...members].sort((a, b) => {
