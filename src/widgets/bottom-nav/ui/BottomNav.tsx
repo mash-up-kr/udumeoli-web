@@ -1,5 +1,5 @@
 import { User } from "lucide-react"
-import globeSrc from "../assets/globe.png"
+import globeSrc from "../assets/globe.svg"
 import type { ComponentProps } from "react"
 
 import { cn } from "@/shared/lib/utils"
@@ -78,21 +78,22 @@ function BottomNav({
         </button>
       </div>
 
-      {/* 중앙 지구본 — 바 위로 절반쯤 겹쳐 떠 있음. 핸들러 주입 시 지도 이동 버튼 */}
+      {/* 중앙 지구본(시안 2632-37387, 96×96) — 바 상단 위로 35px 돌출(시안 y:-35.36).
+          핸들러 주입 시 지도 이동 버튼 */}
       {onGlobeClick ? (
         <button
           type="button"
           aria-label="지도 보기"
           onClick={onGlobeClick}
-          className="absolute bottom-[14px] left-1/2 -translate-x-1/2"
+          className="absolute bottom-[16px] left-1/2 -translate-x-1/2"
         >
-          <img src={globeSrc} alt="" className="size-[98px]" />
+          <img src={globeSrc} alt="" className="size-[96px]" />
         </button>
       ) : (
         <img
           src={globeSrc}
           alt=""
-          className="pointer-events-none absolute bottom-[14px] left-1/2 size-[98px] -translate-x-1/2"
+          className="pointer-events-none absolute bottom-[16px] left-1/2 size-[96px] -translate-x-1/2"
         />
       )}
     </nav>
