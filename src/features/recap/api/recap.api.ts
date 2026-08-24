@@ -25,6 +25,8 @@ interface PartyTripStatsResponse {
 }
 
 export async function fetchRecapStats(partyId: string): Promise<RecapStats> {
+  if (!partyId) throw new Error("리캡 통계를 조회하려면 팟 ID가 필요해요")
+
   const { partyTripStats } = await gqlClient.request<PartyTripStatsResponse>(
     PARTY_TRIP_STATS_QUERY,
     { partyId }

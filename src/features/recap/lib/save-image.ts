@@ -25,8 +25,11 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 }
 
 async function inlineSvgImages(svgMarkup: string): Promise<string> {
-  const document = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
-  const images = Array.from(document.querySelectorAll("image"))
+  const xmlDocument = new DOMParser().parseFromString(
+    svgMarkup,
+    "image/svg+xml"
+  )
+  const images = Array.from(xmlDocument.querySelectorAll("image"))
 
   await Promise.all(
     images.map(async (image) => {
@@ -58,7 +61,7 @@ async function inlineSvgImages(svgMarkup: string): Promise<string> {
     })
   )
 
-  return new XMLSerializer().serializeToString(document.documentElement)
+  return new XMLSerializer().serializeToString(xmlDocument.documentElement)
 }
 
 async function buildExportSvg(element: HTMLElement): Promise<string> {
