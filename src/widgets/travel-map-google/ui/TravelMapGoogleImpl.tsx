@@ -43,6 +43,7 @@ import {
 import {
   createBoundaryLayer,
   createRegionDataLayer,
+  isCanonicalRegionCode,
 } from "../lib/regionDataLayer"
 import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
@@ -928,10 +929,24 @@ function MapController({
         syncBoundaryLayersRef.current = () =>
           syncBoundaryLayers(getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom))
 
+        // 동명 지역(강원·경남 고성군)은 정본(코드 일치) centroid만 남긴다 — 이름 키로
+        // 도 그룹핑·색칠하는 소비자들이 비정본 지역을 잘못 칠하는 것을 막는다.
+        // 판정은 이름이 실제 중복일 때만 — 병합시(포항시 등)는 code가 매핑값과 다르다
+        const nameCounts = new Map<string, number>()
+        for (const f of geojson.features) {
+          const name = f.properties?.name as string | undefined
+          if (name) nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+        }
+
         const computed: Array<Centroid> = []
         for (const f of geojson.features) {
           const name = f.properties?.name as string | undefined
           if (!name) continue
+          if (
+            (nameCounts.get(name) ?? 0) > 1 &&
+            !isCanonicalRegionCode(name, f.properties?.code)
+          )
+            continue
           const center = computeCentroid(f)
           if (center) {
             computed.push({

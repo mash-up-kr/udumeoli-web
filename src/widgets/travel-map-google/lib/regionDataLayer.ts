@@ -7,6 +7,17 @@
 // `data.overrideStyle(feature, style)`로 통째로 덮어쓰는 방식으로 동일 효과를 낸다.
 
 import { regionStrokeForFill } from "@/entities/photo"
+import { REGION_CODE_BY_NAME } from "@/shared/api/region-codes"
+
+/**
+ * 동명 지역(강원·경남 고성군) 충돌 시 앱 식별 코드와 일치하는 쪽이 정본이다.
+ * region-codes.ts의 고정 규칙(고성군=강원 32400)과 렌더 레이어를 일치시킨다.
+ * 병합시(포항시 등)는 code가 매핑값과 달라(37011 vs 37010) 이 판정을
+ * 이름이 실제로 중복된 경우에만 적용해야 한다.
+ */
+export function isCanonicalRegionCode(name: string, code: unknown): boolean {
+  return String(code) === REGION_CODE_BY_NAME[name]
+}
 
 const BOUNDARY_ZOOM = 7.5
 const KEYWORD_FILL_OPACITY = 0.4
@@ -129,9 +140,23 @@ export function createRegionDataLayer(
   data.addGeoJson(geojson)
 
   const nameToFeature = new Map<string, google.maps.Data.Feature>()
+  // 이름 충돌(고성군) 시 정본 feature를 잡고, 밀려난 쪽은 채움/상태 대상에서
+  // 빠지되 기본 테두리는 계속 그리도록 따로 모은다
+  const orphanFeatures: Array<google.maps.Data.Feature> = []
   data.forEach((feature) => {
     const name = feature.getProperty("name")
-    if (typeof name === "string") nameToFeature.set(name, feature)
+    if (typeof name !== "string") return
+    const existing = nameToFeature.get(name)
+    if (!existing) {
+      nameToFeature.set(name, feature)
+      return
+    }
+    if (isCanonicalRegionCode(name, feature.getProperty("code"))) {
+      orphanFeatures.push(existing)
+      nameToFeature.set(name, feature)
+    } else {
+      orphanFeatures.push(feature)
+    }
   })
 
   const states = new Map<string, RegionVisualState>()
@@ -154,8 +179,19 @@ export function createRegionDataLayer(
     data.overrideStyle(feature, computeStyle(state, zoom, opts.accent))
   }
 
+  // 정본에서 밀려난 동명 feature(경남 고성군)는 상태 없이 기본 스타일만 유지
+  const ORPHAN_STATE: RegionVisualState = {
+    hasColor: false,
+    hasPhoto: false,
+    incomplete: false,
+    active: false,
+  }
+
   const applyAll = () => {
     for (const name of nameToFeature.keys()) applyOne(name)
+    for (const feature of orphanFeatures) {
+      data.overrideStyle(feature, computeStyle(ORPHAN_STATE, zoom, opts.accent))
+    }
   }
 
   applyAll()
