@@ -6,7 +6,6 @@ on:
       - main
     types:
       - opened
-      - synchronize
       - ready_for_review
 
 permissions:
@@ -30,3 +29,27 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add LGTM when no review findings
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          marker='표시할 리뷰가 없습니다 LGTM~~'
+
+          if gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[].body' | grep -Fq "$marker"; then
+            exit 0
+          fi
+
+          bot_reviews=$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]")] | length')
+          bot_comments=$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]")] | length')
+
+          if [ "$bot_reviews" -eq 0 ] && [ "$bot_comments" -eq 0 ]; then
+            gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "$marker"
+          fi
