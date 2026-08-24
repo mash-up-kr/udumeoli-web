@@ -1,5 +1,7 @@
 /** 리캡 카드의 지도 SVG를 PNG로 변환해 공유하거나 다운로드한다. */
 
+import type { RecapCardModel } from "./recap-model"
+
 const EXPORT_SCALE = 4
 
 function escapeXml(value: string): string {
@@ -64,16 +66,17 @@ async function inlineSvgImages(svgMarkup: string): Promise<string> {
   return new XMLSerializer().serializeToString(xmlDocument.documentElement)
 }
 
-async function buildExportSvg(element: HTMLElement): Promise<string> {
+async function buildExportSvg(
+  element: HTMLElement,
+  model: RecapCardModel
+): Promise<string> {
   const map = element.querySelector<SVGSVGElement>("[data-recap-map] svg")
   if (!map) throw new Error("리캡 지도를 찾을 수 없어요")
 
-  const days = escapeXml(element.dataset.recapDays ?? "0")
-  const pins = escapeXml(element.dataset.recapPins ?? "0")
-  const potName = escapeXml(element.dataset.recapPotName ?? "")
-  const members = Array.from(
-    element.querySelectorAll<HTMLElement>("[data-recap-member]")
-  ).map((member) => member.dataset.recapMember ?? "")
+  const days = escapeXml(String(model.totalDays))
+  const pins = escapeXml(String(model.pinCount))
+  const potName = escapeXml(model.potName)
+  const members = model.members.map(escapeXml)
   const locationIcon = element.querySelector<HTMLImageElement>(
     "[data-recap-location-icon]"
   )
@@ -157,18 +160,20 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export async function createRecapImageBlob(
-  element: HTMLElement
+  element: HTMLElement,
+  model: RecapCardModel
 ): Promise<Blob> {
-  return svgToBlob(await buildExportSvg(element))
+  return svgToBlob(await buildExportSvg(element, model))
 }
 
 export async function saveRecapImage(
   element: HTMLElement,
+  model: RecapCardModel,
   preparedBlob?: Blob | null
 ): Promise<"shared" | "downloaded"> {
   let svg: string
   try {
-    svg = await buildExportSvg(element)
+    svg = await buildExportSvg(element, model)
   } catch (error) {
     console.error("리캡 SVG 구성 실패, 지도 원본으로 저장을 시도합니다", error)
     svg = buildFallbackExportSvg(element)
