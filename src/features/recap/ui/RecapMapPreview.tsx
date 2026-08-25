@@ -16,6 +16,10 @@ const MAP_PADDING = 4
 const MAX_MAINLAND_SCALE = 1.42
 const MAINLAND_OVERSCAN_X = 1.18
 const MAINLAND_OVERSCAN_Y = 1.12
+const MARKER_CENTER = 15.75
+const MARKER_PIN = { x: 4.75, y: 0.6, width: 22, height: 25.5 }
+const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
+const MARKER_BADGE = { x: 21.5, y: -4.5 }
 
 const EMPTY_GEO: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
@@ -229,25 +233,25 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         {markers.map(({ photo, count, position }) => {
           const keyword = findKeyword(photo.keyword)
           if (!keyword) return null
-          const markerX = position[0] - 15.75
-          const markerY = position[1] - 15.75
+          const markerX = position[0] - MARKER_CENTER
+          const markerY = position[1] - MARKER_CENTER
           const badgeWidth = count > 9 ? 16 : 13.7
           return (
             <g key={photo.id} transform={`translate(${markerX} ${markerY})`}>
               <image
                 href={keyword.mapPinSrc}
-                x="6.16"
-                y="1.37"
-                width="19.16"
-                height="22.58"
+                x={MARKER_PIN.x}
+                y={MARKER_PIN.y}
+                width={MARKER_PIN.width}
+                height={MARKER_PIN.height}
                 preserveAspectRatio="xMidYMid meet"
               />
               <image
                 href={keyword.mapStickerSrc}
-                x="7.53"
-                y="2.74"
-                width="16.42"
-                height="16.42"
+                x={MARKER_STICKER.x}
+                y={MARKER_STICKER.y}
+                width={MARKER_STICKER.width}
+                height={MARKER_STICKER.height}
                 preserveAspectRatio={
                   keyword.mapStickerFit === "food"
                     ? "xMidYMid meet"
@@ -255,7 +259,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                 }
               />
               {count > 1 ? (
-                <g transform="translate(20.53 -4.11)">
+                <g transform={`translate(${MARKER_BADGE.x} ${MARKER_BADGE.y})`}>
                   <rect
                     width={badgeWidth}
                     height="13.69"
