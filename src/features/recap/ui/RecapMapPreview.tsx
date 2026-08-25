@@ -8,18 +8,16 @@ import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 
 type Point = [number, number]
 type Project = (point: Point) => Point
-type Projection = {
-  project: Project
-  projectFeature: (feature: GeoJSON.Feature) => Project
-}
 
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
 const REGION_BORDER_COLOR = "#f8fffb"
-const MAP_PADDING = 4
-const MAX_MAINLAND_SCALE = 1.42
-const MAINLAND_OVERSCAN_X = 1.18
-const MAINLAND_OVERSCAN_Y = 1.12
+const MAP_FRAME = {
+  left: 12,
+  top: 100,
+  width: 246,
+  height: 364,
+} as const
 const MARKER_CENTER = 15.75
 const MARKER_PIN = { x: 4.75, y: 0.6, width: 22, height: 25.5 }
 const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
@@ -41,13 +39,7 @@ function coordinatesOf(feature: GeoJSON.Feature): Array<Point> {
   return []
 }
 
-function isPreservedIslandPoint([lng, lat]: Point): boolean {
-  const isJeju = lng > 125.5 && lng < 127.5 && lat > 32.8 && lat < 34.2
-  const isDokdo = lng > 131 && lng < 132.5 && lat > 36 && lat < 38.5
-  return isJeju || isDokdo
-}
-
-function makeProject(features: Array<GeoJSON.Feature>): Projection {
+function makeProject(features: Array<GeoJSON.Feature>): Project {
   const points = features.flatMap(coordinatesOf)
   const lngs = points.map(([lng]) => lng)
   const lats = points.map(([, lat]) => lat)
@@ -57,59 +49,18 @@ function makeProject(features: Array<GeoJSON.Feature>): Projection {
   const maxLat = Math.max(...lats)
   const width = Math.max(maxLng - minLng, 0.001)
   const height = Math.max(maxLat - minLat, 0.001)
-  const scaleX = (270 - MAP_PADDING * 2) / width
-  const scaleY = Math.min(scaleX * 2, (480 - MAP_PADDING * 2) / height)
-  const offsetX = (270 - width * scaleX) / 2
-  const offsetY = (480 - height * scaleY) / 2
+  // The recap uses a tall art-directed map frame, but keeping the axes closer
+  // to a real map prevents pins and region boundaries from drifting apart.
+  const scaleX = MAP_FRAME.width / width
+  const scaleY = Math.min(scaleX * 1.55, MAP_FRAME.height / height)
+  const offsetX = MAP_FRAME.left + (MAP_FRAME.width - width * scaleX) / 2
+  const offsetY = MAP_FRAME.top + (MAP_FRAME.height - height * scaleY) / 2
 
-  const baseProject = ([lng, lat]: Point): Point => {
+  return ([lng, lat]: Point): Point => {
     const x = offsetX + (lng - minLng) * scaleX
     const y = offsetY + (maxLat - lat) * scaleY
     return [x, y]
   }
-
-  const mainlandProjected = points
-    .filter((point) => !isPreservedIslandPoint(point))
-    .map(baseProject)
-  if (mainlandProjected.length === 0) {
-    return { project: baseProject, projectFeature: () => baseProject }
-  }
-
-  const mainlandXs = mainlandProjected.map(([x]) => x)
-  const mainlandYs = mainlandProjected.map(([, y]) => y)
-  const mainlandWidth = Math.max(...mainlandXs) - Math.min(...mainlandXs)
-  const mainlandHeight = Math.max(...mainlandYs) - Math.min(...mainlandYs)
-  const mainlandScale = Math.min(
-    MAX_MAINLAND_SCALE,
-    (270 - MAP_PADDING * 2) / mainlandWidth,
-    (480 - MAP_PADDING * 2) / mainlandHeight
-  )
-  const mainlandScaleX = mainlandScale * MAINLAND_OVERSCAN_X
-  const mainlandScaleY = mainlandScale * MAINLAND_OVERSCAN_Y
-  const mainlandCenter: Point = [
-    (Math.min(...mainlandXs) + Math.max(...mainlandXs)) / 2,
-    (Math.min(...mainlandYs) + Math.max(...mainlandYs)) / 2,
-  ]
-
-  const projectMainland = (point: Point): Point => {
-    const projected = baseProject(point)
-    return [
-      mainlandCenter[0] + (projected[0] - mainlandCenter[0]) * mainlandScaleX,
-      mainlandCenter[1] + (projected[1] - mainlandCenter[1]) * mainlandScaleY,
-    ]
-  }
-
-  const project = (point: Point): Point =>
-    isPreservedIslandPoint(point) ? baseProject(point) : projectMainland(point)
-
-  const projectFeature = (feature: GeoJSON.Feature): Project => {
-    const featurePoints = coordinatesOf(feature)
-    const isIsland =
-      featurePoints.length > 0 && featurePoints.every(isPreservedIslandPoint)
-    return isIsland ? baseProject : projectMainland
-  }
-
-  return { project, projectFeature }
 }
 
 function pathForFeature(feature: GeoJSON.Feature, project: Project): string {
@@ -164,29 +115,24 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     }
   }, [onReady])
 
-  const projection = React.useMemo(
-    () => makeProject(geojson.features),
-    [geojson]
-  )
+  const project = React.useMemo(() => makeProject(geojson.features), [geojson])
   const projectedFeatures = React.useMemo(
     () =>
       geojson.features
         .map((feature) => ({
           feature,
-          project: projection.projectFeature(feature),
           center: computeCentroid(feature),
         }))
-        .map(({ feature, project, center }) => ({
+        .map(({ feature, center }) => ({
           feature,
-          project,
           path: pathForFeature(feature, project),
           center: center ? project(center) : null,
         })),
-    [geojson, projection]
+    [geojson, project]
   )
   const nationPath = React.useMemo(
-    () => (nation ? pathForFeature(nation, projection.project) : ""),
-    [nation, projection]
+    () => (nation ? pathForFeature(nation, project) : ""),
+    [nation, project]
   )
   const photosByCode = React.useMemo(() => {
     const grouped = new Map<string, Array<Photo>>()
