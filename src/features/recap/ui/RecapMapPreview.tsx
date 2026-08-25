@@ -226,31 +226,6 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
             pointerEvents="none"
           />
         ) : null}
-        {projectedFeatures.map(({ feature, center }) => {
-          const code = String(feature.properties?.code ?? "")
-          const name = String(feature.properties?.name ?? "")
-          if (!name || !center || !photosByCode.has(code)) return null
-          const [x, y] = project(center)
-          return (
-            <text
-              key={`label-${code}`}
-              x={x}
-              y={y + 10}
-              textAnchor="middle"
-              fill="#232936"
-              fillOpacity="0.82"
-              fontSize="5.5"
-              fontWeight="600"
-              paintOrder="stroke"
-              stroke="#ffffff"
-              strokeOpacity="0.72"
-              strokeWidth="0.9"
-              pointerEvents="none"
-            >
-              {name}
-            </text>
-          )
-        })}
         {markers.map(({ photo, count, position }) => {
           const keyword = findKeyword(photo.keyword)
           if (!keyword) return null
