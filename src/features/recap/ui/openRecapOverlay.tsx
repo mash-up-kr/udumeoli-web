@@ -2,6 +2,7 @@ import * as React from "react"
 import { overlay } from "overlay-kit"
 
 import { useRecapStats } from "../api/queries"
+import { RECAP_CARD_LAYOUT, cardPercent } from "../lib/recap-layout"
 import { createRecapImageBlob, saveRecapImage } from "../lib/save-image"
 import { computeRecapStats } from "../lib/stats"
 import { RecapMapPreview } from "./RecapMapPreview"
@@ -191,13 +192,15 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-331px)] w-[min(276px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
+            className="absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-285px)] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
           >
             <div
-              aria-hidden
-              className="pointer-events-none absolute inset-[2px] z-20 rounded-[30px] border border-white"
-            />
-            <div className="absolute inset-x-5 top-6 z-10">
+              className="absolute z-10"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.heading.top, 480),
+                left: cardPercent(RECAP_CARD_LAYOUT.heading.left, 270),
+              }}
+            >
               <div className="flex flex-col font-eng text-[32px] leading-9 font-normal tracking-normal text-[#141820]">
                 <div className="flex items-end gap-1 whitespace-nowrap">
                   <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
@@ -217,7 +220,13 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
               src={recapLocationIconSrc}
               alt=""
               data-recap-location-icon
-              className="absolute top-6 right-4 z-10 h-6 w-5"
+              className="absolute z-10"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.locationIcon.top, 480),
+                right: cardPercent(RECAP_CARD_LAYOUT.locationIcon.right, 270),
+                width: cardPercent(RECAP_CARD_LAYOUT.locationIcon.width, 270),
+                height: cardPercent(RECAP_CARD_LAYOUT.locationIcon.height, 480),
+              }}
             />
             <RecapMapPreview
               photos={photos}
@@ -225,7 +234,14 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
               onReady={handleMapReady}
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
-            <div className="absolute top-[108px] left-5 z-10 flex max-w-[104px] flex-col items-start gap-1">
+            <div
+              className="absolute z-10 flex flex-col items-start gap-1"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.members.top, 480),
+                left: cardPercent(RECAP_CARD_LAYOUT.members.left, 270),
+                maxWidth: cardPercent(RECAP_CARD_LAYOUT.members.width, 270),
+              }}
+            >
               {orderedMembers.map((member) => (
                 <span
                   key={member.id}
