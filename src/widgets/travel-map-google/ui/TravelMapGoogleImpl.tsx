@@ -864,18 +864,17 @@ function MapController({
     if (!map) return
     mapRef.current = map
 
-    // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음
-    map.setOptions({ isFractionalZoomEnabled: true })
-
-    // 세계지도(세로 256·2^zoom px)가 화면 세로를 꽉 채우는 지점까지만 줌아웃 허용 —
-    // 그 아래로 내려가면 지도 위아래로 회색 여백이 남는다. 회전/리사이즈 시 재계산
-    const syncMinZoom = () => {
-      const height = map.getDiv().clientHeight
-      if (height > 0) map.setOptions({ minZoom: Math.log2(height / 256) })
-    }
-    syncMinZoom()
-    const minZoomObserver = new ResizeObserver(syncMinZoom)
-    minZoomObserver.observe(map.getDiv())
+    // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
+    // restriction(strictBounds): 뷰포트가 항상 세계지도(메르카토르 위도 한계 ±85) 안에
+    // 갇히도록 — 지도 밖 회색 영역이 보이는 지점까지 줌아웃·팬이 되지 않게 네이티브로
+    // 클램프한다 (수동 minZoom 계산은 리사이즈 타이밍에 따라 경계 밖이 새어 보였다)
+    map.setOptions({
+      isFractionalZoomEnabled: true,
+      restriction: {
+        latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
+        strictBounds: true,
+      },
+    })
 
     let cancelled = false
     const listeners: Array<google.maps.MapsEventListener> = []
@@ -1043,7 +1042,6 @@ function MapController({
 
     return () => {
       cancelled = true
-      minZoomObserver.disconnect()
       for (const l of listeners) l.remove()
       dataLayer?.destroy()
       overlay?.setMap(null)
