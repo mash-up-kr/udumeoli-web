@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
-import { Copy } from "lucide-react"
 
 import type { PotMember } from "@/entities/travel-pot"
 import {
@@ -13,6 +12,7 @@ import { useSessionStore } from "@/entities/user"
 import { getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
+import iconContentCopySrc from "@/shared/assets/icon-content-copy.svg"
 import { cn } from "@/shared/lib/utils"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
@@ -312,7 +312,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
               <button
                 type="button"
                 disabled={!canSave}
-                className="flex h-[34px] shrink-0 items-center justify-center rounded-full bg-bg-neutral-inverse px-5 text-h9 text-fg-neutral-inverse transition-colors disabled:bg-bg-neutral-inverse-disabled disabled:text-fg-neutral-inverse-disabled"
+                className="flex h-[34px] shrink-0 items-center justify-center rounded-full bg-bg-neutral-inverse px-3 text-h9 text-fg-neutral-inverse transition-colors disabled:bg-bg-neutral-inverse-disabled disabled:text-fg-neutral-inverse-disabled"
                 onClick={handleSave}
               >
                 저장
@@ -345,7 +345,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
               </span>
             </div>
             <ButtonIcon aria-label="초대코드 복사" onClick={handleCopyCode}>
-              <Copy />
+              <img src={iconContentCopySrc} alt="" className="size-6" />
             </ButtonIcon>
           </div>
         </section>
