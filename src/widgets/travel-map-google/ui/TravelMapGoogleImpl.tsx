@@ -98,6 +98,10 @@ const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 4.8 }
 // ponytail: 초기값 고정, 실제 방문 데이터가 쌓이면 최다 방문 권역으로 교체
 const GANGWON_VIEW = { lat: 37.6, lng: 128.5, zoom: 9.5 }
 
+// 여행 팁 안내가 떠 있는 동안 블러 뒤로 비치는 배경 전용 뷰 — 초기 국가 뷰(4.8)는
+// 한국이 너무 작아서, 본토가 화면을 채우는 줌으로 당겨 배경답게 보이게 한다
+const TIPS_BACKDROP_VIEW = { lat: 36.3, lng: 127.9, zoom: 7 }
+
 // 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
 // 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
 type CameraSnapshot = {
@@ -1639,6 +1643,8 @@ function TravelMapGoogleInner({
   const mapTipsOpenedPotRef = React.useRef<string | null>(null)
   // 지도 준비 전에 시작하기를 누른 경우 — 준비되는 시점에 카메라 이동을 이어서 실행
   const pendingTipsCameraRef = React.useRef(false)
+  // 팁이 떠 있는 동안 블러 뒤 지도를 확대 뷰로 — 지도가 늦게 준비되면 그때 당긴다
+  const pendingTipsBackdropRef = React.useRef(false)
   React.useEffect(() => {
     if (!currentPotId) return
     if (mapTipsOpenedPotRef.current === currentPotId) return
@@ -1647,18 +1653,32 @@ function TravelMapGoogleInner({
     const opened = openMapTipsOverlay({
       potId: currentPotId,
       onStart: () => {
+        pendingTipsBackdropRef.current = false
         setRecordTipDismissedForSession(true)
         if (mapReadyRef.current) runCameraMove(GANGWON_VIEW, 600)
         else pendingTipsCameraRef.current = true
       },
     })
-    if (opened) setSeenTips(true)
+    if (opened) {
+      setSeenTips(true)
+      if (mapReadyRef.current) runCameraMove(TIPS_BACKDROP_VIEW, 400)
+      else pendingTipsBackdropRef.current = true
+    }
   }, [currentPotId, runCameraMove])
 
   React.useEffect(() => {
-    if (!mapReady || !pendingTipsCameraRef.current) return
-    pendingTipsCameraRef.current = false
-    runCameraMove(GANGWON_VIEW, 600)
+    if (!mapReady) return
+    // 시작하기가 먼저 눌렸으면 강원 이동이 우선 — 배경 확대는 건너뛴다
+    if (pendingTipsCameraRef.current) {
+      pendingTipsCameraRef.current = false
+      pendingTipsBackdropRef.current = false
+      runCameraMove(GANGWON_VIEW, 600)
+      return
+    }
+    if (pendingTipsBackdropRef.current) {
+      pendingTipsBackdropRef.current = false
+      runCameraMove(TIPS_BACKDROP_VIEW, 400)
+    }
   }, [mapReady, runCameraMove])
 
   const startCollaborationRecord = React.useCallback(

@@ -7,7 +7,6 @@ import photoAlleySrc from "../assets/map-tip-alley.jpg"
 import { cn } from "@/shared/lib/utils"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
-import skyBackgroundSrc from "@/shared/assets/sky-background.png"
 
 // 팟별 노출 이력 — "팟과 함께 지도에 처음 진입할 때 1회"를 팟 단위로 저장해
 // 새 팟에 참여했을 때도 안내가 다시 뜬다. 구 계정 단위 키(photato-map-tips-seen)는
@@ -102,21 +101,15 @@ function MapTipsOverlay({
 
   return (
     <>
-      {/* 배경 — 온보딩과 같은 하늘 사진으로 불투명하게 덮는다. 시안은 지도 위 블러(Dim_white)지만
-          실제로는 지도 타일이 로드되며 블러 뒤 배경이 계속 변해 산만하고, 온보딩(하늘)→안내로
-          넘어올 때 배경이 끊긴다 — 하늘로 통일해 전 구간 한 배경으로 잇는다 */}
+      {/* 배경 — 지도 위에 얹히는 프로스티드 글라스 (Figma Dim_white). 뒤의 확대된 한국
+          지도가 흐릿하게 비치고, 상·하단 흰 그라디언트가 헤더·하단 내비 잔상을 걷어낸다 */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 overflow-hidden bg-bg-neutral-subtle"
+        className="pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 overflow-hidden"
       >
-        <img
-          src={skyBackgroundSrc}
-          alt=""
-          className="absolute inset-0 size-full object-cover"
-        />
-        {/* 온보딩 오버레이와 동일한 블러 그라디언트 (끝색 #66BDFF는 팔레트 밖 → blue-500) */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-blue-500/20 backdrop-blur-[30px]" />
+        <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-[220px] bg-gradient-to-t from-white/80 to-transparent" />
       </div>
 
       {/* 화면이 낮아도 겹치지 않도록 flex 중앙 정렬 + 넘치면 스크롤 */}
