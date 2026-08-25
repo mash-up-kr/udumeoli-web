@@ -3,32 +3,9 @@ import { ClientError, GraphQLClient } from "graphql-request"
 import { authFetch } from "./auth-fetch"
 import { getAccessToken } from "./token-storage"
 
-// 목↔실서버 전환 단일 지점. 기본: dev 서버(localhost)는 목 ON, 프로덕션 빌드는 실서버.
-// VITE_USE_MOCK="true"/"false"로 강제할 수 있고,
-// dev에선 좌하단 MockToggle 버튼(localStorage 오버라이드)이 env 설정보다 우선한다.
-const MOCK_FLAG_KEY = "udumeoli:mock"
-
-function readMockOverride(): boolean | null {
-  if (!import.meta.env.DEV || typeof window === "undefined") return null
-  const value = window.localStorage.getItem(MOCK_FLAG_KEY)
-  if (value === "on") return true
-  if (value === "off") return false
-  return null
-}
-
-export const USE_MOCK = (() => {
-  const override = readMockOverride()
-  if (override !== null) return override
-  const flag = import.meta.env.VITE_USE_MOCK
-  // 배포본에 목데이터(여행 100번 등)가 섞이지 않도록 env 미설정 시 프로덕션은 실서버
-  return flag ? flag === "true" : import.meta.env.DEV
-})()
-
-/** dev 전용 — 목 플래그 토글 후 새로고침 (캐시·store 잔재까지 리셋). */
-export function toggleMockMode() {
-  window.localStorage.setItem(MOCK_FLAG_KEY, USE_MOCK ? "off" : "on")
-  window.location.reload()
-}
+// 목 모드는 테스트 전용 — vite.config.ts의 test.env가 VITE_USE_MOCK=true로 고정해
+// 픽스처 기반 테스트를 돌린다. dev·prod 런타임은 항상 실서버(프록시 경유).
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true"
 
 // graphql-request는 절대 URL만 받는다 — 상대경로(/graphql, vite proxy 경유)면
 // 브라우저 origin을 붙여준다. SSR에선 window가 없지만 쿼리는 클라에서만 실행된다.
