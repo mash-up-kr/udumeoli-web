@@ -2,17 +2,15 @@ import { useState } from "react"
 import { overlay } from "overlay-kit"
 import { ArrowLeft } from "lucide-react"
 
-import photoFrame1Src from "../assets/photo-frame-1.jpg"
-import photoFrame2Src from "../assets/photo-frame-2.jpg"
-import photoFrame3Src from "../assets/photo-frame-3.jpg"
-import photoMapSrc from "../assets/photo-map.jpg"
-import pin1Src from "../assets/pin-1.svg"
-import pin2Src from "../assets/pin-2.svg"
-import emojiTreeSrc from "@/shared/assets/emoji-tree.svg"
-import emojiShoppingBagSrc from "@/shared/assets/emoji-shopping-bag.svg"
-import emojiFerrisWheelSrc from "@/shared/assets/emoji-ferris-wheel.svg"
-import emojiCroissantSrc from "@/shared/assets/emoji-croissant.svg"
-import emojiCameraSrc from "@/shared/assets/emoji-camera.svg"
+import phoneMapSrc from "../assets/phone-map.jpg"
+import photoAlleySrc from "../assets/photo-alley.jpg"
+import photoBeachSrc from "../assets/photo-beach.jpg"
+import photoNightSrc from "../assets/photo-night.jpg"
+import stickerActivitySrc from "@/shared/assets/map-stickers/activity.png"
+import stickerDessertSrc from "@/shared/assets/map-stickers/dessert.png"
+import stickerFoodSrc from "@/shared/assets/map-stickers/food.png"
+import stickerHealingSrc from "@/shared/assets/map-stickers/healing.png"
+import stickerPhotoSrc from "@/shared/assets/map-stickers/photo.png"
 import skyBackgroundSrc from "@/shared/assets/sky-background.png"
 import { cn } from "@/shared/lib/utils"
 import { ButtonIcon } from "@/shared/ui/button-icon"
@@ -22,26 +20,23 @@ const SEEN_KEY = "photato-onboarding-seen"
 
 type Step = 1 | 2 | 3
 
-// 스텝별 카피·CTA (Figma 1951-14617 · 1946-12642 · 1946-12687)
+// 스텝별 카피 (Figma 2632-37599 · 2632-37636 · 2632-37661) — CTA는 마지막 스텝 포함 전부 "다음"
 const STEP_CONTENT = [
   {
     title: ["여행을 대표하는", "스티커를 골라요"],
-    subtitle: "이번 여행, 하나의 스티커로 정의한다면?",
-    cta: "다음",
+    subtitle: "이번 여행, 한 가지 스티커로 정의한다면?",
   },
   {
     title: ["우리만의 여행 지도가", "만들어지는 중"],
-    subtitle: "여행 이후, 지도 위에 스티커로 추억을 기록해요",
-    cta: "다음",
+    subtitle: "여행 후, 지도 위에 스티커로 추억을 기록해요",
   },
   {
     title: ["쉽게 기록하는", "우리의 여행 갤러리"],
-    subtitle: "대표 사진으로, 우리만의 갤러리를 만들어요",
-    cta: "시작하기",
+    subtitle: "대표 사진으로 우리만의 갤러리를 만들어요",
   },
 ] as const
 
-// 스텝1 스티커 칩 — 그래픽 안 장식 요소. left/top은 칩 중심 좌표(343×320 기준)
+// 스텝1 스티커 칩 — 그래픽 안 장식 요소. left/top은 칩 중심 좌표(343×343 기준)
 function StickerChip({
   iconSrc,
   label,
@@ -50,7 +45,7 @@ function StickerChip({
 }: {
   iconSrc: string
   label: string
-  /** 어두운 배경(빵 칩) 변형 */
+  /** 어두운 배경(디저트 칩) 변형 */
   inverse?: boolean
   className?: string
 }) {
@@ -59,14 +54,15 @@ function StickerChip({
       className={cn(
         // w-max: absolute 요소의 shrink-to-fit이 컨테이너 우측 edge에 막혀
         // 배경 pill이 글자보다 좁아지는 것 방지 (액티비티 칩)
-        "absolute flex w-max -translate-x-1/2 -translate-y-1/2 items-center gap-[9px] rounded-full px-[15px] py-[7px] whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+        "absolute flex w-max -translate-x-1/2 -translate-y-1/2 items-center gap-[3px] rounded-full px-[14px] py-[7px] whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
         inverse
           ? "bg-bg-neutral-inverse text-fg-neutral-inverse"
           : "bg-bg-neutral-weak/70 text-fg-neutral-bold",
         className
       )}
     >
-      <img src={iconSrc} alt="" className="size-9" />
+      {/* object-cover: food.png만 4:3이라 정사각 슬롯에 맞춰 크롭 (시안도 중앙 크롭) */}
+      <img src={iconSrc} alt="" className="size-10 object-cover" />
       {/* 그래픽 전용 스케일 텍스트(21.95px) — 타이포 토큰에 없는 아트워크 크기라 값 고정 */}
       <span className="text-[22px] leading-[33px] font-bold tracking-[-0.18px]">
         {label}
@@ -75,107 +71,114 @@ function StickerChip({
   )
 }
 
-// 스텝1 그래픽 — 스티커 칩 5종 (Figma 1951-14626)
+// 스텝1 그래픽 — 자수 스티커 칩 5종 (Figma 2632-37611)
 function StickerGraphic() {
   return (
     <>
       <StickerChip
-        iconSrc={emojiCameraSrc}
-        label="힐링"
-        className="top-[72px] left-[121px] -rotate-4"
-      />
-      <StickerChip
-        iconSrc={emojiCroissantSrc}
-        label="맛집"
+        iconSrc={stickerDessertSrc}
+        label="디저트"
         inverse
-        className="top-[130px] left-[211px] rotate-[2.2deg]"
+        className="top-[125px] left-[232px] rotate-[2.4deg]"
       />
       <StickerChip
-        iconSrc={emojiShoppingBagSrc}
-        label="도시"
-        className="top-[202px] left-[102px] rotate-4"
-      />
-      <StickerChip
-        iconSrc={emojiFerrisWheelSrc}
+        iconSrc={stickerActivitySrc}
         label="액티비티"
-        className="top-[211px] left-[250px] rotate-[-2.7deg]"
+        className="top-[231px] left-[235px] rotate-[-2.9deg]"
       />
       <StickerChip
-        iconSrc={emojiTreeSrc}
-        label="자연"
-        className="top-[285px] left-[207px] rotate-4"
+        iconSrc={stickerFoodSrc}
+        label="맛집"
+        className="top-[63px] left-[121px] rotate-[-6.9deg]"
+      />
+      <StickerChip
+        iconSrc={stickerPhotoSrc}
+        label="감성"
+        className="top-[175px] left-[99px] rotate-[6.7deg]"
+      />
+      <StickerChip
+        iconSrc={stickerHealingSrc}
+        label="힐링"
+        className="top-[307px] left-[143px] rotate-[4.3deg]"
       />
     </>
   )
 }
 
-// 스텝2 그래픽 — 지도 카드 + 스티커 핀 (Figma 1946-12964)
+// 스텝2 그래픽 — 앱 지도 화면 폰 목업 (Figma 2632-37648). 폰 하단은 그래픽 영역(343)
+// 밖으로 이어지다 overflow-clip으로 잘리는 시안 그대로 재현.
+// mask로 하단을 서서히 투명하게 — 시안처럼 폰이 배경 하늘로 녹아든다
 function MapGraphic() {
   return (
-    <div
-      // 카드 배경 #81d5e7는 토큰에 없음 → 가장 근접한 blue-300 사용 (사진 로드 전 fallback으로만 노출)
-      className="absolute top-[calc(50%+14px)] left-1/2 size-[250px] -translate-x-1/2 -translate-y-1/2 overflow-clip rounded-[32px] bg-blue-300"
-    >
-      {/* 회전된 지도 스크린샷 — Figma 크롭(455×424 프레임, 50.26° 회전, 223% 확대) 근사 재현 */}
-      <div className="absolute top-[-130px] left-[-171px] flex h-[622px] w-[618px] items-center justify-center">
-        <div className="relative h-[424px] w-[455px] flex-none rotate-[50.26deg] overflow-hidden">
-          <img
-            src={photoMapSrc}
-            alt=""
-            className="absolute top-[-127%] left-[-123%] w-[223%] max-w-none"
-          />
-        </div>
+    <div className="absolute inset-0 overflow-clip rounded-[32px] [mask-image:linear-gradient(to_bottom,black_62%,transparent_97%)]">
+      <div className="absolute top-10 left-1/2 h-[322px] w-[227px] -translate-x-1/2 overflow-hidden rounded-t-[29px]">
+        {/* 스크린샷이 테두리 밑까지 깔리고 흰 테두리가 그 위에 얹히는 구조 (Figma stroke는 fill 위에 그려짐) */}
+        <img
+          src={phoneMapSrc}
+          alt=""
+          className="absolute top-[-39px] left-0 w-full"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-t-[29px] border-7 border-b-0 border-stroke-neutral-inverse"
+        />
       </div>
-      <img
-        src={pin1Src}
-        alt=""
-        className="absolute top-[97px] left-[10px] w-[149px] rotate-[-83.62deg]"
-      />
-      <img
-        src={pin2Src}
-        alt=""
-        className="absolute top-[33px] left-[14px] w-[88px] rotate-[19.81deg]"
-      />
-      <img
-        src={emojiShoppingBagSrc}
-        alt=""
-        className="absolute top-[30px] left-[106px] size-[47px] rotate-4"
-      />
     </div>
   )
 }
 
-// 스텝3 사진 프레임 — 흰 7px 테두리 · radius 26 (Figma image Frame)
+// 스텝3 사진 프레임 — 128×154 · radius 26 · 불투명 흰 7px 테두리(사진이 비치면 안 됨).
+// left/top은 프레임 중심 좌표(343×343 기준)
 function PhotoFrame({ src, className }: { src: string; className?: string }) {
   return (
     <span
       className={cn(
-        "absolute block overflow-hidden rounded-[26px] border-7 border-stroke-neutral-inverse shadow-[0px_0px_32px_0px_rgba(142,150,169,0.12)]",
+        "absolute block h-[154px] w-[128px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[26px] shadow-[0px_0px_32px_0px_rgba(142,150,169,0.12)]",
         className
       )}
     >
-      <img src={src} alt="" className="size-full object-cover object-top" />
+      <img src={src} alt="" className="size-full object-cover" />
+      <span
+        aria-hidden
+        className="absolute inset-0 rounded-[26px] border-7 border-stroke-neutral-inverse"
+      />
     </span>
   )
 }
 
-// 스텝3 그래픽 — 예시 사진 3장 (Figma 1946-13042)
+// 스텝3 그래픽 — 사진 콜라주 + 장식 스티커 3종 (Figma 2632-37673).
+// 클로버는 시안대로 왼쪽 edge에서 잘리도록 overflow-clip 유지
 function GalleryGraphic() {
   return (
-    <>
+    <div className="absolute inset-0 overflow-clip rounded-[32px]">
       <PhotoFrame
-        src={photoFrame1Src}
-        className="top-[177px] left-[157px] size-[134px] rotate-4"
+        src={photoBeachSrc}
+        className="top-[244px] left-[236px] rotate-[4.8deg]"
       />
       <PhotoFrame
-        src={photoFrame2Src}
-        className="top-[132px] left-[47px] size-[135px]"
+        src={photoNightSrc}
+        className="top-[198px] left-[111px] rotate-[-10.4deg]"
       />
       <PhotoFrame
-        src={photoFrame3Src}
-        className="top-[60px] left-1/2 h-[154px] w-[128px] -translate-x-1/2 -rotate-4"
+        src={photoAlleySrc}
+        className="top-[118px] left-[182px] rotate-[1.9deg]"
       />
-    </>
+      <img
+        src={stickerPhotoSrc}
+        alt=""
+        className="absolute top-[85px] left-[249px] w-[85px] -translate-x-1/2 -translate-y-1/2 rotate-[15deg]"
+      />
+      <img
+        src={stickerDessertSrc}
+        alt=""
+        className="absolute top-[204px] left-[293px] w-[90px] -translate-x-1/2 -translate-y-1/2 rotate-[-8.9deg]"
+      />
+      <img
+        src={stickerHealingSrc}
+        alt=""
+        className="absolute top-[168px] left-[38px] w-[91px] -translate-x-1/2 -translate-y-1/2 rotate-[-21deg]"
+      />
+    </div>
   )
 }
 
@@ -185,13 +188,13 @@ function OnboardingOverlay({
   onFinish,
   unmount,
 }: {
-  /** "시작하기" — 다음 화면 이동. 끝나면 오버레이가 페이드아웃 후 걷힌다 */
+  /** 마지막 스텝 "다음" — 다음 화면 이동. 끝나면 오버레이가 페이드아웃 후 걷힌다 */
   onFinish: () => void | Promise<void>
   unmount: () => void
 }) {
   const [step, setStep] = useState<Step>(1)
   const [closing, setClosing] = useState(false)
-  const { title, subtitle, cta } = STEP_CONTENT[step - 1]
+  const { title, subtitle } = STEP_CONTENT[step - 1]
   const Graphic = STEP_GRAPHICS[step - 1]
 
   const finish = async () => {
@@ -254,15 +257,15 @@ function OnboardingOverlay({
           >
             <div className="flex flex-col gap-4 px-4 text-center">
               {/* 텍스트 섀도 색은 neutral-400 12% (Figma z-index/50 효과) — 섀도 토큰이 없어 값 고정 */}
-              <h2 className="text-h3 text-fg-neutral-bold [text-shadow:0_0_20px_rgba(142,150,169,0.12)]">
+              <h2 className="text-h2 text-fg-neutral-bold [text-shadow:0_0_20px_rgba(142,150,169,0.12)]">
                 {title[0]}
                 <br />
                 {title[1]}
               </h2>
-              <p className="text-h6-1 text-fg-neutral-solid">{subtitle}</p>
+              <p className="text-b4 text-fg-neutral-solid">{subtitle}</p>
             </div>
-            {/* 그래픽 영역 343×320 — 시안 annotation상 추후 전부 교체 예정 */}
-            <div aria-hidden className="relative h-[320px] w-[343px]">
+            {/* 그래픽 영역 343×343 (Figma Graphic 프레임) */}
+            <div aria-hidden className="relative size-[343px]">
               <Graphic />
             </div>
           </div>
@@ -289,10 +292,11 @@ function OnboardingOverlay({
         </div>
 
         <div className="shrink-0 px-4 pt-10 pb-8">
+          {/* 마지막 스텝도 시안대로 "다음" (Figma 2632-37688) */}
           <ButtonCta
             onClick={step === 3 ? finish : () => setStep((step + 1) as Step)}
           >
-            {cta}
+            다음
           </ButtonCta>
         </div>
       </div>
@@ -301,13 +305,13 @@ function OnboardingOverlay({
 }
 
 /**
- * 첫 진입 온보딩 (Figma 1951-14617 → 1946-12642 → 1946-12687) —
+ * 첫 진입 온보딩 (Figma 2632-37599 → 2632-37636 → 2632-37661) —
  * 회원가입 완료 팝업의 확인 클릭 시 1회만 노출되는 3단계 풀스크린 안내.
- * 다음/시작하기로 진행, 스텝 2·3에선 뒤로가기 가능.
+ * "다음"으로 진행, 스텝 2·3에선 뒤로가기 가능.
  *
  * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
  * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
- * `onComplete`는 "시작하기"로 정상 종료됐을 때만 호출 — 가입 직후 흐름에서
+ * `onComplete`는 마지막 스텝 "다음"으로 정상 종료됐을 때만 호출 — 가입 직후 흐름에서
  * 온보딩이 끝난 뒤에야 다음 화면으로 이동시켜, 지도의 "팟 없음" 가드가
  * 온보딩보다 먼저 끼어들어 팝업·온보딩이 스킵되는 경합을 막는다.
  * 페이지 이동을 반환(Promise)하면 이동이 끝난 뒤에 오버레이를 페이드아웃으로 걷는다 —
