@@ -8,6 +8,10 @@ import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 
 type Point = [number, number]
 type Project = (point: Point) => Point
+type Projection = {
+  project: Project
+  projectFeature: (feature: GeoJSON.Feature) => Project
+}
 
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
@@ -43,7 +47,7 @@ function isPreservedIslandPoint([lng, lat]: Point): boolean {
   return isJeju || isDokdo
 }
 
-function makeProject(features: Array<GeoJSON.Feature>): Project {
+function makeProject(features: Array<GeoJSON.Feature>): Projection {
   const points = features.flatMap(coordinatesOf)
   const lngs = points.map(([lng]) => lng)
   const lats = points.map(([, lat]) => lat)
@@ -67,7 +71,9 @@ function makeProject(features: Array<GeoJSON.Feature>): Project {
   const mainlandProjected = points
     .filter((point) => !isPreservedIslandPoint(point))
     .map(baseProject)
-  if (mainlandProjected.length === 0) return baseProject
+  if (mainlandProjected.length === 0) {
+    return { project: baseProject, projectFeature: () => baseProject }
+  }
 
   const mainlandXs = mainlandProjected.map(([x]) => x)
   const mainlandYs = mainlandProjected.map(([, y]) => y)
@@ -85,14 +91,25 @@ function makeProject(features: Array<GeoJSON.Feature>): Project {
     (Math.min(...mainlandYs) + Math.max(...mainlandYs)) / 2,
   ]
 
-  return (point: Point) => {
+  const projectMainland = (point: Point): Point => {
     const projected = baseProject(point)
-    if (isPreservedIslandPoint(point)) return projected
     return [
       mainlandCenter[0] + (projected[0] - mainlandCenter[0]) * mainlandScaleX,
       mainlandCenter[1] + (projected[1] - mainlandCenter[1]) * mainlandScaleY,
     ]
   }
+
+  const project = (point: Point): Point =>
+    isPreservedIslandPoint(point) ? baseProject(point) : projectMainland(point)
+
+  const projectFeature = (feature: GeoJSON.Feature): Project => {
+    const featurePoints = coordinatesOf(feature)
+    const isIsland =
+      featurePoints.length > 0 && featurePoints.every(isPreservedIslandPoint)
+    return isIsland ? baseProject : projectMainland
+  }
+
+  return { project, projectFeature }
 }
 
 function pathForFeature(feature: GeoJSON.Feature, project: Project): string {
@@ -147,19 +164,29 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     }
   }, [onReady])
 
-  const project = React.useMemo(() => makeProject(geojson.features), [geojson])
+  const projection = React.useMemo(
+    () => makeProject(geojson.features),
+    [geojson]
+  )
   const projectedFeatures = React.useMemo(
     () =>
-      geojson.features.map((feature) => ({
-        feature,
-        path: pathForFeature(feature, project),
-        center: computeCentroid(feature),
-      })),
-    [geojson, project]
+      geojson.features
+        .map((feature) => ({
+          feature,
+          project: projection.projectFeature(feature),
+          center: computeCentroid(feature),
+        }))
+        .map(({ feature, project, center }) => ({
+          feature,
+          project,
+          path: pathForFeature(feature, project),
+          center: center ? project(center) : null,
+        })),
+    [geojson, projection]
   )
   const nationPath = React.useMemo(
-    () => (nation ? pathForFeature(nation, project) : ""),
-    [nation, project]
+    () => (nation ? pathForFeature(nation, projection.project) : ""),
+    [nation, projection]
   )
   const photosByCode = React.useMemo(() => {
     const grouped = new Map<string, Array<Photo>>()
@@ -187,9 +214,9 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
       const code = String(feature.properties?.code ?? "")
       const item = byCode.get(code)
       if (!item || !center) return []
-      return [{ ...item, position: project(center) }]
+      return [{ ...item, position: center }]
     })
-  }, [photosByCode, project, projectedFeatures])
+  }, [photosByCode, projectedFeatures])
 
   return (
     <div className={className} data-recap-map>
