@@ -146,7 +146,7 @@ function openPermissionFlow() {
   )
 }
 
-// 가입 완료 팝업 — /map-google 이동 후 표시 (그래픽은 추후 교체 예정 placeholder)
+// 가입 완료 팝업 — /map-google 이동 후 표시 (Figma 1951-13877, 그래픽 없는 텍스트 팝업)
 // 확인 버튼(onConfirm)만 온보딩으로 이어지고, X(onClose)는 그냥 닫는다
 function SignupCompleteContent({
   nickname,
@@ -167,7 +167,6 @@ function SignupCompleteContent({
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
       </button>
-      <div className="h-[120px] rounded-[12px] bg-bg-neutral-subtle" />
       <div className="flex flex-col gap-[10px] py-2 text-center">
         <DialogTitle className="text-h5-1 text-fg-neutral-bold">
           {nickname}님
