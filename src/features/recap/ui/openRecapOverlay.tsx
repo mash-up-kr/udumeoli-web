@@ -55,9 +55,16 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const photos = useAllPhotos(currentPotId)
   const recapCardRef = React.useRef<HTMLDivElement>(null)
   const [mapReady, setMapReady] = React.useState(false)
+  const [mapRetryKey, setMapRetryKey] = React.useState(0)
   const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
   const [isPreparing, setIsPreparing] = React.useState(false)
   const handleMapReady = React.useCallback(() => setMapReady(true), [])
+  const handleMapError = React.useCallback(() => {
+    setMapReady(false)
+  }, [])
+  const handleMapRetry = React.useCallback(() => {
+    setMapRetryKey((key) => key + 1)
+  }, [])
   const localStats = React.useMemo(() => computeRecapStats(photos), [photos])
   const photoSignature = React.useMemo(
     () =>
@@ -232,6 +239,9 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
               photos={photos}
               className="absolute inset-0"
               onReady={handleMapReady}
+              onError={handleMapError}
+              onRetry={handleMapRetry}
+              retryKey={mapRetryKey}
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
             <div

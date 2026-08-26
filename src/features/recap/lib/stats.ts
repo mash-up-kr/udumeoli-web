@@ -18,10 +18,15 @@ const DAY_MS = 24 * 60 * 60 * 1000
  */
 export function computeRecapStats(photos: Array<Photo>): RecapStats {
   const days = new Set<string>()
-  const regions = new Set<string>()
+  const photosByRegion = new Map<string, Array<Photo>>()
 
   for (const photo of photos) {
-    regions.add(photo.region)
+    const regionPhotos = photosByRegion.get(photo.region)
+    if (regionPhotos) {
+      regionPhotos.push(photo)
+    } else {
+      photosByRegion.set(photo.region, [photo])
+    }
 
     const start = Date.parse(photo.date)
     if (!Number.isFinite(start)) continue
@@ -36,11 +41,9 @@ export function computeRecapStats(photos: Array<Photo>): RecapStats {
 
   return {
     totalDays: days.size,
-    regionCount: regions.size,
-    pinCount: [...regions].reduce(
-      (count, region) =>
-        count +
-        groupTrips(photos.filter((photo) => photo.region === region)).length,
+    regionCount: photosByRegion.size,
+    pinCount: [...photosByRegion.values()].reduce(
+      (count, regionPhotos) => count + groupTrips(regionPhotos).length,
       0
     ),
   }

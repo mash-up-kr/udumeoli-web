@@ -93,27 +93,42 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   photos,
   className,
   onReady,
+  onError,
+  onRetry,
+  retryKey = 0,
 }: {
   photos: Array<Photo>
   className?: string
   onReady?: () => void
+  onError?: () => void
+  onRetry?: () => void
+  retryKey?: number
 }) {
   const [geojson, setGeojson] = React.useState(EMPTY_GEO)
   const [nation, setNation] = React.useState<GeoJSON.Feature | null>(null)
+  const [hasError, setHasError] = React.useState(false)
 
   React.useEffect(() => {
     let active = true
-    void loadKoreaGeoJson().then((geo) => {
-      if (active) {
-        setGeojson(geo.municipalities)
-        setNation(geo.nation)
-        onReady?.()
-      }
-    })
+    setHasError(false)
+    void loadKoreaGeoJson()
+      .then((geo) => {
+        if (active) {
+          setGeojson(geo.municipalities)
+          setNation(geo.nation)
+          onReady?.()
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setHasError(true)
+          onError?.()
+        }
+      })
     return () => {
       active = false
     }
-  }, [onReady])
+  }, [onError, onReady, retryKey])
 
   const project = React.useMemo(() => makeProject(geojson.features), [geojson])
   const projectedFeatures = React.useMemo(
@@ -255,6 +270,22 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
           )
         })}
       </svg>
+      {hasError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#79d5e6]/90 px-6 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-sm font-medium text-[#232936]">
+              지도를 불러오지 못했어요.
+            </p>
+            <button
+              type="button"
+              className="rounded-full bg-[#232936] px-3 py-1.5 text-xs font-medium text-white"
+              onClick={onRetry}
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 })

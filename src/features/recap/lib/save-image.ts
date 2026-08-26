@@ -88,6 +88,16 @@ async function inlineSvgImages(svgMarkup: string): Promise<string> {
   return new XMLSerializer().serializeToString(xmlDocument.documentElement)
 }
 
+function buildLocationIconMarkup(element: HTMLElement): string {
+  const locationIcon = element.querySelector<HTMLImageElement>(
+    "[data-recap-location-icon]"
+  )
+  const source = locationIcon?.currentSrc || locationIcon?.src
+  if (!source) return ""
+
+  return `<image href="${escapeXml(source)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
+}
+
 export function buildRecapTextMarkup(model: RecapCardModel): string {
   const days = escapeXml(String(model.totalDays))
   const pins = escapeXml(String(model.pinCount))
@@ -114,11 +124,6 @@ async function buildExportSvg(
   const map = element.querySelector<SVGSVGElement>("[data-recap-map] svg")
   if (!map) throw new Error("리캡 지도를 찾을 수 없어요")
 
-  const locationIcon = element.querySelector<HTMLImageElement>(
-    "[data-recap-location-icon]"
-  )
-  const locationIconSource = locationIcon?.currentSrc || locationIcon?.src
-
   const mapMarkup = (
     await inlineSvgImages(new XMLSerializer().serializeToString(map))
   )
@@ -127,18 +132,16 @@ async function buildExportSvg(
     .replaceAll('href="/', `href="${window.location.origin}/`)
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
 
-  const locationIconMarkup = locationIconSource
-    ? `<image href="${escapeXml(locationIconSource)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
-    : ""
+  const locationIconMarkup = buildLocationIconMarkup(element)
   const fontStyle = await exportFontStyle()
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/><g>${mapMarkup.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
-function buildFallbackExportSvg(
+async function buildFallbackExportSvg(
   element: HTMLElement,
   model: RecapCardModel
-): string {
+): Promise<string> {
   const map = element.querySelector<SVGSVGElement>("[data-recap-map] svg")
   if (!map) throw new Error("리캡 지도를 찾을 수 없어요")
 
@@ -150,7 +153,8 @@ function buildFallbackExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480"><defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${mapMarkup}<rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildRecapTextMarkup(model)}</svg>`
+  const fontStyle = await exportFontStyle()
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${mapMarkup}<rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
 }
 
 async function svgToBlob(svgMarkup: string): Promise<Blob> {
@@ -205,7 +209,7 @@ export async function saveRecapImage(
     svg = await buildExportSvg(element, model)
   } catch (error) {
     console.error("리캡 SVG 구성 실패, 지도 원본으로 저장을 시도합니다", error)
-    svg = buildFallbackExportSvg(element, model)
+    svg = await buildFallbackExportSvg(element, model)
   }
   let blob: Blob
   try {
