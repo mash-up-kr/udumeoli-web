@@ -4,3 +4,6 @@ yarn.lock
 
 # 빌드 산출물 (pnpm geo:build) — 포맷하면 450KB → 1.6MB로 부푼다
 public/korea-topo.json
+
+# TanStack Router 자동 생성 파일 — 포맷하면 제너레이터 출력과 계속 어긋나 트리가 더러워진다
+src/routeTree.gen.ts

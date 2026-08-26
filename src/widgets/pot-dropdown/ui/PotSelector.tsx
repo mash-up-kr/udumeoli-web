@@ -3,7 +3,6 @@ import { useRouter } from "@tanstack/react-router"
 
 import { getMemberPots, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
-import { openPotJoinModal } from "@/features/pot-join"
 import iconCheckSrc from "@/shared/assets/icon-check.svg"
 import iconChevronDownIosSrc from "@/shared/assets/icon-chevron-down-ios.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
@@ -123,7 +122,7 @@ export function PotSelector() {
                   type="button"
                   onClick={() => {
                     setOpen(false)
-                    openPotJoinModal()
+                    router.navigate({ to: "/pot-join" })
                   }}
                   className={rowCls}
                 >

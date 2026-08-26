@@ -8,7 +8,6 @@ import iconTicketSrc from "@/shared/assets/icon-ticket.svg"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { openOnboardingOverlay } from "@/features/onboarding"
-import { openPotJoinModal } from "@/features/pot-join"
 import { useMyPots } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
@@ -89,7 +88,7 @@ export function PotStartPage() {
             iconSrc={iconTicketSrc}
             title="초대코드로 참여하기"
             description="친구가 보내준 코드를 입력해요."
-            onClick={() => openPotJoinModal()}
+            onClick={() => router.navigate({ to: "/pot-join", replace: true })}
           />
         </div>
       </main>
