@@ -235,8 +235,9 @@ function OnboardingOverlay({
         className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-blue-500/20 backdrop-blur-[30px]"
       />
 
-      {/* 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응 */}
-      <div className="relative flex h-full flex-col overflow-y-auto">
+      {/* 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응.
+          343px 그래픽이 더 좁은 화면에서 가로 스크롤을 만들지 않게 x는 잘라낸다 */}
+      <div className="relative flex h-full flex-col overflow-x-hidden overflow-y-auto">
         {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
         {step > 1 && (
           <ButtonIcon
