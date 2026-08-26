@@ -116,6 +116,19 @@ const keywordById = Object.fromEntries(
   TRAVEL_KEYWORDS.map((keyword) => [keyword.id, keyword])
 ) as Record<TravelKeywordId, TravelKeyword>
 
+const strokeByFill = new Map(
+  TRAVEL_KEYWORDS.map((keyword) => [keyword.fill.toLowerCase(), keyword.stroke])
+)
+
+/**
+ * 지역 폴리곤 채움색 → 같은 계열 외곽선색 (Figma 1959-6293, primitive 100→500 페어).
+ * 팔레트에 없는 채움색(mapColor 등)은 undefined — 호출부에서 채움색 자체를
+ * 불투명 스트로크로 쓰면 40% 채움 대비 같은 계열의 진한 테두리가 된다.
+ */
+export function regionStrokeForFill(fill: string): string | undefined {
+  return strokeByFill.get(fill.toLowerCase())
+}
+
 /** 여행 기록 선택 화면에 노출하는 Figma 최신 5종 카테고리 */
 export const TRAVEL_KEYWORD_OPTIONS: Array<TravelKeyword> = [
   keywordById.FOOD,

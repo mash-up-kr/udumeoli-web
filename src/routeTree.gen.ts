@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as SignupRouteImport } from './app/routes/signup'
 import { Route as PotStartRouteImport } from './app/routes/pot-start'
+import { Route as PotJoinRouteImport } from './app/routes/pot-join'
 import { Route as PotCreateRouteImport } from './app/routes/pot-create'
 import { Route as MyPageRouteImport } from './app/routes/my-page'
 import { Route as MapGoogleRouteImport } from './app/routes/map-google'
@@ -29,6 +30,11 @@ const SignupRoute = SignupRouteImport.update({
 const PotStartRoute = PotStartRouteImport.update({
   id: '/pot-start',
   path: '/pot-start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PotJoinRoute = PotJoinRouteImport.update({
+  id: '/pot-join',
+  path: '/pot-join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PotCreateRoute = PotCreateRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/map-google': typeof MapGoogleRoute
   '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
+  '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/map-google': typeof MapGoogleRoute
   '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
+  '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/map-google': typeof MapGoogleRoute
   '/my-page': typeof MyPageRouteWithChildren
   '/pot-create': typeof PotCreateRoute
+  '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/map-google'
     | '/my-page'
     | '/pot-create'
+    | '/pot-join'
     | '/pot-start'
     | '/signup'
     | '/login/callback'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/map-google'
     | '/my-page'
     | '/pot-create'
+    | '/pot-join'
     | '/pot-start'
     | '/signup'
     | '/login/callback'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/map-google'
     | '/my-page'
     | '/pot-create'
+    | '/pot-join'
     | '/pot-start'
     | '/signup'
     | '/login/callback'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   MapGoogleRoute: typeof MapGoogleRoute
   MyPageRoute: typeof MyPageRouteWithChildren
   PotCreateRoute: typeof PotCreateRoute
+  PotJoinRoute: typeof PotJoinRoute
   PotStartRoute: typeof PotStartRoute
   SignupRoute: typeof SignupRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: '/pot-start'
       fullPath: '/pot-start'
       preLoaderRoute: typeof PotStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pot-join': {
+      id: '/pot-join'
+      path: '/pot-join'
+      fullPath: '/pot-join'
+      preLoaderRoute: typeof PotJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pot-create': {
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   MapGoogleRoute: MapGoogleRoute,
   MyPageRoute: MyPageRouteWithChildren,
   PotCreateRoute: PotCreateRoute,
+  PotJoinRoute: PotJoinRoute,
   PotStartRoute: PotStartRoute,
   SignupRoute: SignupRoute,
   LoginCallbackRoute: LoginCallbackRoute,

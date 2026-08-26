@@ -69,7 +69,9 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
     <div
       className={cn(
         // z-[60]: 모달/시트(z-50, body 끝 portal)가 열려 있어도 토스트가 항상 위에 보이도록
-        "fixed bottom-8 left-1/2 z-[60] -translate-x-1/2 px-4",
+        // inset-x-0 + flex 중앙 정렬: left-1/2 방식은 abspos shrink-to-fit 폭이 뷰포트
+        // 절반으로 잡혀 긴 메시지가 절반 폭에서 잘린다. 클릭은 아래로 통과(pill은 표시 전용).
+        "pointer-events-none fixed inset-x-0 bottom-8 z-[60] flex justify-center px-4",
         className
       )}
     >

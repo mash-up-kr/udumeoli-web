@@ -26,7 +26,7 @@ export function LandingPage() {
         <LogoStickerCluster className="-translate-y-[47px]" />
 
         {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위 */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-[34px]">
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
           {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
           <ButtonCta
             className="gap-2 bg-[#FDE500] text-[#3C1E1E]"

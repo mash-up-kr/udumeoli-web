@@ -6,6 +6,19 @@
 // JS 메모리(Map)에 직접 들고 있다가, 상태가 바뀔 때마다 전체 스타일을 계산해
 // `data.overrideStyle(feature, style)`로 통째로 덮어쓰는 방식으로 동일 효과를 낸다.
 
+import { regionStrokeForFill } from "@/entities/photo"
+import { REGION_CODE_BY_NAME } from "@/shared/api/region-codes"
+
+/**
+ * 동명 지역(강원·경남 고성군) 충돌 시 앱 식별 코드와 일치하는 쪽이 정본이다.
+ * region-codes.ts의 고정 규칙(고성군=강원 32400)과 렌더 레이어를 일치시킨다.
+ * 병합시(포항시 등)는 code가 매핑값과 달라(37011 vs 37010) 이 판정을
+ * 이름이 실제로 중복된 경우에만 적용해야 한다.
+ */
+export function isCanonicalRegionCode(name: string, code: unknown): boolean {
+  return String(code) === REGION_CODE_BY_NAME[name]
+}
+
 const BOUNDARY_ZOOM = 7.5
 const KEYWORD_FILL_OPACITY = 0.4
 
@@ -37,13 +50,18 @@ function computeStyle(
   const fillColor =
     state.previewColor ?? (state.hasColor && state.color ? state.color : accent)
 
+  // 색칠 지역 테두리 = 채움색과 같은 계열의 진한 색 (Figma 1959-6293).
+  // 팔레트 100→500 페어에 없는 채움색은 채움색 자체를 불투명하게 써서
+  // 40% opacity 채움 대비 같은 계열의 진한 테두리로 보이게 한다.
   let strokeColor = state.incomplete
     ? "#232936"
     : state.active
       ? accent
-      : "#aaaaaa"
+      : hasColor
+        ? (regionStrokeForFill(fillColor) ?? fillColor)
+        : "#aaaaaa"
   let strokeWeight = state.active ? 2.5 : state.incomplete ? 1.4 : 0.9
-  let strokeOpacity = state.active || state.incomplete ? 1 : 0.65
+  let strokeOpacity = state.active || state.incomplete || hasColor ? 1 : 0.65
 
   if (state.decorateColor) {
     // Data API는 폴리곤 stroke에 dash pattern을 지원하지 않아 굵은 실선으로 근사
@@ -61,6 +79,14 @@ function computeStyle(
     strokeColor,
     strokeWeight,
     strokeOpacity,
+    // 색 테두리 지역을 이웃 폴리곤 위로 — 안 올리면 나중에 그려진 이웃의 회색
+    // 테두리가 공유 경계 구간을 덮어 색 테두리가 군데군데 끊겨 보인다
+    zIndex:
+      state.active || state.decorateColor
+        ? 3
+        : hasColor || state.incomplete
+          ? 2
+          : 1,
     clickable: true,
     // 완전 투명 지역을 visible:false로 빼는 최적화는 하지 않는다 — 줌 제스처마다
     // BOUNDARY_ZOOM(7.5) 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
@@ -93,18 +119,25 @@ export type RegionDataLayer = {
  * 기록 지역 테두리(#232936)와 같은 짙은 톤 — 기본 경계선(#aaaaaa 0.65)은 축소 뷰에서
  * 흐려 보인다. 노출 제어는 호출부가 setMap으로 한다.
  */
+/** 경계선 기본 스타일 — 색만 바꿔 재사용 (도별·전국 대표색 테두리) */
+export function boundaryStyle(
+  strokeColor = "#232936"
+): google.maps.Data.StyleOptions {
+  return {
+    clickable: false,
+    fillOpacity: 0,
+    strokeColor,
+    strokeWeight: 1,
+    strokeOpacity: 1,
+  }
+}
+
 export function createBoundaryLayer(
   geojson: GeoJSON.FeatureCollection | GeoJSON.Feature
 ): google.maps.Data {
   const layer = new google.maps.Data()
   layer.addGeoJson(geojson)
-  layer.setStyle({
-    clickable: false,
-    fillOpacity: 0,
-    strokeColor: "#232936",
-    strokeWeight: 1,
-    strokeOpacity: 1,
-  })
+  layer.setStyle(boundaryStyle())
   return layer
 }
 
@@ -122,9 +155,23 @@ export function createRegionDataLayer(
   data.addGeoJson(geojson)
 
   const nameToFeature = new Map<string, google.maps.Data.Feature>()
+  // 이름 충돌(고성군) 시 정본 feature를 잡고, 밀려난 쪽은 채움/상태 대상에서
+  // 빠지되 기본 테두리는 계속 그리도록 따로 모은다
+  const orphanFeatures: Array<google.maps.Data.Feature> = []
   data.forEach((feature) => {
     const name = feature.getProperty("name")
-    if (typeof name === "string") nameToFeature.set(name, feature)
+    if (typeof name !== "string") return
+    const existing = nameToFeature.get(name)
+    if (!existing) {
+      nameToFeature.set(name, feature)
+      return
+    }
+    if (isCanonicalRegionCode(name, feature.getProperty("code"))) {
+      orphanFeatures.push(existing)
+      nameToFeature.set(name, feature)
+    } else {
+      orphanFeatures.push(feature)
+    }
   })
 
   const states = new Map<string, RegionVisualState>()
@@ -147,8 +194,19 @@ export function createRegionDataLayer(
     data.overrideStyle(feature, computeStyle(state, zoom, opts.accent))
   }
 
+  // 정본에서 밀려난 동명 feature(경남 고성군)는 상태 없이 기본 스타일만 유지
+  const ORPHAN_STATE: RegionVisualState = {
+    hasColor: false,
+    hasPhoto: false,
+    incomplete: false,
+    active: false,
+  }
+
   const applyAll = () => {
     for (const name of nameToFeature.keys()) applyOne(name)
+    for (const feature of orphanFeatures) {
+      data.overrideStyle(feature, computeStyle(ORPHAN_STATE, zoom, opts.accent))
+    }
   }
 
   applyAll()

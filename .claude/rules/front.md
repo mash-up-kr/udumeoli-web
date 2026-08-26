@@ -28,7 +28,7 @@ FSD(Feature-Sliced Design) 구조를 따른다.
 
 ## GraphQL 엔티티 연결
 
-목↔실서버 전환은 `shared/api/client.ts`의 `USE_MOCK` 한 곳에서만 갈린다 (기본: dev 서버는 목, 프로덕션 빌드는 실서버. `VITE_USE_MOCK=true|false`로 강제).
+`shared/api/client.ts`의 `USE_MOCK`은 이제 테스트 전용이다 — dev·prod 런타임은 항상 실서버(프록시 경유)이고, vitest만 `vite.config.ts`의 `test.env`(`VITE_USE_MOCK=true`)로 목 픽스처를 탄다. 목 분기 코드는 테스트 픽스처로만 유지한다.
 새 엔티티를 붙일 때는 이미 연결된 `entities/user`·`entities/travel-pot`를 그대로 베낀다.
 
 **파일 2개가 전부다.**

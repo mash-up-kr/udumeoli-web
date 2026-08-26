@@ -4,6 +4,7 @@ export {
   TRAVEL_KEYWORDS,
   TRAVEL_KEYWORD_OPTIONS,
   findKeyword,
+  regionStrokeForFill,
 } from "./model/keywords"
 export {
   MAX_PHOTO_UPLOAD_MB,

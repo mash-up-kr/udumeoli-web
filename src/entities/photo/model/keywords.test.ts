@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { TRAVEL_KEYWORDS, TRAVEL_KEYWORD_OPTIONS } from "./keywords"
+import {
+  TRAVEL_KEYWORDS,
+  TRAVEL_KEYWORD_OPTIONS,
+  regionStrokeForFill,
+} from "./keywords"
 
 describe("TRAVEL_KEYWORDS", () => {
   it("서버 TripKeyword enum 6종과 정확히 일치한다", () => {
@@ -27,5 +31,18 @@ describe("TRAVEL_KEYWORDS", () => {
       ["액티비티", "#E87545"],
       ["사진", "#20201F"],
     ])
+  })
+})
+
+describe("regionStrokeForFill", () => {
+  it("키워드 채움색(100)마다 같은 계열 외곽선색(500)을 돌려준다", () => {
+    for (const keyword of TRAVEL_KEYWORDS) {
+      expect(regionStrokeForFill(keyword.fill)).toBe(keyword.stroke)
+    }
+    expect(regionStrokeForFill("#FFF0B1")).toBe("#dbb71f")
+  })
+
+  it("팔레트에 없는 채움색은 undefined", () => {
+    expect(regionStrokeForFill("#123456")).toBeUndefined()
   })
 })

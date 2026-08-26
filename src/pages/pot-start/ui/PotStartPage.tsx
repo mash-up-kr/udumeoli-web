@@ -3,18 +3,21 @@ import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
 
+import iconPinSrc from "@/shared/assets/icon-pin.svg"
+import iconTicketSrc from "@/shared/assets/icon-ticket.svg"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { openOnboardingOverlay } from "@/features/onboarding"
-import { openPotJoinModal } from "@/features/pot-join"
 import { useMyPots } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
 function StartOptionRow({
+  iconSrc,
   title,
   description,
   onClick,
 }: {
+  iconSrc: string
   title: ReactNode
   description: ReactNode
   onClick: () => void
@@ -25,7 +28,9 @@ function StartOptionRow({
       onClick={onClick}
       className="flex w-full items-center gap-3 rounded-[32px] bg-bg-neutral-weak p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
     >
-      <span className="size-12 shrink-0 rounded-full bg-bg-neutral-solid" />
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-bg-neutral-solid">
+        <img src={iconSrc} alt="" className="size-8" />
+      </span>
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
         <span className="text-h6 text-fg-neutral-bold">{title}</span>
         <span className="text-b8 text-fg-neutral-subtle">{description}</span>
@@ -72,6 +77,7 @@ export function PotStartPage() {
         </div>
         <div className="flex w-full flex-col gap-4 py-6">
           <StartOptionRow
+            iconSrc={iconPinSrc}
             title="새 팟 만들기"
             description="우리만의 여행팟을 새로 시작해요."
             onClick={() =>
@@ -79,9 +85,10 @@ export function PotStartPage() {
             }
           />
           <StartOptionRow
+            iconSrc={iconTicketSrc}
             title="초대코드로 참여하기"
             description="친구가 보내준 코드를 입력해요."
-            onClick={() => openPotJoinModal()}
+            onClick={() => router.navigate({ to: "/pot-join", replace: true })}
           />
         </div>
       </main>

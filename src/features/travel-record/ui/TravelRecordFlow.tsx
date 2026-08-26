@@ -17,6 +17,7 @@ import {
   MAX_PHOTO_UPLOAD_MB,
   findKeyword,
   groupTrips,
+  regionStrokeForFill,
   useAllPhotos,
   useCreatePhoto,
 } from "@/entities/photo"
@@ -330,10 +331,19 @@ export function TravelRecordFlow({
               selected={keywordId}
               onSelect={(id) => {
                 setKeywordId(id)
-                // 선택 즉시 지도 지역에 색 미리보기 (확인 전에도 결과를 볼 수 있게)
+                // 선택 즉시 지도 지역에 색 미리보기 (확인 전에도 결과를 볼 수 있게).
+                // 완료 시 실제 색칠은 mapColor라(buildMapFills) 미리보기도 같은 색을 쓴다 —
+                // 칩용 fill(primitive 100)을 쓰면 모든 테마에서 미리보기가 실제와 어긋난다
                 const picked = findKeyword(id)
                 setPreview(
-                  picked ? { fill: picked.fill, stroke: picked.stroke } : null
+                  picked
+                    ? {
+                        fill: picked.mapColor,
+                        stroke:
+                          regionStrokeForFill(picked.mapColor) ??
+                          picked.mapColor,
+                      }
+                    : null
                 )
               }}
             />
