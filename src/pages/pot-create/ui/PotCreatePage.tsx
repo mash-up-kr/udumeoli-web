@@ -1,34 +1,28 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
-import confetti from "canvas-confetti"
 import { ArrowLeft, X } from "lucide-react"
 
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
-import { NumberCode } from "@/shared/ui/number-code"
 import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
-import { useCreateParty, usePotStore } from "@/entities/travel-pot"
+import { TicketCard, useCreateParty, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
-import partySrc from "@/shared/assets/party.svg"
 
 function CreatedStep({
   name,
   code,
+  leaderName,
   onClose,
 }: {
   name: string
   code: string
+  leaderName: string
   onClose: () => void
 }) {
-  // 코드 발급 축하 컨페티 (진입 시 1회)
-  React.useEffect(() => {
-    confetti({ particleCount: 120, spread: 70, origin: { y: 0.3 } })
-  }, [])
-
   // 시스템 공유 시트(카톡 등) 노출, 미지원 브라우저는 클립보드 복사로 폴백
   const share = async () => {
     const text = `${name} 여행팟 초대코드: ${code}`
@@ -57,21 +51,38 @@ function CreatedStep({
           <X />
         </ButtonIcon>
       </div>
-      <main className="flex flex-1 flex-col gap-4 px-4">
-        <img src={partySrc} alt="" className="size-[60px]" />
-        <div className="flex w-full flex-col gap-2">
-          <div className="flex flex-col">
-            <p className="text-h3-1 text-fg-brand-solid underline">{name}</p>
-            <p className="text-h3-1 text-fg-neutral-bold">
-              여행팟 코드가 발급되었어요!
+      <main className="flex flex-1 flex-col">
+        <h1 className="px-4 py-1 text-h3-1 text-fg-neutral-bold">
+          {name}
+          <br />
+          여행팟이 만들어졌어요!
+        </h1>
+        {/* 티켓 카드 — 시안(Figma 2588-38543) 상단 여백 43px */}
+        <div className="flex h-[375px] w-full justify-center">
+          <TicketCard
+            name={name}
+            leaderName={leaderName}
+            seatLabel="01"
+            className="mt-[43px]"
+          >
+            <p className="sr-only">초대코드 {code}</p>
+            <div aria-hidden="true" className="flex gap-[6px]">
+              {code
+                .slice(0, 6)
+                .split("")
+                .map((char, i) => (
+                  <span
+                    key={i}
+                    className="flex h-[34px] w-[28px] items-center justify-center rounded-[8px] border border-neutral-200 bg-neutral-100 font-eng text-e3 text-neutral-900"
+                  >
+                    {char}
+                  </span>
+                ))}
+            </div>
+            <p className="text-h9 text-neutral-900">
+              함께 여행할 친구들을 초대해 보세요!
             </p>
-          </div>
-          <p className="text-b6 text-fg-neutral-subtle">
-            이제 친구를 초대해 같이 지도를 채워볼까요?
-          </p>
-        </div>
-        <div className="flex w-full justify-center">
-          <NumberCode value={code} readOnly />
+          </TicketCard>
         </div>
       </main>
       <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
@@ -94,7 +105,7 @@ function CreatedStep({
   )
 }
 
-/** 여행팟 생성 페이지 — 이름 입력 → 초대코드 발급(컨페티). (Figma 1893-12129) */
+/** 여행팟 생성 페이지 — 이름 입력 → 티켓 완료 화면. (Figma 1893-12129, 완료 화면 2588-38543) */
 export function PotCreatePage() {
   const router = useRouter()
   const createPot = usePotStore((s) => s.createPot)
@@ -137,7 +148,12 @@ export function PotCreatePage() {
 
   if (created) {
     return (
-      <CreatedStep name={created.name} code={created.code} onClose={goToMap} />
+      <CreatedStep
+        name={created.name}
+        code={created.code}
+        leaderName={currentUser?.nickname ?? "나"}
+        onClose={goToMap}
+      />
     )
   }
 
