@@ -27,11 +27,12 @@ import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
 
 const APP_VERSION = "v 1.0.0"
 
-// TODO: 실제 노션 페이지 URL 확정 시 교체
 const TERMS_URL =
-  import.meta.env.VITE_TERMS_NOTION_URL ?? "https://www.notion.so"
+  import.meta.env.VITE_TERMS_NOTION_URL ??
+  "https://app.notion.com/p/3c9bee7f5996807eb34ad0588da2c8ab"
 const PRIVACY_URL =
-  import.meta.env.VITE_PRIVACY_NOTION_URL ?? "https://www.notion.so"
+  import.meta.env.VITE_PRIVACY_NOTION_URL ??
+  "https://app.notion.com/p/3c9bee7f5996804f817eeae28111d964"
 
 // 스플래시(랜딩) CTA(카카오로 시작하기, 바닥 34px + 높이 56) 위 12px에 완료 토스트 노출
 const SPLASH_TOAST_POSITION = "bottom-[102px]"
