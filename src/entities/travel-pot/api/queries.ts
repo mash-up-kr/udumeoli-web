@@ -45,6 +45,7 @@ function useUpsertingMutation(
 ) {
   const queryClient = useQueryClient()
   const replacePots = usePotStore((s) => s.replacePots)
+  const selectPot = usePotStore((s) => s.selectPot)
   return useMutation({
     mutationFn,
     onSuccess: (pot) => {
@@ -54,6 +55,9 @@ function useUpsertingMutation(
       const pots = [pot, ...cached.filter((existing) => existing.id !== pot.id)]
       queryClient.setQueryData(travelPotKeys.myParties(), pots)
       replacePots(pots)
+      // 방금 생성·참여한 팟으로 즉시 전환 — replacePots는 기존 선택이 목록에
+      // 남아 있으면 유지하므로, 여기서 명시적으로 선택해야 새 팟이 현재 팟이 된다
+      selectPot(pot.id)
     },
   })
 }
