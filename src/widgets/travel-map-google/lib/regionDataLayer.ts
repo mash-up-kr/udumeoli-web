@@ -19,7 +19,9 @@ export function isCanonicalRegionCode(name: string, code: unknown): boolean {
   return String(code) === REGION_CODE_BY_NAME[name]
 }
 
-const BOUNDARY_ZOOM = 7.5
+// 3단계(상세 뷰) 진입 줌 — Impl의 DETAIL_ENTER_ZOOM과 동일 값.
+// 이 아래(0·1·2단계)는 색칠만 남기고 테두리를 그리지 않는다.
+const STROKE_MIN_ZOOM = 9
 const KEYWORD_FILL_OPACITY = 0.4
 
 export type RegionVisualState = {
@@ -53,13 +55,11 @@ function computeStyle(
   // 색칠 지역 테두리 = 채움색과 같은 계열의 진한 색 (Figma 1959-6293).
   // 팔레트 100→500 페어에 없는 채움색은 채움색 자체를 불투명하게 써서
   // 40% opacity 채움 대비 같은 계열의 진한 테두리로 보이게 한다.
-  let strokeColor = state.incomplete
-    ? "#232936"
-    : state.active
-      ? accent
-      : hasColor
-        ? (regionStrokeForFill(fillColor) ?? fillColor)
-        : "#aaaaaa"
+  let strokeColor = state.active
+    ? accent
+    : hasColor
+      ? (regionStrokeForFill(fillColor) ?? fillColor)
+      : "#aaaaaa"
   let strokeWeight = state.active ? 2.5 : state.incomplete ? 1.4 : 0.9
   let strokeOpacity = state.active || state.incomplete || hasColor ? 1 : 0.65
 
@@ -68,7 +68,7 @@ function computeStyle(
     strokeColor = state.decorateColor
     strokeWeight = 3
     strokeOpacity = 1
-  } else if (zoom < BOUNDARY_ZOOM) {
+  } else if (zoom < STROKE_MIN_ZOOM) {
     strokeWeight = 0
     strokeOpacity = 0
   }
@@ -89,7 +89,7 @@ function computeStyle(
           : 1,
     clickable: true,
     // 완전 투명 지역을 visible:false로 빼는 최적화는 하지 않는다 — 줌 제스처마다
-    // BOUNDARY_ZOOM(7.5) 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
+    // STROKE_MIN_ZOOM 통과 시 전체 폴리곤이 제거/재추가되며 애니메이션 중간에
     // 히치가 생겨, 투명 렌더 비용 절감보다 체감 버벅임이 더 컸다
   }
 }
@@ -112,33 +112,6 @@ export type RegionDataLayer = {
   /** 줌 변경 시 경계선 minzoom 게이팅 재계산 */
   syncZoom: (zoom: number) => void
   destroy: () => void
-}
-
-/**
- * 상위 행정 경계선(시도/국가) 레이어 — 비인터랙티브 stroke 전용 google.maps.Data.
- * 기록 지역 테두리(#232936)와 같은 짙은 톤 — 기본 경계선(#aaaaaa 0.65)은 축소 뷰에서
- * 흐려 보인다. 노출 제어는 호출부가 setMap으로 한다.
- */
-/** 경계선 기본 스타일 — 색만 바꿔 재사용 (도별·전국 대표색 테두리) */
-export function boundaryStyle(
-  strokeColor = "#232936"
-): google.maps.Data.StyleOptions {
-  return {
-    clickable: false,
-    fillOpacity: 0,
-    strokeColor,
-    strokeWeight: 1,
-    strokeOpacity: 1,
-  }
-}
-
-export function createBoundaryLayer(
-  geojson: GeoJSON.FeatureCollection | GeoJSON.Feature
-): google.maps.Data {
-  const layer = new google.maps.Data()
-  layer.addGeoJson(geojson)
-  layer.setStyle(boundaryStyle())
-  return layer
 }
 
 export function createRegionDataLayer(
@@ -185,7 +158,7 @@ export function createRegionDataLayer(
   }
 
   let zoom = opts.initialZoom
-  let isAboveBoundary = zoom >= BOUNDARY_ZOOM
+  let isAboveBoundary = zoom >= STROKE_MIN_ZOOM
 
   const applyOne = (name: string) => {
     const feature = nameToFeature.get(name)
@@ -329,9 +302,9 @@ export function createRegionDataLayer(
     },
     syncZoom: (newZoom) => {
       zoom = newZoom
-      // BOUNDARY_ZOOM 경계를 넘나들 때만 스타일이 실제로 바뀐다 — 매 프레임 오는
+      // STROKE_MIN_ZOOM 경계를 넘나들 때만 스타일이 실제로 바뀐다 — 매 프레임 오는
       // zoom_changed마다 전체 재계산하면 스크롤 줌 중 심하게 끊긴다
-      const nowAboveBoundary = zoom >= BOUNDARY_ZOOM
+      const nowAboveBoundary = zoom >= STROKE_MIN_ZOOM
       if (nowAboveBoundary === isAboveBoundary) return
       isAboveBoundary = nowAboveBoundary
       applyAll()
