@@ -20,11 +20,16 @@ export const RECAP_MAINLAND_MAP_VIEW: RecapMapView = {
   height: 640,
 } as const
 
+export const RECAP_MAINLAND_SCREEN_MAP_VIEW: RecapMapView = {
+  ...RECAP_MAINLAND_MAP_VIEW,
+  zoom: 6.8,
+} as const
+
 export function getRecapMapView(includeIslands: boolean): RecapMapView {
   return includeIslands ? RECAP_MAP_VIEW : RECAP_MAINLAND_MAP_VIEW
 }
 
 export function getRecapScreenMapView(includeIslands: boolean): RecapMapView {
   const view = getRecapMapView(includeIslands)
-  return includeIslands ? view : { ...view, zoom: 6.8 }
+  return includeIslands ? view : RECAP_MAINLAND_SCREEN_MAP_VIEW
 }
