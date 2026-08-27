@@ -33,4 +33,5 @@ export {
   seedUtPhotos,
   resetUtPhotos,
   removeSeedPhotosByUploader,
+  uploadErrorMessage,
 } from "./api/photo.api"

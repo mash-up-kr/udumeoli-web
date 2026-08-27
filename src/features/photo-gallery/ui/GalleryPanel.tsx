@@ -8,7 +8,11 @@ import type { GallerySlot } from "./DateSection"
 import type { Photo } from "@/entities/photo"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
-import { useAllPhotos, useCreatePhoto } from "@/entities/photo"
+import {
+  uploadErrorMessage,
+  useAllPhotos,
+  useCreatePhoto,
+} from "@/entities/photo"
 import { formatRegionName } from "@/entities/region"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -155,9 +159,9 @@ export function GalleryPanel({
         file,
         previewUrl: url,
       })
-    } catch {
+    } catch (error) {
       showToast({
-        message: "업로드에 실패했어요. 다시 시도해 주세요.",
+        message: uploadErrorMessage(error),
         icon: "alert",
         className: expanded ? undefined : "bottom-[256px]",
       })
