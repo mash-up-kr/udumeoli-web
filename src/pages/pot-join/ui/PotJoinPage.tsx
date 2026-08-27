@@ -180,8 +180,17 @@ function PotJoinPageContent() {
     if (sanitized) setCode(sanitized)
   }, [])
 
-  // 뒤로가기 — 실제 진입 지점(팟 시작 온보딩/지도 드롭다운)으로 복귀 [정책 #1]
-  const goBack = () => router.history.back()
+  // 뒤로가기 — 실제 진입 지점(팟 시작 온보딩/지도 드롭다운)으로 복귀 [정책 #1].
+  // 초대링크로 곧장 진입하면(replace 체인) 되돌아갈 히스토리가 없어 back()이
+  // 무동작 — 랜딩으로 보낸다. 랜딩이 미로그인이면 로그인 화면을, 로그인 세션이
+  // 있으면 자동으로 지도까지 보내준다
+  const goBack = () => {
+    if (router.history.canGoBack()) {
+      router.history.back()
+    } else {
+      router.navigate({ to: "/", replace: true })
+    }
+  }
   // 참여 확정 시 팟의 여행 지도로 이동 [정책 #9] — replace로 참여 플로우를 히스토리에서 걷어낸다
   const goToMap = () => router.navigate({ to: "/map-google", replace: true })
 
