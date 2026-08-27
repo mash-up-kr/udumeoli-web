@@ -41,16 +41,27 @@ function StartOptionRow({
 }
 
 /** 여행팟 시작 온보딩 페이지 — 새 팟 만들기 / 초대코드로 참여하기. (Figma 1893-11882) */
-export function PotStartPage() {
+export function PotStartPage({ inviteCode }: { inviteCode?: string }) {
   const router = useRouter()
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const { hasPot } = useMyPots(currentUserId)
 
+  // 초대 링크(?inviteCode=) 진입이면 팟 보유 여부와 무관하게 참여 플로우로 —
+  // 이 분기가 hasPot 리다이렉트보다 먼저 걸리지 않으면, 팟 보유 유저는
+  // 친구 팟 대신 자기 팟 지도로 튕겨 공유 링크가 무력화된다.
   // 초대코드로 참여해 팟이 생기면(팟 생성은 pot-create가 자체 처리) 곧장 지도로 —
   // replace로 이동해 이 화면이 히스토리에 남아 뒤로가기 시 다시 나타나지 않게 한다
   React.useEffect(() => {
+    if (inviteCode) {
+      router.navigate({
+        to: "/pot-join",
+        search: { inviteCode },
+        replace: true,
+      })
+      return
+    }
     if (hasPot) router.navigate({ to: "/map-google", replace: true })
-  }, [hasPot, router])
+  }, [inviteCode, hasPot, router])
 
   // 이 화면은 항상 팟이 없는 신규 유저가 지도 진입 시 강제 리다이렉트된 것이라
   // "/"·"/map-google" 둘 다 다시 이리로 튕겨와 history.back()으로는 빠져나갈 곳이 없다.
