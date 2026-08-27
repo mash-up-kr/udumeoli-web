@@ -612,4 +612,12 @@
             display: none;
         }
     }
+
+    /* Google Maps 하단 어트리뷰션 숨김 (QA 요청) — 지도·리캡 공통.
+       .gm-style-cc = 약관·지도 데이터·키보드 단축키 줄, a[href^=...] = Google 로고.
+       Google Maps Platform 약관상 로고/저작자 표기 노출이 원칙이라 정식 심사 대상이 되면 되살려야 한다 */
+    .gm-style-cc,
+    .gm-style a[href^="https://maps.google"] {
+        display: none !important;
+    }
 }
