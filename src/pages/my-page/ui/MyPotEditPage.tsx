@@ -212,8 +212,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
     if (typeof navigator.share !== "function") return
 
     try {
+      // title을 넣으면 카톡 등에서 "제목 - 본문"으로 이어 붙여 팟 이름이 중복 노출된다
       await navigator.share({
-        title: pot.name,
         text: `${pot.name} 여행팟에 초대합니다.`,
         url: link,
       })
