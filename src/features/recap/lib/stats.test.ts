@@ -28,13 +28,20 @@ describe("computeRecapStats", () => {
 
   it("기간 사진은 date~endDate 전체를, 겹치는 날짜는 한 번만 센다", () => {
     const stats = computeRecapStats([
-      // 서울 2박 3일 (08-01 ~ 08-03)
       makePhoto({ date: "2026-08-01", endDate: "2026-08-03", region: "서울" }),
-      // 같은 기간에 겹치는 강릉 당일 — 날짜는 중복 없이, 지역만 추가
       makePhoto({ date: "2026-08-02", region: "강릉" }),
-      // 떨어진 부산 당일
       makePhoto({ date: "2026-08-10", region: "부산" }),
     ])
     expect(stats).toEqual({ totalDays: 4, regionCount: 3, pinCount: 3 })
+  })
+
+  it("지역별 방문 횟수를 한 번씩 계산한다", () => {
+    expect(
+      computeRecapStats([
+        makePhoto({ date: "2026-07-01", region: "서울" }),
+        makePhoto({ date: "2026-07-05", region: "서울" }),
+        makePhoto({ date: "2026-08-10", region: "부산" }),
+      ])
+    ).toMatchObject({ regionCount: 2, pinCount: 3 })
   })
 })

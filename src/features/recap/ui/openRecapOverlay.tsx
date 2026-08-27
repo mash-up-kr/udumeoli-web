@@ -2,9 +2,11 @@ import * as React from "react"
 import { overlay } from "overlay-kit"
 
 import { useRecapStats } from "../api/queries"
+import { RECAP_CARD_LAYOUT, cardPercent } from "../lib/recap-layout"
 import { createRecapImageBlob, saveRecapImage } from "../lib/save-image"
 import { computeRecapStats } from "../lib/stats"
 import { RecapMapPreview } from "./RecapMapPreview"
+import type { RecapCardModel } from "../lib/recap-model"
 
 import { useAllPhotos } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
@@ -19,11 +21,14 @@ import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import recapLocationIconSrc from "@/shared/assets/icon-recap-location.svg"
 import photoMapSrc from "@/shared/assets/photo-map.jpg"
 
-async function exportRecapImage(preparedBlob?: Blob | null) {
-  const element = document.querySelector<HTMLElement>("[data-recap-card]")
+async function exportRecapImage(
+  element: HTMLElement | null,
+  model: RecapCardModel,
+  preparedBlob?: Blob | null
+) {
   if (!element) throw new Error("리캡 카드를 찾을 수 없어요")
   try {
-    await saveRecapImage(element, preparedBlob)
+    await saveRecapImage(element, model, preparedBlob)
     showToast({
       message: "이미지가 저장되었어요.",
       icon: "check",
@@ -48,10 +53,35 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const members = usePotStore(selectCurrentPotMembers)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const photos = useAllPhotos(currentPotId)
+  const recapCardRef = React.useRef<HTMLDivElement>(null)
   const [mapReady, setMapReady] = React.useState(false)
+  const [mapRetryKey, setMapRetryKey] = React.useState(0)
   const [preparedBlob, setPreparedBlob] = React.useState<Blob | null>(null)
+  const [isPreparing, setIsPreparing] = React.useState(false)
   const handleMapReady = React.useCallback(() => setMapReady(true), [])
+  const handleMapError = React.useCallback(() => {
+    setMapReady(false)
+  }, [])
+  const handleMapRetry = React.useCallback(() => {
+    setMapRetryKey((key) => key + 1)
+  }, [])
   const localStats = React.useMemo(() => computeRecapStats(photos), [photos])
+  const photoSignature = React.useMemo(
+    () =>
+      photos
+        .map((photo) =>
+          [
+            photo.id,
+            photo.region,
+            photo.keyword,
+            photo.date,
+            photo.endDate ?? "",
+            photo.thumbnailUrl,
+          ].join(":")
+        )
+        .join("|"),
+    [photos]
+  )
   const recapStatsQuery = useRecapStats(currentPotId)
   const { totalDays, pinCount } = USE_MOCK
     ? localStats
@@ -65,6 +95,15 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
       }),
     [currentUserId, members]
   )
+  const recapModel = React.useMemo<RecapCardModel>(
+    () => ({
+      totalDays,
+      pinCount,
+      potName,
+      members: orderedMembers.map((member) => member.nickname),
+    }),
+    [orderedMembers, pinCount, potName, totalDays]
+  )
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -76,21 +115,29 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
 
   React.useEffect(() => {
     if (!mapReady) return
-    const element = document.querySelector<HTMLElement>("[data-recap-card]")
+    const element = recapCardRef.current
     if (!element) return
     let active = true
-    const promise = createRecapImageBlob(element)
+    setPreparedBlob(null)
+    setIsPreparing(true)
+    const promise = createRecapImageBlob(element, recapModel)
     void promise
       .then((blob) => {
-        if (active) setPreparedBlob(blob)
+        if (active) {
+          setPreparedBlob(blob)
+          setIsPreparing(false)
+        }
       })
       .catch(() => {
-        if (active) setPreparedBlob(null)
+        if (active) {
+          setPreparedBlob(null)
+          setIsPreparing(false)
+        }
       })
     return () => {
       active = false
     }
-  }, [mapReady, photos, potName, orderedMembers, totalDays, pinCount])
+  }, [mapReady, photoSignature, recapModel])
 
   return (
     <div
@@ -108,21 +155,21 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         />
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[18px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90" />
+        <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90 backdrop-blur-[2px]" />
       </div>
 
-      <div className="relative flex h-full flex-col pt-[calc(env(safe-area-inset-top)+54px)] pb-[max(env(safe-area-inset-bottom),33px)]">
+      <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),33px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
-        <div className="relative h-[76px] shrink-0 px-4">
+        <div className="relative h-[164px] shrink-0 px-4">
           <ButtonIcon
             aria-label="뒤로가기"
             onClick={unmount}
-            className="absolute top-[18px] left-4"
+            className="absolute top-3.5 left-4"
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />
           </ButtonIcon>
 
-          <div className="absolute top-5 left-1/2 flex w-fit -translate-x-1/2 flex-col items-center gap-4">
+          <div className="absolute top-3 left-1/2 flex w-fit -translate-x-1/2 flex-col items-center gap-4">
             <div className="flex flex-col items-center gap-1">
               <p className="text-h3 text-fg-neutral-bold">{potName}</p>
               <div className="flex items-center">
@@ -146,17 +193,21 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         </div>
 
         {/* 리캡 이미지 미리보기 — 임시 placeholder (최종 그래픽은 추후 확정, 시안 #4) */}
-        <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
+        <div className="relative min-h-0 flex-1 px-4 pb-6">
           <div
             role="img"
             aria-label="리캡 이미지 미리보기"
             data-recap-card
-            data-recap-days={totalDays}
-            data-recap-pins={pinCount}
-            data-recap-pot-name={potName}
-            className="relative aspect-[270/480] h-full max-h-[480px] overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0px_0px_10px_0px_white]"
+            ref={recapCardRef}
+            className="absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-285px)] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
           >
-            <div className="absolute inset-x-5 top-6 z-10">
+            <div
+              className="absolute z-10"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.heading.top, 480),
+                left: cardPercent(RECAP_CARD_LAYOUT.heading.left, 270),
+              }}
+            >
               <div className="flex flex-col font-eng text-[32px] leading-9 font-normal tracking-normal text-[#141820]">
                 <div className="flex items-end gap-1 whitespace-nowrap">
                   <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
@@ -176,19 +227,34 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
               src={recapLocationIconSrc}
               alt=""
               data-recap-location-icon
-              className="absolute top-6 right-4 z-10 h-6 w-5"
+              className="absolute z-10"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.locationIcon.top, 480),
+                right: cardPercent(RECAP_CARD_LAYOUT.locationIcon.right, 270),
+                width: cardPercent(RECAP_CARD_LAYOUT.locationIcon.width, 270),
+                height: cardPercent(RECAP_CARD_LAYOUT.locationIcon.height, 480),
+              }}
             />
             <RecapMapPreview
               photos={photos}
               className="absolute inset-0"
               onReady={handleMapReady}
+              onError={handleMapError}
+              onRetry={handleMapRetry}
+              retryKey={mapRetryKey}
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
-            <div className="absolute top-[108px] left-5 z-10 flex max-w-[104px] flex-col items-start gap-1">
+            <div
+              className="absolute z-10 flex flex-col items-start gap-1"
+              style={{
+                top: cardPercent(RECAP_CARD_LAYOUT.members.top, 480),
+                left: cardPercent(RECAP_CARD_LAYOUT.members.left, 270),
+                maxWidth: cardPercent(RECAP_CARD_LAYOUT.members.width, 270),
+              }}
+            >
               {orderedMembers.map((member) => (
                 <span
                   key={member.id}
-                  data-recap-member={member.nickname}
                   className="max-w-full truncate rounded-full bg-[#232936]/40 px-2 py-[2px] text-[9px] leading-[12px] whitespace-nowrap text-white backdrop-blur-[4px]"
                 >
                   @{member.nickname}
@@ -199,8 +265,17 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         </div>
 
         <div className="shrink-0 px-4">
-          <ButtonCta onClick={() => void exportRecapImage(preparedBlob)}>
-            이미지로 내보내기
+          <ButtonCta
+            disabled={!mapReady || isPreparing}
+            onClick={() =>
+              void exportRecapImage(
+                recapCardRef.current,
+                recapModel,
+                preparedBlob
+              )
+            }
+          >
+            {isPreparing ? "이미지 준비 중..." : "이미지로 내보내기"}
           </ButtonCta>
         </div>
       </div>
