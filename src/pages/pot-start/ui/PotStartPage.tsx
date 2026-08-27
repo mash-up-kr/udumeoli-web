@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useRouter, useSearch } from "@tanstack/react-router"
+import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
 
@@ -45,26 +45,31 @@ function StartOptionRow({
 }
 
 /** 여행팟 시작 온보딩 페이지 — 새 팟 만들기 / 초대코드로 참여하기. (Figma 1893-11882) */
-export function PotStartPage() {
+export function PotStartPage({ inviteCode }: { inviteCode?: string }) {
   const router = useRouter()
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   const { hasPot } = useMyPots(currentUserId)
-  const inviteCode = useSearch({ from: "/pot-start" }).inviteCode
 
-  // 초대링크 진입 — 코드를 보관하고 곧장 코드 입력 화면으로. 보관해 두면
-  // 미로그인 유저가 로그인·가입 리다이렉트를 거쳐 돌아와도(가입 완료 후 이 화면
-  // 재진입 포함) 코드가 살아 있다. 초대 의도가 있으면 hasPot 지도 리다이렉트보다 우선.
-  //
+  // 초대 링크(?inviteCode=) 진입이면 팟 보유 여부와 무관하게 참여 플로우로 —
+  // 이 분기가 hasPot 리다이렉트보다 먼저 걸리지 않으면, 팟 보유 유저는
+  // 친구 팟 대신 자기 팟 지도로 튕겨 공유 링크가 무력화된다.
+  // 코드는 보관도 해둔다 — 미로그인 유저가 로그인·가입 리다이렉트를 거쳐
+  // 돌아와도(가입 완료 후 이 화면 재진입 포함) 참여 플로우로 복귀할 수 있게.
   // 초대코드로 참여해 팟이 생기면(팟 생성은 pot-create가 자체 처리) 곧장 지도로 —
   // replace로 이동해 이 화면이 히스토리에 남아 뒤로가기 시 다시 나타나지 않게 한다
   React.useEffect(() => {
-    if (inviteCode) setPendingInviteCode(inviteCode)
-    if (inviteCode || getPendingInviteCode()) {
-      router.navigate({ to: "/pot-join", replace: true })
+    const code = inviteCode ?? getPendingInviteCode()
+    if (code) {
+      if (inviteCode) setPendingInviteCode(inviteCode)
+      router.navigate({
+        to: "/pot-join",
+        search: { inviteCode: code },
+        replace: true,
+      })
       return
     }
     if (hasPot) router.navigate({ to: "/map-google", replace: true })
-  }, [hasPot, inviteCode, router])
+  }, [inviteCode, hasPot, router])
 
   // 이 화면은 항상 팟이 없는 신규 유저가 지도 진입 시 강제 리다이렉트된 것이라
   // "/"·"/map-google" 둘 다 다시 이리로 튕겨와 history.back()으로는 빠져나갈 곳이 없다.

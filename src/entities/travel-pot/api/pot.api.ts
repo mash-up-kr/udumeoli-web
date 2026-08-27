@@ -67,6 +67,15 @@ const PARTY_PREVIEW_QUERY = /* GraphQL */ `
   }
 `
 
+const RENAME_PARTY_MUTATION = /* GraphQL */ `
+  mutation RenameParty($partyId: ID!, $name: String!) {
+    renameParty(partyId: $partyId, name: $name) {
+      id
+      name
+    }
+  }
+`
+
 const LEAVE_PARTY_MUTATION = /* GraphQL */ `
   mutation LeaveParty($partyId: ID!) {
     leaveParty(partyId: $partyId)
@@ -115,9 +124,8 @@ export type MapCellKeyword =
   | "HEALING"
   | "ACTIVITY"
   | "FOOD"
-  | "NATURE"
-  | "CITY"
-  | "CULTURE"
+  | "DESSERT"
+  | "PHOTO"
 
 export interface MapCell {
   regionCode: string
@@ -253,6 +261,16 @@ export async function fetchPartyMapOverview(
 }
 
 /** 팟 나가기 — [정책] owner가 호출하면 OWNER_CANNOT_LEAVE 에러. */
+export async function renameParty(
+  partyId: string,
+  name: string
+): Promise<void> {
+  await gqlClient.request<{ renameParty: { id: string; name: string } }>(
+    RENAME_PARTY_MUTATION,
+    { partyId, name }
+  )
+}
+
 export async function leaveParty(partyId: string): Promise<string> {
   const data = await gqlClient.request<{ leaveParty: string }>(
     LEAVE_PARTY_MUTATION,

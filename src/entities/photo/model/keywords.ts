@@ -13,9 +13,8 @@ export type TravelKeywordId =
   | "HEALING"
   | "ACTIVITY"
   | "FOOD"
-  | "NATURE"
-  | "CITY"
-  | "CULTURE"
+  | "DESSERT"
+  | "PHOTO"
 
 export interface TravelKeyword {
   id: TravelKeywordId
@@ -37,11 +36,8 @@ export interface TravelKeyword {
 }
 
 /**
- * 서버 TripKeyword enum 6종.
- *
- * Figma 최신 정책의 표시 카테고리는 5종(맛집·디저트·힐링·액티비티·사진)이지만,
- * 백엔드 GraphQL enum은 아직 6종이라 프론트에서 라벨과 스티커만 alias한다.
- * NATURE는 디저트, CITY/CULTURE는 사진으로 노출한다.
+ * 서버 TripKeyword enum 5종 (맛집·디저트·힐링·액티비티·사진).
+ * 구 6종(NATURE/CITY/CULTURE alias)에서 서버가 enum을 정리하며 함께 개편됨.
  */
 export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
   {
@@ -78,7 +74,7 @@ export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
     stroke: "#e3800f",
   },
   {
-    id: "NATURE",
+    id: "DESSERT",
     label: "디저트",
     emojiSrc: mapStickerDessertSrc,
     mapStickerSrc: mapStickerDessertSrc,
@@ -89,7 +85,7 @@ export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
     stroke: "#fa3343",
   },
   {
-    id: "CITY",
+    id: "PHOTO",
     label: "사진",
     emojiSrc: mapStickerPhotoSrc,
     mapStickerSrc: mapStickerPhotoSrc,
@@ -98,17 +94,6 @@ export const TRAVEL_KEYWORDS: Array<TravelKeyword> = [
     mapStickerFit: "bottom",
     fill: "#ffc5bf",
     stroke: "#e8453a",
-  },
-  {
-    id: "CULTURE",
-    label: "사진",
-    emojiSrc: mapStickerPhotoSrc,
-    mapStickerSrc: mapStickerPhotoSrc,
-    mapPinSrc: mapPinPhotoSrc,
-    mapColor: "#20201F",
-    mapStickerFit: "bottom",
-    fill: "#d7d7d7",
-    stroke: "#20201f",
   },
 ]
 
@@ -132,10 +117,10 @@ export function regionStrokeForFill(fill: string): string | undefined {
 /** 여행 기록 선택 화면에 노출하는 Figma 최신 5종 카테고리 */
 export const TRAVEL_KEYWORD_OPTIONS: Array<TravelKeyword> = [
   keywordById.FOOD,
-  keywordById.NATURE,
+  keywordById.DESSERT,
   keywordById.HEALING,
   keywordById.ACTIVITY,
-  keywordById.CITY,
+  keywordById.PHOTO,
 ]
 
 export function findKeyword(

@@ -3,7 +3,8 @@
 import specialGothicFontUrl from "@fontsource/special-gothic-condensed-one/files/special-gothic-condensed-one-latin-400-normal.woff2"
 
 import { RECAP_CARD_LAYOUT, RECAP_CARD_SIZE } from "./recap-layout"
-import { RECAP_MAP_VIEW } from "./recap-map-config"
+import { getRecapMapView } from "./recap-map-config"
+import type { RECAP_MAP_VIEW } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
 const EXPORT_SCALE = 4
@@ -102,7 +103,7 @@ function buildLocationIconMarkup(element: HTMLElement): string {
   return `<image href="${escapeXml(source)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
 }
 
-async function buildStaticMapMarkup(): Promise<string> {
+async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
   if (!GOOGLE_STATIC_MAPS_KEY) return ""
 
   const fetchMap = async (view: typeof RECAP_MAP_VIEW) => {
@@ -125,9 +126,18 @@ async function buildStaticMapMarkup(): Promise<string> {
   }
 
   try {
-    const mainMap = await fetchMap(RECAP_MAP_VIEW)
+    const mapView =
+      element.querySelector<HTMLElement>("[data-recap-map]")?.dataset
+        .recapMapView === "mainland"
+        ? getRecapMapView(false)
+        : getRecapMapView(true)
+    const mainMap = await fetchMap(mapView)
     return `<image href="${mainMap}" x="0" y="0" width="270" height="480" preserveAspectRatio="xMidYMid slice"/>`
-  } catch {
+  } catch (error) {
+    console.warn(
+      "리캡 Static Maps를 불러오지 못해 SVG 지도로 저장합니다",
+      error
+    )
     return ""
   }
 }
@@ -135,6 +145,17 @@ async function buildStaticMapMarkup(): Promise<string> {
 function removeMapBackground(svgMarkup: string): string {
   const document = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
   document.querySelector("[data-recap-ocean]")?.remove()
+  document.querySelectorAll("[data-recap-unvisited]").forEach((path) => {
+    path.setAttribute("fill-opacity", "0.28")
+  })
+  return new XMLSerializer().serializeToString(document.documentElement)
+}
+
+function softenFallbackMap(svgMarkup: string): string {
+  const document = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
+  document.querySelectorAll("[data-recap-unvisited]").forEach((path) => {
+    path.setAttribute("fill-opacity", "0.28")
+  })
   return new XMLSerializer().serializeToString(document.documentElement)
 }
 
@@ -173,10 +194,10 @@ async function buildExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
 
   const locationIconMarkup = buildLocationIconMarkup(element)
-  const staticMapMarkup = await buildStaticMapMarkup()
+  const staticMapMarkup = await buildStaticMapMarkup(element)
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
-    : mapMarkup
+    : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}<g>${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
@@ -197,10 +218,10 @@ async function buildFallbackExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  const staticMapMarkup = await buildStaticMapMarkup()
+  const staticMapMarkup = await buildStaticMapMarkup(element)
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
-    : mapMarkup
+    : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
   return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}${mapWithBackground}<rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
 }

@@ -55,7 +55,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utYangyangSrc,
     altUrls: [utYangyang2Src, utYangyang3Src],
     dates: ["2026-07-03", "2026-07-04", "2026-07-05"],
-    keyword: "NATURE",
+    keyword: "DESSERT",
   },
   {
     region: "대전광역시",
@@ -82,7 +82,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGyeongjuSrc,
     altUrls: [utGyeongju2Src, utGyeongju3Src],
     dates: ["2026-04-17", "2026-04-18", "2026-04-19"],
-    keyword: "CITY",
+    keyword: "PHOTO",
   },
   {
     region: "부산광역시",
@@ -100,7 +100,7 @@ const UT_REGIONS: Array<UtRegionSeed> = [
     thumbnailUrl: utGeojeSrc,
     altUrls: [utGeoje2Src, utGeoje3Src],
     dates: ["2026-05-29", "2026-05-30", "2026-05-31"],
-    keyword: "NATURE",
+    keyword: "DESSERT",
   },
 ]
 

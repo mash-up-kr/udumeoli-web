@@ -151,7 +151,7 @@ function ConfirmStep({
  * 초대코드로 여행팟 참여 페이지 — 코드 입력 → 티켓으로 팟 확인 → 참여 확정.
  * (Figma 코드 입력 1893-12640 · 참여 확인 2588-37965 · 정책 1893-21176)
  */
-function PotJoinPageContent() {
+function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   const router = useRouter()
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
@@ -160,25 +160,26 @@ function PotJoinPageContent() {
   const currentPotId = usePotStore((s) => s.currentPotId)
   const hasRegionCards = useAllPhotos(currentPotId).length > 0
   const currentUser = useSessionStore((s) => s.currentUser)
-  const [code, setCode] = React.useState("")
+  const [code, setCode] = React.useState(initialCode ?? "")
   // [정책 #3] 검증 실패 시 에러 테두리 + CTA 비활성 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)
   const [previewLoading, setPreviewLoading] = React.useState(false)
   // 참여 확인 스텝 데이터 — 있으면 확인 화면, 없으면 코드 입력 화면
   const [preview, setPreview] = React.useState<JoinPreview | null>(null)
 
-  // 초대링크로 들어온 코드 프리필 — pot-start가 보관해 둔 코드를 소비한다.
+  // 초대링크로 보관된 코드 소비 — 여기(인증 통과 후)까지 왔으면 역할이 끝났으니
+  // 지운다. search로 못 받은 경로(로그인 콜백 복귀 등)에선 프리필로도 쓴다.
   // 마운트 효과로 채워야 SSR 첫 렌더(빈 셀)와 hydration이 어긋나지 않는다
   React.useEffect(() => {
     const pending = takePendingInviteCode()
-    if (!pending) return
+    if (!pending || initialCode) return
     // NumberCode alphanumeric과 같은 규칙 [정책 #2: 영문 소문자+숫자 6자리]
     const sanitized = pending
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "")
       .slice(0, CODE_LENGTH)
     if (sanitized) setCode(sanitized)
-  }, [])
+  }, [initialCode])
 
   // 뒤로가기 — 실제 진입 지점(팟 시작 온보딩/지도 드롭다운)으로 복귀 [정책 #1].
   // 초대링크로 곧장 진입하면(replace 체인) 되돌아갈 히스토리가 없어 back()이
@@ -247,6 +248,15 @@ function PotJoinPageContent() {
       setPreviewLoading(false)
     }
   }
+
+  // 초대 링크(?inviteCode=) 진입이면 코드 입력 없이 곧장 확인 스텝(팟 티켓)으로.
+  // 실패(만료·정원 초과 등) 시엔 코드가 채워진 입력 화면 + 에러 토스트로 남는다
+  const autoPreviewedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!initialCode || autoPreviewedRef.current) return
+    autoPreviewedRef.current = true
+    void handleSubmit()
+  })
 
   // [정책 #9] 맞아요 — 참여 확정 후 지도 이동 + 완료 토스트
   const handleConfirm = async () => {
@@ -334,13 +344,13 @@ function PotJoinPageContent() {
   )
 }
 
-export function PotJoinPage() {
+export function PotJoinPage({ initialCode }: { initialCode?: string }) {
   return (
     // 참여(preview·join) 요청은 인증 필수 — 초대링크로 온 미로그인 유저(카톡 인앱
     // 브라우저 등)가 여기서 인증 에러 토스트를 받는 대신 로그인부터 타게 한다.
     // 보관된 초대코드는 로그인 콜백이 다시 이 화면으로 데려온 뒤 프리필된다
     <RequireAuth>
-      <PotJoinPageContent />
+      <PotJoinPageContent initialCode={initialCode} />
     </RequireAuth>
   )
 }

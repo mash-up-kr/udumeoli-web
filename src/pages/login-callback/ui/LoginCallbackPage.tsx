@@ -40,12 +40,18 @@ export function LoginCallbackPage() {
         if (result.status === "AUTHENTICATED" && result.tokens) {
           setTokens(result.tokens)
           login(await fetchMe())
-          // 초대링크로 왔다가 로그인한 경우 — 지도 대신 코드 입력 화면으로 복귀.
+          // 초대링크로 왔다가 로그인한 경우 — 지도 대신 참여 플로우로 복귀.
           // 이미 팟이 있는 유저는 지도가 pot-start로 보내주지 않아 여기서 갈라야 한다
-          void router.navigate({
-            to: getPendingInviteCode() ? "/pot-join" : "/map-google",
-            replace: true,
-          })
+          const pendingCode = getPendingInviteCode()
+          if (pendingCode) {
+            void router.navigate({
+              to: "/pot-join",
+              search: { inviteCode: pendingCode },
+              replace: true,
+            })
+          } else {
+            void router.navigate({ to: "/map-google", replace: true })
+          }
           return
         }
         fail("카카오 로그인에 실패했어요. 다시 시도해 주세요.")

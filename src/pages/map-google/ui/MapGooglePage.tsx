@@ -2,6 +2,10 @@ import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 
+import { hasSeenZoomGuide, markZoomGuideSeen } from "../lib/zoomGuide"
+import { ZoomInGuide } from "./ZoomInGuide"
+
+import type { ZoomStage } from "@/widgets/travel-map-google"
 import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
@@ -12,7 +16,7 @@ import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
-import { photoKeys, seedUtPhotos } from "@/entities/photo"
+import { photoKeys, seedUtPhotos, useAllPhotos } from "@/entities/photo"
 import {
   TRIP_100_POT,
   useMyPots,
@@ -71,9 +75,23 @@ function MapGooglePageContent() {
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
-  const [mapZoomStage, setMapZoomStage] = React.useState<0 | 1 | 2 | 3>(0)
+  const [mapZoomStage, setMapZoomStage] = React.useState<ZoomStage>(0)
   const showMapChrome = !decorating && detailRegion === null
   const showPersistentMapActions = showMapChrome && mapZoomStage < 3
+
+  // 줌인 가이드(시안 2822-8047) — 사진 0장 && 줌 3단계 미만일 때만 노출,
+  // 한 번이라도 3단계까지 줌인하면 localStorage 플래그로 영구 종료
+  const currentPotId = usePotStore((s) => s.currentPotId)
+  const photoCount = useAllPhotos(currentPotId).length
+  const [zoomGuideSeen, setZoomGuideSeen] = React.useState(hasSeenZoomGuide)
+  const [zoomToDetailSignal, setZoomToDetailSignal] = React.useState(0)
+  React.useEffect(() => {
+    if (zoomGuideSeen || mapZoomStage < 3) return
+    markZoomGuideSeen()
+    setZoomGuideSeen(true)
+  }, [mapZoomStage, zoomGuideSeen])
+  const showZoomGuide =
+    showPersistentMapActions && !zoomGuideSeen && photoCount === 0
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
 
@@ -89,6 +107,7 @@ function MapGooglePageContent() {
           onAlbumAvailabilityChange={setCanOpenAlbum}
           onRegionDetailChange={setDetailRegion}
           onZoomStageChange={setMapZoomStage}
+          zoomToDetailSignal={zoomToDetailSignal}
         />
 
         {showMapChrome ? (
@@ -98,12 +117,21 @@ function MapGooglePageContent() {
                   빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
               <AppHeader potSelector={<PotSelector />} />
               {showPersistentMapActions ? (
-                <div className="px-4">
-                  {/* RECAP 버튼 — 시안 1745-38063 로고 아래 좌측 */}
+                // RECAP 버튼 — 시안 2897-28068 팟 선택 아래 우측, 팟 선택 필 하단과 10px 간격.
+                // 헤더(py-3=12px) 안에서 42px 필이 60px 로고 행에 센터 정렬돼 아래로 9px 여백이
+                // 더 생기므로, 9+12-11 = 10px이 되도록 -11px로 당긴다
+                <div className="-mt-[11px] flex justify-end px-4">
                   <RecapButton className="pointer-events-auto" />
                 </div>
               ) : null}
             </div>
+
+            {showZoomGuide ? (
+              <ZoomInGuide
+                className="z-10"
+                onClick={() => setZoomToDetailSignal((n) => n + 1)}
+              />
+            ) : null}
 
             {showPersistentMapActions ? (
               <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">

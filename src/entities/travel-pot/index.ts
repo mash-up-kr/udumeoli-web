@@ -28,6 +28,7 @@ export {
   useMyParties,
   useMyPots,
   usePartyMapOverview,
+  useRenameParty,
 } from "./api/queries"
 export {
   getPendingInviteCode,

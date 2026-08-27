@@ -19,6 +19,7 @@ import {
   findKeyword,
   formatTripRange,
   groupTrips,
+  uploadErrorMessage,
   useCreatePhoto,
   useDeletePhoto,
   usePhotos,
@@ -97,9 +98,9 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
           previewUrl: url,
         })
         showToast({ message: "업로드가 완료됐어요", icon: "check" })
-      } catch {
+      } catch (error) {
         showToast({
-          message: "업로드에 실패했어요. 다시 시도해 주세요.",
+          message: uploadErrorMessage(error),
           icon: "alert",
         })
       } finally {
