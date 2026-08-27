@@ -155,6 +155,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   const router = useRouter()
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
+  const selectPot = usePotStore((s) => s.selectPot)
   const joinPartyMutation = useJoinParty()
   // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
   const currentPotId = usePotStore((s) => s.currentPotId)
@@ -216,8 +217,24 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     })
   }
 
-  // [정책 #3] 참여하기 — 코드 유효성 검사 후 확인 스텝으로 전환
-  const handleSubmit = async () => {
+  // 초대링크로 들어온 팟에 이미 참여중 — 에러 대신 그 팟을 현재 팟으로 선택하고
+  // 지도로 통과시킨다 (수동 입력은 기존 에러 토스트 유지)
+  const enterAlreadyJoinedPot = () => {
+    const myPot = usePotStore.getState().pots.find((p) => p.inviteCode === code)
+    if (myPot) selectPot(myPot.id)
+    goToMap()
+    showToast({
+      message: myPot
+        ? `이미 참여중인 ${myPot.name} 여행팟으로 이동했어요`
+        : "이미 참여중인 여행팟이에요",
+      icon: "alert-neutral",
+      className: hasRegionCards ? MAP_TOAST_POSITION : MAP_TOAST_POSITION_EMPTY,
+    })
+  }
+
+  // [정책 #3] 참여하기 — 코드 유효성 검사 후 확인 스텝으로 전환.
+  // fromLink: 초대링크 자동 진입 여부 — 이미 참여중 에러의 분기에만 쓴다
+  const handleSubmit = async ({ fromLink = false } = {}) => {
     if (USE_MOCK) {
       const result = previewJoin(code, currentUser?.id)
       if (result.status !== "ok") {
@@ -243,6 +260,10 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
       const data = await fetchPartyPreview(code)
       setPreview({ ...data, mockPot: null })
     } catch (error) {
+      if (fromLink && getGraphQLErrorCode(error) === "ALREADY_JOINED_PARTY") {
+        enterAlreadyJoinedPot()
+        return
+      }
       showJoinError(error)
     } finally {
       setPreviewLoading(false)
@@ -255,7 +276,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   React.useEffect(() => {
     if (!initialCode || autoPreviewedRef.current) return
     autoPreviewedRef.current = true
-    void handleSubmit()
+    void handleSubmit({ fromLink: true })
   })
 
   // [정책 #9] 맞아요 — 참여 확정 후 지도 이동 + 완료 토스트
