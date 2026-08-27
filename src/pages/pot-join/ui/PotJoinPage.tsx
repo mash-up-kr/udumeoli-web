@@ -50,6 +50,11 @@ const MAP_TOAST_POSITION = "bottom-[242px]"
 // 캐러셀(image-card-pattern)이 없는 첫 참여 상태에서는 하단 62px (시안 9_토스트_여행팟참여완료)
 const MAP_TOAST_POSITION_EMPTY = "bottom-[62px]"
 
+// 이미 참여중 안내 토스트 — 지도 하단 nav·캐러셀과 겹치지 않게 상단 중앙(헤더 아래).
+// 토스트 기본 bottom-8을 해제해야 top이 적용된다
+const MAP_TOAST_POSITION_TOP =
+  "top-[calc(env(safe-area-inset-top)+72px)] bottom-auto"
+
 interface JoinPreview {
   name: string
   memberCount: number
@@ -223,12 +228,11 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     const myPot = usePotStore.getState().pots.find((p) => p.inviteCode === code)
     if (myPot) selectPot(myPot.id)
     goToMap()
+    // 어느 팟인지는 지도 우상단 드롭다운이 보여준다 — 문구는 핵심만 짧게
     showToast({
-      message: myPot
-        ? `이미 참여중인 ${myPot.name} 여행팟으로 이동했어요`
-        : "이미 참여중인 여행팟이에요",
+      message: "이미 참여중인 여행팟이에요",
       icon: "alert-neutral",
-      className: hasRegionCards ? MAP_TOAST_POSITION : MAP_TOAST_POSITION_EMPTY,
+      className: MAP_TOAST_POSITION_TOP,
     })
   }
 
