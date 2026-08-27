@@ -447,6 +447,20 @@
                 rotate(var(--record-preview-rotate, 0deg));
         }
     }
+
+    /* 줌인 가이드 좌우 화살표 — 줌인하듯 좌우로 살짝 벌어지는 반복 펄스.
+       transform(scale)만 사용(GPU 가속) — reduce 환경은 motion-reduce:animate-none으로 정지 */
+    --animate-zoom-guide-arrows: zoom-guide-arrows 1.6s ease-in-out infinite;
+
+    @keyframes zoom-guide-arrows {
+        0%,
+        100% {
+            transform: scaleX(1);
+        }
+        50% {
+            transform: scaleX(1.22);
+        }
+    }
 }
 
 @layer base {

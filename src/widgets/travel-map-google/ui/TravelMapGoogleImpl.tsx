@@ -742,6 +742,8 @@ export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
   onZoomStageChange?: (stage: ZoomStage) => void
+  /** 값이 증가할 때마다 현재 중심을 유지한 채 3단계(상세) 줌으로 카메라 이동 — 줌인 가이드 클릭용 */
+  zoomToDetailSignal?: number
   /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
   onTilesLoaded?: () => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
@@ -1125,6 +1127,7 @@ function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
   onZoomStageChange,
+  zoomToDetailSignal,
   onTilesLoaded,
   onReady,
 }: TravelMapImplProps) {
@@ -1522,6 +1525,19 @@ function TravelMapGoogleInner({
     },
     [syncVisualsForStage]
   )
+
+  // 줌인 가이드 클릭 — 현재 중심을 유지한 채 3단계(상세) 줌으로 이동
+  React.useEffect(() => {
+    if (!zoomToDetailSignal) return
+    const map = mapRef.current
+    if (!map) return
+    const center = map.getCenter()
+    if (!center) return
+    runCameraMove(
+      { lat: center.lat(), lng: center.lng(), zoom: DETAIL_ENTER_ZOOM },
+      600
+    )
+  }, [runCameraMove, zoomToDetailSignal])
 
   // 팟 단위 1회 노출 — 온보딩 직후 첫 진입은 물론, 지도가 떠 있는 채로 새 팟에
   // 참여(currentPotId 변경)했을 때도 안내가 다시 뜬다. ref는 StrictMode 중복 실행 가드.
