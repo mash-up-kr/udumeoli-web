@@ -12,3 +12,19 @@ export const RECAP_MAP_VIEW: RecapMapView = {
   width: 360,
   height: 640,
 } as const
+
+export const RECAP_MAINLAND_MAP_VIEW: RecapMapView = {
+  center: { lat: 36.3, lng: 127.5 },
+  zoom: 7,
+  width: 360,
+  height: 640,
+} as const
+
+export function getRecapMapView(includeIslands: boolean): RecapMapView {
+  return includeIslands ? RECAP_MAP_VIEW : RECAP_MAINLAND_MAP_VIEW
+}
+
+export function getRecapScreenMapView(includeIslands: boolean): RecapMapView {
+  const view = getRecapMapView(includeIslands)
+  return includeIslands ? view : { ...view, zoom: 6.8 }
+}
