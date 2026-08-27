@@ -2,6 +2,7 @@ import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 
+import type { ZoomStage } from "@/widgets/travel-map-google"
 import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
@@ -71,7 +72,7 @@ function MapGooglePageContent() {
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
-  const [mapZoomStage, setMapZoomStage] = React.useState<0 | 1 | 2 | 3>(0)
+  const [mapZoomStage, setMapZoomStage] = React.useState<ZoomStage>(0)
   const showMapChrome = !decorating && detailRegion === null
   const showPersistentMapActions = showMapChrome && mapZoomStage < 3
 

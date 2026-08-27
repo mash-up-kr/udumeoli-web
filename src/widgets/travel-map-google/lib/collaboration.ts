@@ -1,3 +1,4 @@
+import type { ZoomStage } from "./zoomStage"
 import type { Photo, TravelKeywordId } from "@/entities/photo"
 import type { PotMember } from "@/entities/travel-pot"
 import { groupTrips } from "@/entities/photo"
@@ -208,7 +209,7 @@ export function resolveRegionAction({
 }: {
   /** 그 지역의 최신 여행 — 없으면 아직 아무도 기록하지 않은 지역 */
   latestTrip: CollaborationTrip | undefined
-  zoomStage: 0 | 1 | 2 | 3
+  zoomStage: ZoomStage
   /** 폴리곤 클릭처럼 "지역을 눌렀을 뿐"인 경로만 줌 게이트를 적용한다 */
   applyZoomGate: boolean
 }): RegionAction {

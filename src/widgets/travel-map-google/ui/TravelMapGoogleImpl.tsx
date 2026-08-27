@@ -46,6 +46,7 @@ import {
 import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { LatLngBox } from "../lib/viewportBounds"
+import type { ZoomStage } from "../lib/zoomStage"
 import type { CollaborationTrip } from "../lib/collaboration"
 import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
@@ -109,6 +110,9 @@ const PARTY_ZOOM = 9.5
 // 시 레벨에서 조금 더 줌인하면 + 버튼·단순 스티커 상세 단계로 전환한다.
 // maxZoom(9.5)까지 기다리면 등록 진입점이 너무 늦게 보인다.
 const DETAIL_ENTER_ZOOM = 9
+// 2.5단계(인기지역 [+]·지역명 선노출) 진입 줌 — 2단계(7.5)와 3단계(9) 사이 중간값.
+// 3단계까지 줌인해야만 등록 진입점이 보이는 불편을 줄인다
+const POPULAR_ENTER_ZOOM = 8.25
 // 전국(1단계) 뷰 하한 줌 — KOREA_VIEW(4.8)는 국가(0단계)에서 시작한다.
 // 6 → 5: 도 단위 집계(1단계) 화면을 더 오래 유지하기 위해 한 단계 낮췄다
 const NATION_MIN_ZOOM = 5
@@ -587,9 +591,10 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
 })
 
 // Figma 줌인 기준(2466-8921): 0 국가 / 1 도 / 2 시(핀 유지) /
-// 3 상세(+지역명·추가 버튼·64px 스티커)
-function getZoomStage(zoom: number): 0 | 1 | 2 | 3 {
+// 2.5 인기지역 [+]·지역명 선노출 / 3 상세(전 지역 +지역명·추가 버튼·64px 스티커)
+function getZoomStage(zoom: number): ZoomStage {
   if (zoom >= DETAIL_ENTER_ZOOM) return 3
+  if (zoom >= POPULAR_ENTER_ZOOM) return 2.5
   if (zoom >= BOUNDARY_ZOOM) return 2
   if (zoom >= NATION_MIN_ZOOM) return 1
   return 0
@@ -736,7 +741,7 @@ function syncViewportState(
 export type TravelMapImplProps = {
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
-  onZoomStageChange?: (stage: 0 | 1 | 2 | 3) => void
+  onZoomStageChange?: (stage: ZoomStage) => void
   /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
   onTilesLoaded?: () => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
@@ -806,9 +811,9 @@ function MapController({
   decorating: string | null
   decoratePreview: DecoratePreview | null
   /** 줌 스테이지가 바뀌는 즉시 같은 stage 기준의 fill을 Data layer에 반영 */
-  syncVisualsForStage: (stage: 0 | 1 | 2 | 3) => void
+  syncVisualsForStage: (stage: ZoomStage) => void
   stageSyncedFillsRef: React.MutableRefObject<Record<string, RegionFill> | null>
-  setZoomStage: (stage: 0 | 1 | 2 | 3) => void
+  setZoomStage: (stage: ZoomStage) => void
   setCentroids: (c: Array<Centroid>) => void
   setViewportCentroids: React.Dispatch<React.SetStateAction<Array<Centroid>>>
   setViewportBox: React.Dispatch<React.SetStateAction<LatLngBox | null>>
@@ -921,7 +926,7 @@ function MapController({
             setViewportCentroids
           )
         let syncedVisualStage = getZoomStage(map.getZoom() ?? KOREA_VIEW.zoom)
-        const syncStage = (stage: 0 | 1 | 2 | 3) => {
+        const syncStage = (stage: ZoomStage) => {
           if (stage !== syncedVisualStage) {
             syncVisualsForStage(stage)
             syncedVisualStage = stage
@@ -1150,7 +1155,7 @@ function TravelMapGoogleInner({
         cancelAnimationFrame(cameraRafRef.current)
     }
   }, [])
-  const [zoomStage, setZoomStage] = React.useState<0 | 1 | 2 | 3>(() =>
+  const [zoomStage, setZoomStage] = React.useState<ZoomStage>(() =>
     getZoomStage(lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom)
   )
   const zoomStageRef = React.useRef(zoomStage)
@@ -1371,7 +1376,7 @@ function TravelMapGoogleInner({
   const stageSyncedFillsRef = React.useRef<Record<string, RegionFill> | null>(
     null
   )
-  const syncVisualsForStage = React.useCallback((stage: 0 | 1 | 2 | 3) => {
+  const syncVisualsForStage = React.useCallback((stage: ZoomStage) => {
     const nextFills = buildDisplayFills({
       zoomStage: stage,
       ...displayFillInputsRef.current,
@@ -1666,6 +1671,7 @@ function TravelMapGoogleInner({
       return canShowAvailableRegionMarker({
         zoomStage,
         hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
+        region: name,
       })
     })
   }, [decorating, latestTripsByRegion, viewportCentroids, zoomStage])
@@ -1803,7 +1809,7 @@ function TravelMapGoogleInner({
           onReady={handleMapReady}
         />
 
-        {/* 3단계부터 진행 중인 여행이 없는 지역의 [+] 버튼 (Figma 2466-8293) */}
+        {/* 진행 중인 여행이 없는 지역의 [+] 버튼 — 2.5단계는 인기지역만, 3단계부터 전 지역 (Figma 2466-8293) */}
         <RegionAddMarkers
           markers={availableRegionMarkers}
           onStartDecorate={handleStartRegionMarkerClick}

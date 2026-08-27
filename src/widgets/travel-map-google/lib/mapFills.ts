@@ -1,3 +1,4 @@
+import type { ZoomStage } from "./zoomStage"
 import type { RegionFill } from "@/entities/region"
 import type { PartyMapOverview } from "@/entities/travel-pot"
 import type { TravelKeyword, TravelKeywordId } from "@/entities/photo"
@@ -84,7 +85,7 @@ export function buildDisplayFills({
   countryKeyword,
   centroids,
 }: {
-  zoomStage: 0 | 1 | 2 | 3
+  zoomStage: ZoomStage
   mapFills: Record<string, RegionFill>
   provinceAggregates: Array<DisplayFillProvince>
   countryKeyword: TravelKeyword | undefined
