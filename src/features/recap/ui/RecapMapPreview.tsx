@@ -20,8 +20,11 @@ type Project = (point: Point) => Point
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
 const REGION_BORDER_COLOR = "#f8fffb"
-const MARKER_CENTER = 15.75
 const MARKER_PIN = { x: 4.75, y: 0.6, width: 22, height: 25.5 }
+const MARKER_ANCHOR = {
+  x: MARKER_PIN.x + MARKER_PIN.width / 2,
+  y: MARKER_PIN.y + MARKER_PIN.height,
+}
 const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
 const MARKER_BADGE = { x: 21.5, y: -4.5 }
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
@@ -309,6 +312,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
               d={path}
               fill={keyword?.mapColor ?? UNVISITED_REGION_COLOR}
               fillOpacity={keyword ? "0.82" : "0.94"}
+              data-recap-unvisited={keyword ? undefined : "true"}
               stroke={REGION_BORDER_COLOR}
               strokeOpacity="0.12"
               strokeWidth="0.35"
@@ -330,8 +334,8 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         {markers.map(({ photo, count, position }) => {
           const keyword = findKeyword(photo.keyword)
           if (!keyword) return null
-          const markerX = position[0] - MARKER_CENTER
-          const markerY = position[1] - MARKER_CENTER
+          const markerX = position[0] - MARKER_ANCHOR.x
+          const markerY = position[1] - MARKER_ANCHOR.y
           const badgeWidth = count > 9 ? 16 : 13.7
           return (
             <g key={photo.id} transform={`translate(${markerX} ${markerY})`}>
