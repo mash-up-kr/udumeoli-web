@@ -1,10 +1,11 @@
-const CACHE_NAME = "pinnned-shell-v2"
+const CACHE_NAME = "pinnned-shell-v3"
 const APP_SHELL = [
   "/",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
   "/favicon.svg",
+  "/splash.mp4",
 ]
 
 self.addEventListener("install", (event) => {
