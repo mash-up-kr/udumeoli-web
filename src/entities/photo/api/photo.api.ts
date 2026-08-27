@@ -6,6 +6,7 @@ import { UT_PHOTOS } from "./photo.ut"
 import type { TravelKeywordId } from "../model/keywords"
 import type { Photo } from "../model/types"
 import { USE_MOCK, gqlClient, mockResponse } from "@/shared/api/client"
+import { normalizeImageOrientation } from "@/shared/lib/exif-orientation"
 import {
   REGION_CODE_BY_NAME,
   REGION_NAME_BY_CODE,
@@ -244,7 +245,10 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     throw new Error(`알 수 없는 지역: ${input.region}`)
   }
   const regionCode = REGION_CODE_BY_NAME[input.region]
-  const contentType = input.file.type || "image/jpeg"
+  // EXIF 회전 태그만 믿는 세로 사진은 태그를 무시하는 소비처(서버 썸네일)에서
+  // 90도 돌아간다 — 업로드 전에 픽셀을 정방향으로 구워 넣는다
+  const file = await normalizeImageOrientation(input.file)
+  const contentType = file.type || "image/jpeg"
 
   const target = await gqlClient.request<CreateImageUploadUrlResponse>(
     CREATE_IMAGE_UPLOAD_URL_MUTATION,
@@ -256,7 +260,7 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
   const uploaded = await fetch(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": contentType },
-    body: input.file,
+    body: file,
   })
   if (!uploaded.ok) {
     throw new Error(`이미지 업로드 실패 (${uploaded.status})`)
