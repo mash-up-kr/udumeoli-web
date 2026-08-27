@@ -24,6 +24,16 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "Pinnned" },
+      // 카카오톡 등 링크 공유 미리보기용 OG 태그 — og:image는 절대 URL 필수
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Pinnned" },
+      { property: "og:description", content: "🩵 👉 Pinnned 사용해보기 👈 🩵" },
+      {
+        property: "og:image",
+        content: "https://www.pinnned.co.kr/og-image.jpg",
+      },
+      { property: "og:url", content: "https://www.pinnned.co.kr/" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         name: "theme-color",
         content: "#76bdf3",
