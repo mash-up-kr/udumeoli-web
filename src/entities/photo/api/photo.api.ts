@@ -5,7 +5,12 @@ import { ALBUM_PHOTOS, STICKER_DEMO_PHOTOS } from "./photo.mock"
 import { UT_PHOTOS } from "./photo.ut"
 import type { TravelKeywordId } from "../model/keywords"
 import type { Photo } from "../model/types"
-import { USE_MOCK, gqlClient, mockResponse } from "@/shared/api/client"
+import {
+  USE_MOCK,
+  getGraphQLErrorCode,
+  gqlClient,
+  mockResponse,
+} from "@/shared/api/client"
 import {
   REGION_CODE_BY_NAME,
   REGION_NAME_BY_CODE,
@@ -187,6 +192,22 @@ export function fetchPhotos(potId: string): Promise<Array<Photo>> {
     .then((data) =>
       data.partyTrips.flatMap((trip) => tripToPhotos(trip, potId))
     )
+}
+
+/**
+ * 업로드 실패 토스트 문구 — 단계별 원인(서버 에러 코드·네트워크·클라 검증)을 드러낸다.
+ * 원인을 삼키면 QA에서 "실패했어요"만 보여 presigned PUT CORS인지 서버 거부인지 알 수 없다.
+ */
+export function uploadErrorMessage(error: unknown): string {
+  const code = getGraphQLErrorCode(error)
+  if (code === "UNAUTHENTICATED")
+    return "로그인이 만료됐어요. 다시 로그인해 주세요."
+  if (code) return `업로드에 실패했어요 (${code})`
+  // fetch 자체가 거부되는 경우(CORS 차단·오프라인)는 status 없이 TypeError로 떨어진다
+  if (error instanceof TypeError) return "네트워크 연결을 확인해 주세요."
+  if (error instanceof Error && error.message)
+    return `업로드에 실패했어요 — ${error.message}`
+  return "업로드에 실패했어요. 다시 시도해 주세요."
 }
 
 export interface CreatePhotoInput {

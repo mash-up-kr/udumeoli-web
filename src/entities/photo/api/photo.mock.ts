@@ -400,7 +400,7 @@ const ALBUM_SEEDS: Array<AlbumSeed> = [
   },
   {
     region: "강릉시",
-    keyword: "NATURE",
+    keyword: "DESSERT",
     uploads: [
       ["2026-02-27", "m-유지-0", "혼자 다녀옴 ㅎㅎ"],
       ["2026-02-28", "m-유지-0"],
@@ -443,9 +443,9 @@ const STICKER_DEMO_UPLOADERS = [
 const STICKER_DEMO_KEYWORDS: Array<NonNullable<Photo["keyword"]>> = [
   "FOOD",
   "HEALING",
-  "CITY",
+  "PHOTO",
   "ACTIVITY",
-  "NATURE",
+  "DESSERT",
 ]
 
 // 좌표는 권역별 러프 중심 + 순번 오프셋 — 스티커 위치는 GeoJSON centroid를 쓰므로 폴백용

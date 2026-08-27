@@ -7,6 +7,7 @@ import {
   useLeaveParty,
   usePotStore,
   usePotsHydrated,
+  useRenameParty,
 } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { getGraphQLErrorCode } from "@/shared/api/client"
@@ -153,7 +154,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
   const user = useSessionStore((s) => s.currentUser)
   const potsHydrated = usePotsHydrated()
   const pot = usePotStore((s) => s.pots.find((p) => p.id === potId))
-  const renamePot = usePotStore((s) => s.renamePot)
+  const renamePartyMutation = useRenameParty()
   const deletePartyMutation = useDeleteParty()
   const leavePartyMutation = useLeaveParty()
   const [name, setName] = React.useState(pot?.name ?? "")
@@ -186,11 +187,16 @@ function MyPotEditContent({ potId }: { potId: string }) {
 
   if (!potsHydrated || !pot || !user || !isMember) return null
 
-  const handleSave = () => {
-    if (!canSave) return
-    // TODO(graphql): 서버에 팟 이름 변경 뮤테이션이 없다 — 로컬만 변경되고
-    // 새로고침 시 서버 목록(myParties)의 이름으로 복원된다
-    renamePot(pot.id, trimmedName)
+  const handleSave = async () => {
+    if (!canSave || renamePartyMutation.isPending) return
+    try {
+      await renamePartyMutation.mutateAsync({
+        potId: pot.id,
+        name: trimmedName,
+      })
+    } catch {
+      showToast({ message: "이름 변경에 실패했어요", icon: "alert" })
+    }
   }
 
   const handleCopyCode = async () => {

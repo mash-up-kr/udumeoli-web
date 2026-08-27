@@ -13,7 +13,7 @@ import { TRAVEL_KEYWORDS } from "@/entities/photo"
 
 const healing = TRAVEL_KEYWORDS.find((keyword) => keyword.id === "HEALING")!
 const food = TRAVEL_KEYWORDS.find((keyword) => keyword.id === "FOOD")!
-const nature = TRAVEL_KEYWORDS.find((keyword) => keyword.id === "NATURE")!
+const nature = TRAVEL_KEYWORDS.find((keyword) => keyword.id === "DESSERT")!
 const incompleteFill = "#9eb8ac"
 
 describe("buildMapFills", () => {
@@ -25,7 +25,7 @@ describe("buildMapFills", () => {
       trips: [
         {
           region: "강릉시",
-          keyword: "NATURE",
+          keyword: "DESSERT",
           hasMine: true,
           isComplete: true,
         },
@@ -44,7 +44,7 @@ describe("buildMapFills", () => {
       trips: [
         {
           region: "강릉시",
-          keyword: "NATURE",
+          keyword: "DESSERT",
           hasMine: false,
           isComplete: false,
         },
@@ -82,7 +82,7 @@ describe("buildMapFills", () => {
       trips: [
         {
           region: "강릉시",
-          keyword: "NATURE",
+          keyword: "DESSERT",
           hasMine: true,
           isComplete: true,
         },
@@ -104,7 +104,7 @@ describe("buildMapFills", () => {
       trips: [
         {
           region: "강릉시",
-          keyword: "NATURE",
+          keyword: "DESSERT",
           hasMine: false,
           isComplete: false,
         },
@@ -225,7 +225,7 @@ describe("buildPartyMapFills", () => {
     memberCount: 4,
     country: {
       regionCode: "KR",
-      keyword: "NATURE" as const,
+      keyword: "DESSERT" as const,
       regionCount: 2,
       visitCount: 3,
       recordedMemberCount: 4,

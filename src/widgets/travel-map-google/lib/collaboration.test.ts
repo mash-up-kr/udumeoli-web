@@ -99,10 +99,10 @@ describe("visibleStickerTrips", () => {
           keyword: "FOOD",
         }),
         photo("second", "강릉시", "2026-08-01", "user-1", {
-          keyword: "NATURE",
+          keyword: "DESSERT",
         }),
         photo("first", "강릉시", "2026-07-01", "user-1", {
-          keyword: "CITY",
+          keyword: "PHOTO",
         }),
       ],
       members,
@@ -120,10 +120,10 @@ describe("visibleStickerTrips", () => {
       photos: [
         // 1차: 내가 기록 / 2차: 팟원만 / 3차: 내가 기록 → 3차는 회차 초과라 제외
         photo("first-me", "강릉시", "2026-07-01", "user-1", {
-          keyword: "CITY",
+          keyword: "PHOTO",
         }),
         photo("second-other", "강릉시", "2026-08-01", "m-1", {
-          keyword: "NATURE",
+          keyword: "DESSERT",
         }),
         photo("third-me", "강릉시", "2026-09-01", "user-1", {
           keyword: "FOOD",
@@ -145,7 +145,7 @@ describe("visibleStickerTrips", () => {
           keyword: "FOOD",
         }),
         photo("other", "동해시", "2026-09-01", "m-1", {
-          keyword: "NATURE",
+          keyword: "DESSERT",
         }),
       ],
       members,
@@ -169,7 +169,7 @@ describe("resolveRegionAction", () => {
         photo("first-1", "강릉시", "2026-07-01", "m-1"),
         photo("first-2", "강릉시", "2026-07-01", "m-2"),
         photo("second-me", "강릉시", "2026-09-01", "user-1", {
-          keyword: "NATURE",
+          keyword: "DESSERT",
         }),
       ],
       members,
@@ -268,21 +268,21 @@ describe("mostPickedKeyword", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("newest", "속초시", "2026-09-01", "user-1", { keyword: "FOOD" }),
-        photo("mid", "동해시", "2026-08-01", "user-1", { keyword: "NATURE" }),
-        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "NATURE" }),
+        photo("mid", "동해시", "2026-08-01", "user-1", { keyword: "DESSERT" }),
+        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "DESSERT" }),
       ],
       members,
       currentUserId: "user-1",
     })
 
-    expect(mostPickedKeyword(trips)).toBe("NATURE")
+    expect(mostPickedKeyword(trips)).toBe("DESSERT")
   })
 
   it("개수가 동일하면 가장 최근 여행의 키워드를 고른다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("new", "동해시", "2026-08-01", "user-1", { keyword: "FOOD" }),
-        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "NATURE" }),
+        photo("old", "강릉시", "2026-07-01", "user-1", { keyword: "DESSERT" }),
       ],
       members,
       currentUserId: "user-1",

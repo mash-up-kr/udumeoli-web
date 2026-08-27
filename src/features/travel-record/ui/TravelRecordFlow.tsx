@@ -18,6 +18,7 @@ import {
   findKeyword,
   groupTrips,
   regionStrokeForFill,
+  uploadErrorMessage,
   useAllPhotos,
   useCreatePhoto,
 } from "@/entities/photo"
@@ -211,9 +212,9 @@ export function TravelRecordFlow({
         previewUrl: photoUrl,
         center,
       })
-    } catch {
+    } catch (error) {
       showToast({
-        message: "업로드에 실패했어요. 다시 시도해 주세요.",
+        message: uploadErrorMessage(error),
         icon: "alert",
         className: "bottom-[106px]",
       })

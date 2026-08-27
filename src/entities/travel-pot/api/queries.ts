@@ -9,6 +9,7 @@ import {
   fetchPartyMapOverview,
   joinParty,
   leaveParty,
+  renameParty,
 } from "./pot.api"
 import type { TravelPot } from "../model/types"
 import type { QueryOptions } from "@/shared/api/client"
@@ -45,6 +46,7 @@ function useUpsertingMutation(
 ) {
   const queryClient = useQueryClient()
   const replacePots = usePotStore((s) => s.replacePots)
+  const selectPot = usePotStore((s) => s.selectPot)
   return useMutation({
     mutationFn,
     onSuccess: (pot) => {
@@ -54,6 +56,9 @@ function useUpsertingMutation(
       const pots = [pot, ...cached.filter((existing) => existing.id !== pot.id)]
       queryClient.setQueryData(travelPotKeys.myParties(), pots)
       replacePots(pots)
+      // 방금 생성·참여한 팟으로 즉시 전환 — replacePots는 기존 선택이 목록에
+      // 남아 있으면 유지하므로, 여기서 명시적으로 선택해야 새 팟이 현재 팟이 된다
+      selectPot(pot.id)
     },
   })
 }
@@ -64,6 +69,27 @@ export function useCreateParty() {
 
 export function useJoinParty() {
   return useUpsertingMutation(joinParty)
+}
+
+/** 팟 이름 변경 — 성공 시 store와 myParties 캐시의 이름을 함께 갱신. */
+export function useRenameParty() {
+  const queryClient = useQueryClient()
+  const renamePot = usePotStore((s) => s.renamePot)
+  return useMutation({
+    mutationFn: async ({ potId, name }: { potId: string; name: string }) => {
+      if (!USE_MOCK) await renameParty(potId, name)
+    },
+    onSuccess: (_, { potId, name }) => {
+      renamePot(potId, name)
+      queryClient.setQueryData<Array<TravelPot>>(
+        travelPotKeys.myParties(),
+        (pots) =>
+          pots?.map((pot) =>
+            pot.id === potId ? { ...pot, name: name.trim() } : pot
+          )
+      )
+    },
+  })
 }
 
 /** 팟 나가기 — 성공 시 캐시에선 팟을 빼고, store에선 내 자리만 비운다(목 공석 규칙 유지). */

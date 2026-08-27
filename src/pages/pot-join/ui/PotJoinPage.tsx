@@ -149,7 +149,7 @@ function ConfirmStep({
  * 초대코드로 여행팟 참여 페이지 — 코드 입력 → 티켓으로 팟 확인 → 참여 확정.
  * (Figma 코드 입력 1893-12640 · 참여 확인 2588-37965 · 정책 1893-21176)
  */
-export function PotJoinPage() {
+export function PotJoinPage({ initialCode }: { initialCode?: string }) {
   const router = useRouter()
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
@@ -158,7 +158,7 @@ export function PotJoinPage() {
   const currentPotId = usePotStore((s) => s.currentPotId)
   const hasRegionCards = useAllPhotos(currentPotId).length > 0
   const currentUser = useSessionStore((s) => s.currentUser)
-  const [code, setCode] = React.useState("")
+  const [code, setCode] = React.useState(initialCode ?? "")
   // [정책 #3] 검증 실패 시 에러 테두리 + CTA 비활성 — 다시 입력하면 해제
   const [codeError, setCodeError] = React.useState(false)
   const [previewLoading, setPreviewLoading] = React.useState(false)
@@ -223,6 +223,15 @@ export function PotJoinPage() {
       setPreviewLoading(false)
     }
   }
+
+  // 초대 링크(?inviteCode=) 진입이면 코드 입력 없이 곧장 확인 스텝(팟 티켓)으로.
+  // 실패(만료·정원 초과 등) 시엔 코드가 채워진 입력 화면 + 에러 토스트로 남는다
+  const autoPreviewedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!initialCode || autoPreviewedRef.current) return
+    autoPreviewedRef.current = true
+    void handleSubmit()
+  })
 
   // [정책 #9] 맞아요 — 참여 확정 후 지도 이동 + 완료 토스트
   const handleConfirm = async () => {

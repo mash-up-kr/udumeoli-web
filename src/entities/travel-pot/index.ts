@@ -28,6 +28,7 @@ export {
   useMyParties,
   useMyPots,
   usePartyMapOverview,
+  useRenameParty,
 } from "./api/queries"
 export { MOCK_POTS, TRIP_100_POT } from "./api/pot.mock"
 export { TicketCard } from "./ui/TicketCard"

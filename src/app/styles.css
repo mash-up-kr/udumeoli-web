@@ -447,6 +447,20 @@
                 rotate(var(--record-preview-rotate, 0deg));
         }
     }
+
+    /* 줌인 가이드 좌우 화살표 — 줌인하듯 좌우로 살짝 벌어지는 반복 펄스.
+       transform(scale)만 사용(GPU 가속) — reduce 환경은 motion-reduce:animate-none으로 정지 */
+    --animate-zoom-guide-arrows: zoom-guide-arrows 1.6s ease-in-out infinite;
+
+    @keyframes zoom-guide-arrows {
+        0%,
+        100% {
+            transform: scaleX(1);
+        }
+        50% {
+            transform: scaleX(1.22);
+        }
+    }
 }
 
 @layer base {
@@ -597,5 +611,13 @@
         .animate-record-preview-particle {
             display: none;
         }
+    }
+
+    /* Google Maps 하단 어트리뷰션 숨김 (QA 요청) — 지도·리캡 공통.
+       .gm-style-cc = 약관·지도 데이터·키보드 단축키 줄, a[href^=...] = Google 로고.
+       Google Maps Platform 약관상 로고/저작자 표기 노출이 원칙이라 정식 심사 대상이 되면 되살려야 한다 */
+    .gm-style-cc,
+    .gm-style a[href^="https://maps.google"] {
+        display: none !important;
     }
 }

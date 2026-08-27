@@ -1,5 +1,5 @@
 import { User } from "lucide-react"
-import globeSrc from "../assets/globe.svg"
+import globeSrc from "../assets/globe.png"
 import type { ComponentProps } from "react"
 
 import { cn } from "@/shared/lib/utils"
@@ -78,7 +78,7 @@ function BottomNav({
         </button>
       </div>
 
-      {/* 중앙 지구본(시안 2632-37387, 96×96) — 바 상단 위로 35px 돌출(시안 y:-35.36).
+      {/* 중앙 지구본(시안 2885-8192, 96×96 래스터라 2x PNG) — 바 상단 위로 35px 돌출(시안 y:-35.36).
           핸들러 주입 시 지도 이동 버튼 */}
       {onGlobeClick ? (
         <button
