@@ -115,9 +115,8 @@ export type MapCellKeyword =
   | "HEALING"
   | "ACTIVITY"
   | "FOOD"
-  | "NATURE"
-  | "CITY"
-  | "CULTURE"
+  | "DESSERT"
+  | "PHOTO"
 
 export interface MapCell {
   regionCode: string
