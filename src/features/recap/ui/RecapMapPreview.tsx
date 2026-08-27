@@ -1,4 +1,12 @@
 import * as React from "react"
+import {
+  APIProvider,
+  AdvancedMarker,
+  Map as GoogleMap,
+  useMap,
+} from "@vis.gl/react-google-maps"
+
+import { RECAP_MAP_VIEW } from "../lib/recap-map-config"
 
 import type { Photo } from "@/entities/photo"
 import { findKeyword, groupTrips } from "@/entities/photo"
@@ -12,54 +20,45 @@ type Project = (point: Point) => Point
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
 const REGION_BORDER_COLOR = "#f8fffb"
-const MAP_FRAME = {
-  left: 12,
-  top: 100,
-  width: 246,
-  height: 364,
-} as const
 const MARKER_CENTER = 15.75
 const MARKER_PIN = { x: 4.75, y: 0.6, width: 22, height: 25.5 }
 const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
 const MARKER_BADGE = { x: 21.5, y: -4.5 }
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
+const GOOGLE_MAP_ID =
+  (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined) ||
+  "DEMO_MAP_ID"
+const SCREEN_MAP_VIEW = {
+  center: { lat: 36.05, lng: 128.35 },
+  zoom: 6.35,
+} as const
 
 const EMPTY_GEO: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [],
 }
 
-function coordinatesOf(feature: GeoJSON.Feature): Array<Point> {
-  const geometry = feature.geometry
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates.flat().map(([lng, lat]) => [lng, lat])
-  }
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.flat(2).map(([lng, lat]) => [lng, lat])
-  }
-  return []
-}
-
-function makeProject(features: Array<GeoJSON.Feature>): Project {
-  const points = features.flatMap(coordinatesOf)
-  const lngs = points.map(([lng]) => lng)
-  const lats = points.map(([, lat]) => lat)
-  const minLng = Math.min(...lngs)
-  const maxLng = Math.max(...lngs)
-  const minLat = Math.min(...lats)
-  const maxLat = Math.max(...lats)
-  const width = Math.max(maxLng - minLng, 0.001)
-  const height = Math.max(maxLat - minLat, 0.001)
-  // The recap uses a tall art-directed map frame, but keeping the axes closer
-  // to a real map prevents pins and region boundaries from drifting apart.
-  const scaleX = MAP_FRAME.width / width
-  const scaleY = Math.min(scaleX * 1.55, MAP_FRAME.height / height)
-  const offsetX = MAP_FRAME.left + (MAP_FRAME.width - width * scaleX) / 2
-  const offsetY = MAP_FRAME.top + (MAP_FRAME.height - height * scaleY) / 2
+function makeProject(): Project {
+  const mapSize = 256 * 2 ** RECAP_MAP_VIEW.zoom
+  const centerX = ((RECAP_MAP_VIEW.center.lng + 180) / 360) * mapSize
+  const centerSin = Math.sin((RECAP_MAP_VIEW.center.lat * Math.PI) / 180)
+  const centerY =
+    (0.5 - Math.log((1 + centerSin) / (1 - centerSin)) / (4 * Math.PI)) *
+    mapSize
 
   return ([lng, lat]: Point): Point => {
-    const x = offsetX + (lng - minLng) * scaleX
-    const y = offsetY + (maxLat - lat) * scaleY
-    return [x, y]
+    const sin = Math.sin((lat * Math.PI) / 180)
+    const pixelX = ((lng + 180) / 360) * mapSize
+    const pixelY =
+      (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * mapSize
+    let deltaX = pixelX - centerX
+    if (deltaX > mapSize / 2) deltaX -= mapSize
+    if (deltaX < -mapSize / 2) deltaX += mapSize
+    return [
+      ((deltaX + RECAP_MAP_VIEW.width / 2) / RECAP_MAP_VIEW.width) * 270,
+      ((pixelY - centerY + RECAP_MAP_VIEW.height / 2) / RECAP_MAP_VIEW.height) *
+        480,
+    ]
   }
 }
 
@@ -87,6 +86,101 @@ function pathForFeature(feature: GeoJSON.Feature, project: Project): string {
 
 function regionCode(photo: Photo): string | undefined {
   return REGION_CODE_BY_NAME[photo.region]
+}
+
+function GoogleRecapLayer({
+  geojson,
+  photosByCode,
+}: {
+  geojson: GeoJSON.FeatureCollection
+  photosByCode: Map<string, Array<Photo>>
+}) {
+  const map = useMap()
+
+  React.useEffect(() => {
+    if (!map || geojson.features.length === 0) return
+
+    const data = new google.maps.Data()
+    data.addGeoJson(geojson)
+    data.setStyle((feature) => {
+      const code = String(feature.getProperty("code") ?? "")
+      const keyword = findKeyword(photosByCode.get(code)?.at(-1)?.keyword)
+      return {
+        fillColor: keyword?.mapColor ?? UNVISITED_REGION_COLOR,
+        fillOpacity: keyword ? 0.68 : 0.08,
+        strokeColor: REGION_BORDER_COLOR,
+        strokeOpacity: keyword ? 0.32 : 0.08,
+        strokeWeight: 1,
+        clickable: false,
+      }
+    })
+    data.setMap(map)
+
+    return () => data.setMap(null)
+  }, [geojson, map, photosByCode])
+
+  return null
+}
+
+function GoogleRecapMap({
+  geojson,
+  photosByCode,
+  markers,
+}: {
+  geojson: GeoJSON.FeatureCollection
+  photosByCode: Map<string, Array<Photo>>
+  markers: Array<{
+    photo: Photo
+    count: number
+    geoPosition: Point
+  }>
+}) {
+  return (
+    <APIProvider apiKey={GOOGLE_MAPS_KEY} libraries={["marker"]}>
+      <GoogleMap
+        mapId={GOOGLE_MAP_ID}
+        defaultCenter={SCREEN_MAP_VIEW.center}
+        defaultZoom={SCREEN_MAP_VIEW.zoom}
+        gestureHandling="none"
+        disableDefaultUI
+        clickableIcons={false}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <GoogleRecapLayer geojson={geojson} photosByCode={photosByCode} />
+        {markers.map(({ photo, count, geoPosition }) => {
+          const keyword = findKeyword(photo.keyword)
+          if (!keyword) return null
+          return (
+            <AdvancedMarker
+              key={`google-${photo.id}`}
+              position={{ lat: geoPosition[1], lng: geoPosition[0] }}
+            >
+              <div className="relative size-10">
+                <img
+                  src={keyword.mapPinSrc}
+                  alt=""
+                  className="absolute inset-0 size-full"
+                />
+                <img
+                  src={keyword.mapStickerSrc}
+                  alt=""
+                  className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 object-contain"
+                />
+                {count > 1 ? (
+                  <span
+                    className="absolute -top-1 -right-2 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 text-white"
+                    style={{ backgroundColor: keyword.mapColor }}
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </div>
+            </AdvancedMarker>
+          )
+        })}
+      </GoogleMap>
+    </APIProvider>
+  )
 }
 
 export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
@@ -130,7 +224,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     }
   }, [onError, onReady, retryKey])
 
-  const project = React.useMemo(() => makeProject(geojson.features), [geojson])
+  const project = React.useMemo(() => makeProject(), [])
   const projectedFeatures = React.useMemo(
     () =>
       geojson.features
@@ -142,6 +236,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
           feature,
           path: pathForFeature(feature, project),
           center: center ? project(center) : null,
+          geoCenter: center,
         })),
     [geojson, project]
   )
@@ -171,25 +266,39 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
       const photo = trips[0]?.photos.at(-1)
       if (photo) byCode.set(code, { photo, count: trips.length })
     }
-    return projectedFeatures.flatMap(({ feature, center }) => {
+    return projectedFeatures.flatMap(({ feature, center, geoCenter }) => {
       const code = String(feature.properties?.code ?? "")
       const item = byCode.get(code)
-      if (!item || !center) return []
-      return [{ ...item, position: center }]
+      if (!item || !center || !geoCenter) return []
+      return [{ ...item, position: center, geoPosition: geoCenter }]
     })
   }, [photosByCode, projectedFeatures])
 
   return (
     <div className={className} data-recap-map>
+      {geojson.features.length > 0 && !hasError ? (
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-[30px]">
+          <GoogleRecapMap
+            geojson={geojson}
+            photosByCode={photosByCode}
+            markers={markers}
+          />
+        </div>
+      ) : null}
       <svg
         viewBox="0 0 270 480"
-        className="size-full"
+        className="absolute inset-0 z-[-1] size-full opacity-0"
         role="img"
         aria-label="여행 기록 지도"
         shapeRendering="geometricPrecision"
         textRendering="geometricPrecision"
       >
-        <rect width="270" height="480" fill={MAP_OCEAN_COLOR} />
+        <rect
+          width="270"
+          height="480"
+          fill={MAP_OCEAN_COLOR}
+          data-recap-ocean
+        />
         {projectedFeatures.map(({ feature, path }, index) => {
           const code = String(feature.properties?.code ?? "")
           const photo = photosByCode.get(code)?.at(-1)
