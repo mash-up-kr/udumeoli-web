@@ -10,10 +10,12 @@ import { NumberCode } from "@/shared/ui/number-code"
 import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
+import { RequireAuth } from "@/features/auth"
 import { useAllPhotos } from "@/entities/photo"
 import {
   TicketCard,
   fetchPartyPreview,
+  takePendingInviteCode,
   useJoinParty,
   usePotStore,
 } from "@/entities/travel-pot"
@@ -149,7 +151,7 @@ function ConfirmStep({
  * 초대코드로 여행팟 참여 페이지 — 코드 입력 → 티켓으로 팟 확인 → 참여 확정.
  * (Figma 코드 입력 1893-12640 · 참여 확인 2588-37965 · 정책 1893-21176)
  */
-export function PotJoinPage() {
+function PotJoinPageContent() {
   const router = useRouter()
   const previewJoin = usePotStore((s) => s.previewJoin)
   const confirmJoin = usePotStore((s) => s.confirmJoin)
@@ -164,6 +166,19 @@ export function PotJoinPage() {
   const [previewLoading, setPreviewLoading] = React.useState(false)
   // 참여 확인 스텝 데이터 — 있으면 확인 화면, 없으면 코드 입력 화면
   const [preview, setPreview] = React.useState<JoinPreview | null>(null)
+
+  // 초대링크로 들어온 코드 프리필 — pot-start가 보관해 둔 코드를 소비한다.
+  // 마운트 효과로 채워야 SSR 첫 렌더(빈 셀)와 hydration이 어긋나지 않는다
+  React.useEffect(() => {
+    const pending = takePendingInviteCode()
+    if (!pending) return
+    // NumberCode alphanumeric과 같은 규칙 [정책 #2: 영문 소문자+숫자 6자리]
+    const sanitized = pending
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, CODE_LENGTH)
+    if (sanitized) setCode(sanitized)
+  }, [])
 
   // 뒤로가기 — 실제 진입 지점(팟 시작 온보딩/지도 드롭다운)으로 복귀 [정책 #1]
   const goBack = () => router.history.back()
@@ -307,5 +322,16 @@ export function PotJoinPage() {
         </ButtonCta>
       </div>
     </MobileLayout>
+  )
+}
+
+export function PotJoinPage() {
+  return (
+    // 참여(preview·join) 요청은 인증 필수 — 초대링크로 온 미로그인 유저(카톡 인앱
+    // 브라우저 등)가 여기서 인증 에러 토스트를 받는 대신 로그인부터 타게 한다.
+    // 보관된 초대코드는 로그인 콜백이 다시 이 화면으로 데려온 뒤 프리필된다
+    <RequireAuth>
+      <PotJoinPageContent />
+    </RequireAuth>
   )
 }
