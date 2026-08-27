@@ -24,6 +24,11 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "Pinnned" },
+      {
+        name: "description",
+        content:
+          "친구들과 팟을 만들어 여행 기록으로 우리만의 지도를 채워보세요. 함께 만드는 여행 지도, Pinnned.",
+      },
       // 카카오톡 등 링크 공유 미리보기용 OG 태그 — og:image는 절대 URL 필수
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Pinnned" },
@@ -66,7 +71,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <head>
         <HeadContent />
       </head>
