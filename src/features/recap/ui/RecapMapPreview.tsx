@@ -6,7 +6,8 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps"
 
-import { RECAP_MAP_VIEW } from "../lib/recap-map-config"
+import { getRecapMapView, getRecapScreenMapView } from "../lib/recap-map-config"
+import type { RECAP_MAP_VIEW } from "../lib/recap-map-config"
 
 import type { Photo } from "@/entities/photo"
 import { findKeyword, groupTrips } from "@/entities/photo"
@@ -31,20 +32,15 @@ const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 const GOOGLE_MAP_ID =
   (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined) ||
   "DEMO_MAP_ID"
-const SCREEN_MAP_VIEW = {
-  center: { lat: 36.05, lng: 128.35 },
-  zoom: 6.35,
-} as const
-
 const EMPTY_GEO: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [],
 }
 
-function makeProject(): Project {
-  const mapSize = 256 * 2 ** RECAP_MAP_VIEW.zoom
-  const centerX = ((RECAP_MAP_VIEW.center.lng + 180) / 360) * mapSize
-  const centerSin = Math.sin((RECAP_MAP_VIEW.center.lat * Math.PI) / 180)
+function makeProject(view: typeof RECAP_MAP_VIEW): Project {
+  const mapSize = 256 * 2 ** view.zoom
+  const centerX = ((view.center.lng + 180) / 360) * mapSize
+  const centerSin = Math.sin((view.center.lat * Math.PI) / 180)
   const centerY =
     (0.5 - Math.log((1 + centerSin) / (1 - centerSin)) / (4 * Math.PI)) *
     mapSize
@@ -58,9 +54,8 @@ function makeProject(): Project {
     if (deltaX > mapSize / 2) deltaX -= mapSize
     if (deltaX < -mapSize / 2) deltaX += mapSize
     return [
-      ((deltaX + RECAP_MAP_VIEW.width / 2) / RECAP_MAP_VIEW.width) * 270,
-      ((pixelY - centerY + RECAP_MAP_VIEW.height / 2) / RECAP_MAP_VIEW.height) *
-        480,
+      ((deltaX + view.width / 2) / view.width) * 270,
+      ((pixelY - centerY + view.height / 2) / view.height) * 480,
     ]
   }
 }
@@ -129,6 +124,7 @@ function GoogleRecapMap({
   geojson,
   photosByCode,
   markers,
+  mapView,
 }: {
   geojson: GeoJSON.FeatureCollection
   photosByCode: Map<string, Array<Photo>>
@@ -137,13 +133,14 @@ function GoogleRecapMap({
     count: number
     geoPosition: Point
   }>
+  mapView: typeof RECAP_MAP_VIEW
 }) {
   return (
     <APIProvider apiKey={GOOGLE_MAPS_KEY} libraries={["marker"]}>
       <GoogleMap
         mapId={GOOGLE_MAP_ID}
-        defaultCenter={SCREEN_MAP_VIEW.center}
-        defaultZoom={SCREEN_MAP_VIEW.zoom}
+        defaultCenter={mapView.center}
+        defaultZoom={mapView.zoom}
         gestureHandling="none"
         disableDefaultUI
         clickableIcons={false}
@@ -227,7 +224,23 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     }
   }, [onError, onReady, retryKey])
 
-  const project = React.useMemo(() => makeProject(), [])
+  const includeIslands = React.useMemo(
+    () =>
+      photos.some(
+        ({ lat, lng }) =>
+          lng >= 130 || (lat <= 34.5 && lng >= 125 && lng <= 127.5)
+      ),
+    [photos]
+  )
+  const mapView = React.useMemo(
+    () => getRecapMapView(includeIslands),
+    [includeIslands]
+  )
+  const screenMapView = React.useMemo(
+    () => getRecapScreenMapView(includeIslands),
+    [includeIslands]
+  )
+  const project = React.useMemo(() => makeProject(mapView), [mapView])
   const projectedFeatures = React.useMemo(
     () =>
       geojson.features
@@ -278,13 +291,18 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   }, [photosByCode, projectedFeatures])
 
   return (
-    <div className={className} data-recap-map>
+    <div
+      className={className}
+      data-recap-map
+      data-recap-map-view={includeIslands ? "full" : "mainland"}
+    >
       {geojson.features.length > 0 && !hasError ? (
         <div className="absolute inset-0 z-0 overflow-hidden rounded-[30px]">
           <GoogleRecapMap
             geojson={geojson}
             photosByCode={photosByCode}
             markers={markers}
+            mapView={screenMapView}
           />
         </div>
       ) : null}

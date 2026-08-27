@@ -3,7 +3,8 @@
 import specialGothicFontUrl from "@fontsource/special-gothic-condensed-one/files/special-gothic-condensed-one-latin-400-normal.woff2"
 
 import { RECAP_CARD_LAYOUT, RECAP_CARD_SIZE } from "./recap-layout"
-import { RECAP_MAP_VIEW } from "./recap-map-config"
+import { getRecapMapView } from "./recap-map-config"
+import type { RECAP_MAP_VIEW } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
 const EXPORT_SCALE = 4
@@ -102,7 +103,7 @@ function buildLocationIconMarkup(element: HTMLElement): string {
   return `<image href="${escapeXml(source)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
 }
 
-async function buildStaticMapMarkup(): Promise<string> {
+async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
   if (!GOOGLE_STATIC_MAPS_KEY) return ""
 
   const fetchMap = async (view: typeof RECAP_MAP_VIEW) => {
@@ -125,7 +126,12 @@ async function buildStaticMapMarkup(): Promise<string> {
   }
 
   try {
-    const mainMap = await fetchMap(RECAP_MAP_VIEW)
+    const mapView =
+      element.querySelector<HTMLElement>("[data-recap-map]")?.dataset
+        .recapMapView === "mainland"
+        ? getRecapMapView(false)
+        : getRecapMapView(true)
+    const mainMap = await fetchMap(mapView)
     return `<image href="${mainMap}" x="0" y="0" width="270" height="480" preserveAspectRatio="xMidYMid slice"/>`
   } catch (error) {
     console.warn(
@@ -188,7 +194,7 @@ async function buildExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
 
   const locationIconMarkup = buildLocationIconMarkup(element)
-  const staticMapMarkup = await buildStaticMapMarkup()
+  const staticMapMarkup = await buildStaticMapMarkup(element)
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
@@ -212,7 +218,7 @@ async function buildFallbackExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  const staticMapMarkup = await buildStaticMapMarkup()
+  const staticMapMarkup = await buildStaticMapMarkup(element)
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
