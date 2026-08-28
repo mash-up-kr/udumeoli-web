@@ -19,7 +19,7 @@ export function AppSplash({
   onMotionEnd,
 }: {
   children?: ReactNode
-  /** 스플래시 영상 재생 완료(또는 로드 실패) 시 호출 — 랜딩이 CTA 노출 시점으로 쓴다 */
+  /** 스플래시 모션 종료 시점에 호출 — 랜딩이 CTA 노출 시점으로 쓴다. 중복 호출될 수 있다 */
   onMotionEnd?: () => void
 }) {
   return (
@@ -35,6 +35,11 @@ export function AppSplash({
         className="absolute inset-0 size-full object-cover"
         onEnded={onMotionEnd}
         onError={onMotionEnd}
+        // 영상 끝은 마지막 프레임 유지 구간이라 ended까지 기다리면 CTA가 늦게 뜬다 — 1초 전 미리 알림
+        onTimeUpdate={(event) => {
+          const video = event.currentTarget
+          if (video.duration - video.currentTime <= 1) onMotionEnd?.()
+        }}
       />
       {children}
     </MobileLayout>
