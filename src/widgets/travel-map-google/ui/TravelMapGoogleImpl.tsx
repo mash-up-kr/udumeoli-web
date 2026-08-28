@@ -167,8 +167,6 @@ type ProvinceAggregate = {
   regionCount: number
   /** 도 안의 여행 횟수 — 최신 지도 핀 하단 뱃지의 +N */
   visitCount: number
-  recordedMemberCount?: number
-  memberCount?: number
   lat: number
   lng: number
 }
@@ -527,12 +525,6 @@ const ProvinceAggregateMarkers = React.memo(
               imageAlt={`${formatProvinceBadgeName(agg.province)} 대표 키워드 ${
                 agg.keyword.label
               }`}
-              topBadge={
-                agg.recordedMemberCount !== undefined &&
-                agg.memberCount !== undefined
-                  ? `${agg.recordedMemberCount}/${agg.memberCount}`
-                  : undefined
-              }
               bottomBadge={`${formatProvinceBadgeName(agg.province)}+${
                 agg.regionCount
               }`}
@@ -1270,8 +1262,6 @@ function TravelMapGoogleInner({
             regions: members.map((member) => member.name),
             regionCount: cell.regionCount,
             visitCount: cell.visitCount,
-            recordedMemberCount: cell.recordedMemberCount,
-            memberCount: mapOverview.memberCount,
             lat:
               members.reduce((sum, member) => sum + member.lat, 0) /
               members.length,
@@ -1323,9 +1313,6 @@ function TravelMapGoogleInner({
   const countryRegionCount = mapOverview
     ? (mapOverview.country?.regionCount ?? 0)
     : new Set(visualTrips.map((trip) => trip.region)).size
-  const countryProgressBadge = mapOverview?.country
-    ? `${mapOverview.country.recordedMemberCount}/${mapOverview.memberCount}`
-    : undefined
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
@@ -1849,7 +1836,6 @@ function TravelMapGoogleInner({
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              topBadge={countryProgressBadge}
               bottomBadge={`전국+${countryRegionCount}`}
             />
           </AdvancedMarker>
