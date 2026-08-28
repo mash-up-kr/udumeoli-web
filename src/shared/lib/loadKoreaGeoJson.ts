@@ -98,9 +98,30 @@ async function buildKoreaGeoJson(): Promise<KoreaGeo> {
     provTopo,
     provTopo.objects[provKey]
   ) as unknown as GeoJSON.FeatureCollection
-  const cityFeatures = provRaw.features.filter((f) =>
-    METRO_CITIES.has(f.properties?.name as string)
-  )
+  // 광역시 시도 경계는 소속 군(기장·달성·강화·옹진·울주)까지 포함한다 — 그대로 쓰면
+  // 군이 별도 feature(투명)로 위에 얹혀 광역시만 칠해도 군 영역에 색이 비친다.
+  // 군을 뺀 소속 구들만 merge해 광역시 폴리곤을 만든다 (소속 구가 없으면 시도 경계 fallback)
+  const cityFeatures = provRaw.features
+    .filter((f) => METRO_CITIES.has(f.properties?.name as string))
+    .map((f): GeoJSON.Feature => {
+      const provCode = String(f.properties?.code)
+      const geoms = muniGeoms.filter((geom) => {
+        const name = geom.properties.name as string | undefined
+        return (
+          String(geom.properties.code).slice(0, 2) === provCode &&
+          !name?.endsWith("군")
+        )
+      })
+      if (geoms.length === 0) return f
+      return {
+        type: "Feature",
+        geometry: toMerge(muniTopo, geoms as Parameters<typeof toMerge>[1]),
+        properties: {
+          name: f.properties?.name,
+          code: geoms[0].properties.code,
+        },
+      }
+    })
 
   // 시군구 → 도 매핑 (kostat 코드 앞 2자리 = 도 코드, 광역시는 자기 자신이 도)
   const codeToProvince = new Map<string, string>()
