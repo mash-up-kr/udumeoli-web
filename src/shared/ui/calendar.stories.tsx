@@ -10,7 +10,7 @@ const meta: Meta<typeof Calendar> = {
     docs: {
       description: {
         component:
-          "react-day-picker 기반 날짜 선택 캘린더 (Figma Date Picker v1.0.0). 한국어·월요일 시작, 오늘/선택 상태 브랜드 컬러.",
+          "react-day-picker 기반 날짜 선택 캘린더 (Figma Date Picker v1.0.0). 한국어·월요일 시작, 오늘/선택 상태 브랜드 컬러. 항상 6주 고정 렌더(fixedWeeks)로 달 이동 시 높이가 흔들리지 않는다.",
       },
     },
   },

@@ -112,6 +112,14 @@ function MapGooglePageContent() {
 
         {showMapChrome ? (
           <>
+            {/* 지도 상·하단 그라데이션 오버레이 — 시안 2466-8641 기반이되 높이·blur는 축소.
+                시안값(상단 163px·하단 303px + blur 2px)은 지도 핀까지 흐려져(QA)
+                헤더/내비 가독에 필요한 만큼만 남긴다. 하단은 내비와 같은 조건(줌 3단계 미만)에서만 노출 */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-white/80 to-transparent" />
+            {showPersistentMapActions ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[180px] bg-gradient-to-b from-transparent via-white/60 via-[36.47%] to-white opacity-90" />
+            ) : null}
+
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
               {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
                   빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}

@@ -1,3 +1,5 @@
+import * as React from "react"
+
 import { MobileLayout } from "./mobile-layout"
 import type { ReactNode } from "react"
 
@@ -14,19 +16,59 @@ import skyBackgroundSrc from "@/shared/assets/sky-background.png"
  *
  * 랜딩(LandingPage)은 children으로 CTA를 얹어 같은 화면을 공유한다.
  */
-export function AppSplash({ children }: { children?: ReactNode }) {
+export function AppSplash({
+  children,
+  onMotionEnd,
+}: {
+  children?: ReactNode
+  /** 스플래시 모션 종료 시점에 호출 — 랜딩이 CTA 노출 시점으로 쓴다. 중복 호출될 수 있다 */
+  onMotionEnd?: () => void
+}) {
+  const videoRef = React.useRef<HTMLVideoElement>(null)
+  // iOS 저전력·데이터 절약 모드는 muted autoplay도 거부하고 영상 위에 네이티브
+  // 재생 버튼을 덮는다 — play()가 거부되면 영상을 정적 배경으로 대체한다
+  const [autoplayBlocked, setAutoplayBlocked] = React.useState(false)
+  const playAttemptedRef = React.useRef(false)
+
+  React.useEffect(() => {
+    // 리렌더로 이펙트가 재실행돼도 play()는 최초 1회만 — 끝난 영상이 재시작되면 안 된다
+    if (playAttemptedRef.current) return
+    playAttemptedRef.current = true
+    void videoRef.current?.play().catch(() => {
+      setAutoplayBlocked(true)
+      onMotionEnd?.()
+    })
+  }, [onMotionEnd])
+
   return (
     <MobileLayout className="relative flex h-dvh flex-col items-center justify-center overflow-hidden bg-bg-neutral-subtle">
-      <video
-        src="/splash.mp4"
-        poster={skyBackgroundSrc}
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-        className="absolute inset-0 size-full object-cover"
-      />
+      {autoplayBlocked ? (
+        <img
+          src={skyBackgroundSrc}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src="/splash.mp4"
+          poster={skyBackgroundSrc}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          className="absolute inset-0 size-full object-cover"
+          onEnded={onMotionEnd}
+          onError={onMotionEnd}
+          // 영상 끝은 마지막 프레임 유지 구간이라 ended까지 기다리면 CTA가 늦게 뜬다 — 2초 전 미리 알림
+          onTimeUpdate={(event) => {
+            const video = event.currentTarget
+            if (video.duration - video.currentTime <= 2) onMotionEnd?.()
+          }}
+        />
+      )}
       {children}
     </MobileLayout>
   )

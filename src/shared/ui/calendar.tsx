@@ -25,6 +25,8 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
       locale={ko}
       weekStartsOn={1}
       showOutsideDays
+      // 5주짜리 달도 6주로 고정 — 달 이동 시 캘린더 높이가 널뛰지 않게 (모자란 행은 다음 달 날짜를 흐리게)
+      fixedWeeks
       formatters={{
         formatCaption: (date) =>
           `${date.getFullYear()}년 ${date.getMonth() + 1}월`,

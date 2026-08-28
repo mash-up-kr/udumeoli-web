@@ -127,13 +127,17 @@ const RECORD_CAMERA_DURATION_MS = 420
 // 마커의 onClick·title이 담당한다.
 const MARKER_CONTENT =
   "flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
+// 하단 툴팁 기준선 — 내비 바닥 오프셋 max(safe-area,33px) + 지구본 상단까지 112px(바 안 16px + 지구본 96px) + 여백 8px.
+// dvh 비례로 두면 화면 높이에 따라 지구본에 가려진다 (QA) — 지구본 기준 고정 오프셋으로 계산
+const BOTTOM_TOOLTIP_POSITION =
+  "bottom-[calc(max(env(safe-area-inset-bottom),33px)_+_120px)]"
 // Figma 2466-8293: 상세 줌에서는 [+] 버튼·협업 액션·스티커가 가까이 있어도 동시에 보여야 한다.
 const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
 const DETAIL_STICKER_Z_INDEX = 30
 const DETAIL_ACTION_Z_INDEX = 40
 const DETAIL_TOOLTIP_Z_INDEX = 50
 const CATEGORY_PIN_BADGE =
-  "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
+  "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h8-1 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const CATEGORY_PIN_COUNT_BADGE =
   "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
@@ -163,8 +167,6 @@ type ProvinceAggregate = {
   regionCount: number
   /** 도 안의 여행 횟수 — 최신 지도 핀 하단 뱃지의 +N */
   visitCount: number
-  recordedMemberCount?: number
-  memberCount?: number
   lat: number
   lng: number
 }
@@ -442,7 +444,7 @@ const RegionAddMarkers = React.memo(function RegionAddMarkerLayer({
             <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
               <img src={iconAddSrc} alt="" className="size-5" />
             </span>
-            <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+            <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
               {formatRegionName(name)}
             </span>
           </div>
@@ -481,7 +483,7 @@ const CollaborationProgressMarkers = React.memo(
                   <img src={iconAddSrc} alt="" className="size-5" />
                 )}
               </span>
-              <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+              <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
               {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
@@ -523,12 +525,6 @@ const ProvinceAggregateMarkers = React.memo(
               imageAlt={`${formatProvinceBadgeName(agg.province)} 대표 키워드 ${
                 agg.keyword.label
               }`}
-              topBadge={
-                agg.recordedMemberCount !== undefined &&
-                agg.memberCount !== undefined
-                  ? `${agg.recordedMemberCount}/${agg.memberCount}`
-                  : undefined
-              }
               bottomBadge={`${formatProvinceBadgeName(agg.province)}+${
                 agg.regionCount
               }`}
@@ -1266,8 +1262,6 @@ function TravelMapGoogleInner({
             regions: members.map((member) => member.name),
             regionCount: cell.regionCount,
             visitCount: cell.visitCount,
-            recordedMemberCount: cell.recordedMemberCount,
-            memberCount: mapOverview.memberCount,
             lat:
               members.reduce((sum, member) => sum + member.lat, 0) /
               members.length,
@@ -1319,9 +1313,6 @@ function TravelMapGoogleInner({
   const countryRegionCount = mapOverview
     ? (mapOverview.country?.regionCount ?? 0)
     : new Set(visualTrips.map((trip) => trip.region)).size
-  const countryProgressBadge = mapOverview?.country
-    ? `${mapOverview.country.recordedMemberCount}/${mapOverview.memberCount}`
-    : undefined
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
@@ -1845,7 +1836,6 @@ function TravelMapGoogleInner({
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              topBadge={countryProgressBadge}
               bottomBadge={`전국+${countryRegionCount}`}
             />
           </AdvancedMarker>
@@ -1920,7 +1910,12 @@ function TravelMapGoogleInner({
           4초 뒤 독려 툴팁이 사라져도 위치가 흔들리지 않게 한다 */}
       {visibleEncouragementTrip ||
       (visibleCompletionTrip && completionTipKey) ? (
-        <div className="absolute inset-x-0 bottom-[clamp(112px,16dvh,130px)] z-10 flex flex-col items-center gap-2 px-4">
+        <div
+          className={cn(
+            "absolute inset-x-0 z-10 flex flex-col items-center gap-2 px-4",
+            BOTTOM_TOOLTIP_POSITION
+          )}
+        >
           {visibleEncouragementTrip ? (
             <MapPillTooltip className="pointer-events-none">
               {encouragementMessage}
@@ -1956,7 +1951,10 @@ function TravelMapGoogleInner({
             setRecordTipDismissedForSession(true)
             runCameraMove(GANGWON_VIEW, 600)
           }}
-          className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          className={cn(
+            "absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+            BOTTOM_TOOLTIP_POSITION
+          )}
         >
           <span className="text-b6 text-fg-neutral-inverse">
             최근 여행을 기록해볼까요?

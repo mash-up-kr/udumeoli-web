@@ -1,4 +1,3 @@
-import { User } from "lucide-react"
 import globeSrc from "../assets/globe.png"
 import type { ComponentProps } from "react"
 
@@ -34,15 +33,15 @@ function BottomNav({
       {...props}
     >
       <div className="flex items-center justify-between rounded-full border border-stroke-neutral-inverse bg-neutral-900 px-[21px] py-[13px]">
-        {/* 지도 시안 기준 여행 앨범 white/30 · 마이페이지 white/60 — 토큰에 없는 white alpha라 하드코딩.
-            앨범 페이지(1846-3645)에선 활성 탭 흰색 · 비활성 fg-neutral-subtle */}
+        {/* 새 시안(2897-19246) 기준 두 탭 모두 fg-neutral-subtle(#8e96a9)로 동일.
+            앨범 페이지(1846-3645)에선 활성 탭만 흰색 */}
         <button
           type="button"
           onClick={onAlbumClick}
           disabled={albumDisabled}
           className={cn(
             "flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px]",
-            active === "album" ? "text-white" : "text-white/30",
+            active === "album" ? "text-white" : "text-fg-neutral-subtle",
             albumDisabled && "cursor-default"
           )}
           aria-current={active === "album" ? "page" : undefined}
@@ -66,12 +65,20 @@ function BottomNav({
         <button
           type="button"
           onClick={onMyPageClick}
-          className={cn(
-            "flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px]",
-            active === "album" ? "text-fg-neutral-subtle" : "text-white/60"
-          )}
+          className="flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px] text-fg-neutral-subtle"
         >
-          <User aria-hidden className="size-[18px]" />
+          {/* 마이페이지 아이콘 (시안 2897-19253 icon-person) — 활성/비활성 색을 따라가도록 currentColor */}
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            fill="none"
+            className="size-[18px]"
+          >
+            <path
+              d="M9.0285 10.6665C8.20733 9.84533 7.79675 8.85483 7.79675 7.695C7.79675 6.53533 8.20733 5.54583 9.0285 4.7265C9.84967 3.90733 10.8402 3.49775 12 3.49775C13.1598 3.49775 14.1503 3.90733 14.9715 4.7265C15.7927 5.54583 16.2032 6.53533 16.2032 7.695C16.2032 8.85483 15.7927 9.84533 14.9715 10.6665C14.1503 11.4877 13.1598 11.8982 12 11.8982C10.8402 11.8982 9.84967 11.4877 9.0285 10.6665ZM3.79675 18.03V17.2898C3.79675 16.6871 3.95258 16.1323 4.26425 15.6255C4.57575 15.1187 4.99108 14.7323 5.51025 14.4663C6.55558 13.9456 7.61958 13.5541 8.70225 13.2918C9.78475 13.0294 10.884 12.8982 12 12.8982C13.1238 12.8982 14.2271 13.0284 15.3097 13.2887C16.3924 13.5491 17.4524 13.9396 18.4897 14.4602C19.0089 14.7262 19.4242 15.1117 19.7357 15.6165C20.0474 16.1215 20.2032 16.6793 20.2032 17.2898V18.03C20.2032 18.6597 19.9815 19.1963 19.538 19.6398C19.0945 20.0833 18.5579 20.305 17.9282 20.305H6.07175C5.44208 20.305 4.9055 20.0833 4.462 19.6398C4.0185 19.1963 3.79675 18.6597 3.79675 18.03Z"
+              fill="currentColor"
+            />
+          </svg>
           <span className="text-[10px] font-semibold tracking-[-0.2px]">
             마이페이지
           </span>
