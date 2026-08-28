@@ -77,7 +77,7 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
               "flex size-9 items-center justify-center rounded-full text-h6-1 text-fg-neutral-bold transition-colors hover:bg-bg-neutral-solid",
               modifiers.outside && "text-fg-neutral-subtle",
               modifiers.today &&
-                "bg-neutral-500 text-fg-neutral-inverse hover:bg-neutral-500",
+                "relative bg-neutral-500 text-fg-neutral-inverse hover:bg-neutral-500",
               modifiers.selected &&
                 "bg-bg-brand-solid text-fg-neutral-inverse hover:bg-bg-brand-solid",
               // 기간(range) 선택 — 시작·끝은 solid, 사이 날짜는 weak.
@@ -88,15 +88,12 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
               cls
             )}
           >
-            {modifiers.today ? (
-              <span className="flex flex-col items-center">
-                <span className="leading-none">{day.date.getDate()}</span>
-                <span className="text-[8px] leading-none font-medium">
-                  오늘
-                </span>
+            {day.date.getDate()}
+            {/* 숫자는 다른 날짜와 같은 자리에 두고, 라벨만 원 하단에 겹쳐 표시 */}
+            {modifiers.today && (
+              <span className="absolute bottom-[3px] text-[8px] leading-none font-medium">
+                오늘
               </span>
-            ) : (
-              day.date.getDate()
             )}
           </button>
         ),
