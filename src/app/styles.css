@@ -584,9 +584,12 @@
         height: clamp(32px, 10.7vw, 40px);
     }
 
+    /* 시안 H3 (24px/36px/700) — 작은 화면에선 크기만 clamp로 축소 */
     .travel-record-keyword-label {
-        font-size: clamp(20px, 6.4vw, 24px);
+        font-size: clamp(20px, 6.4vw, var(--text-h3));
         line-height: 1.5;
+        font-weight: var(--text-h3--font-weight);
+        letter-spacing: var(--text-h3--letter-spacing);
     }
 
     .animate-record-preview-photo-in,
