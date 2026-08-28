@@ -289,7 +289,7 @@ export function TravelRecordFlow({
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
           {step === "photo" && keyword ? (
             <>
-              <span className="underline" style={{ color: keyword.stroke }}>
+              <span className="underline" style={{ color: keyword.mapColor }}>
                 {keyword.label}!투어
               </span>
               {" 대표 사진 1장을\n업로드 해주세요"}

@@ -191,10 +191,11 @@ export function PreviewStep({
 
       {/* min-h-0 없이 flex-1 — 낮은 화면에서 내용이 넘치면 잘리는 대신 루트가 스크롤된다 */}
       <div className="relative z-20 flex flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
-        {/* 날짜 칩 — 키워드 stroke색 배경 (Figma Chip · H9) */}
+        {/* 날짜 칩 — 키워드 대표색(mapColor) 배경 (Figma Chip · H9).
+            stroke는 지역 폴리곤 외곽선 팔레트라 키워드 색과 다르다 (사진이 디저트 빨강으로 보이던 원인) */}
         <span
           className="rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"
-          style={{ backgroundColor: keyword?.stroke ?? "#232936" }}
+          style={{ backgroundColor: keyword?.mapColor ?? "#232936" }}
         >
           {formatRecordRange(startDate, endDate)}
         </span>
@@ -204,7 +205,7 @@ export function PreviewStep({
             <>
               우리의 여행은
               <br />
-              <span className="underline" style={{ color: keyword.stroke }}>
+              <span className="underline" style={{ color: keyword.mapColor }}>
                 {keyword.label}!투어
               </span>
             </>
