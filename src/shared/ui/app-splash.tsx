@@ -35,10 +35,10 @@ export function AppSplash({
         className="absolute inset-0 size-full object-cover"
         onEnded={onMotionEnd}
         onError={onMotionEnd}
-        // 영상 끝은 마지막 프레임 유지 구간이라 ended까지 기다리면 CTA가 늦게 뜬다 — 1초 전 미리 알림
+        // 영상 끝은 마지막 프레임 유지 구간이라 ended까지 기다리면 CTA가 늦게 뜬다 — 2초 전 미리 알림
         onTimeUpdate={(event) => {
           const video = event.currentTarget
-          if (video.duration - video.currentTime <= 1) onMotionEnd?.()
+          if (video.duration - video.currentTime <= 2) onMotionEnd?.()
         }}
       />
       {children}
