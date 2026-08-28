@@ -127,6 +127,10 @@ const RECORD_CAMERA_DURATION_MS = 420
 // 마커의 onClick·title이 담당한다.
 const MARKER_CONTENT =
   "flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
+// 하단 툴팁 기준선 — 내비 바닥 오프셋 max(safe-area,33px) + 지구본 상단까지 112px(바 안 16px + 지구본 96px) + 여백 8px.
+// dvh 비례로 두면 화면 높이에 따라 지구본에 가려진다 (QA) — 지구본 기준 고정 오프셋으로 계산
+const BOTTOM_TOOLTIP_POSITION =
+  "bottom-[calc(max(env(safe-area-inset-bottom),33px)_+_120px)]"
 // Figma 2466-8293: 상세 줌에서는 [+] 버튼·협업 액션·스티커가 가까이 있어도 동시에 보여야 한다.
 const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
 const DETAIL_STICKER_Z_INDEX = 30
@@ -1920,7 +1924,12 @@ function TravelMapGoogleInner({
           4초 뒤 독려 툴팁이 사라져도 위치가 흔들리지 않게 한다 */}
       {visibleEncouragementTrip ||
       (visibleCompletionTrip && completionTipKey) ? (
-        <div className="absolute inset-x-0 bottom-[clamp(112px,16dvh,130px)] z-10 flex flex-col items-center gap-2 px-4">
+        <div
+          className={cn(
+            "absolute inset-x-0 z-10 flex flex-col items-center gap-2 px-4",
+            BOTTOM_TOOLTIP_POSITION
+          )}
+        >
           {visibleEncouragementTrip ? (
             <MapPillTooltip className="pointer-events-none">
               {encouragementMessage}
@@ -1956,7 +1965,10 @@ function TravelMapGoogleInner({
             setRecordTipDismissedForSession(true)
             runCameraMove(GANGWON_VIEW, 600)
           }}
-          className="absolute bottom-[clamp(112px,16dvh,130px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+          className={cn(
+            "absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
+            BOTTOM_TOOLTIP_POSITION
+          )}
         >
           <span className="text-b6 text-fg-neutral-inverse">
             최근 여행을 기록해볼까요?
