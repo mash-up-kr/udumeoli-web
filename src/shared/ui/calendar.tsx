@@ -17,7 +17,8 @@ const navButton =
  * react-day-picker 래퍼 (Figma Date Picker v1.0.0).
  *
  * 흰 카드(bg-neutral-weak·rounded-3xl), 한국어·월요일 시작. 셀 36px 원형.
- * Today: bg-brand-weak·fg-brand-solid / Selected: bg-brand-solid·fg-neutral-inverse.
+ * Today: bg-neutral-inverse·fg-neutral-inverse / Selected: bg-brand-solid·fg-neutral-inverse
+ * — 파란 원은 "선택"만 의미하도록 오늘은 무채색으로 구분한다.
  */
 export function Calendar({ className, classNames, ...props }: CalendarProps) {
   return (
@@ -75,11 +76,11 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
               "flex size-9 items-center justify-center rounded-full text-h6-1 text-fg-neutral-bold transition-colors hover:bg-bg-neutral-solid",
               modifiers.outside && "text-fg-neutral-subtle",
               modifiers.today &&
-                "bg-bg-brand-weak text-fg-brand-solid hover:bg-bg-brand-weak",
+                "bg-bg-neutral-inverse text-fg-neutral-inverse hover:bg-bg-neutral-inverse",
               modifiers.selected &&
                 "bg-bg-brand-solid text-fg-neutral-inverse hover:bg-bg-brand-solid",
               // 기간(range) 선택 — 시작·끝은 solid, 사이 날짜는 weak.
-              // 셀 사이에 여백이 있어 막대로 잇지 않고 today와 같은 톤의 원형으로 표시한다
+              // 셀 사이에 여백이 있어 막대로 잇지 않고 연한 브랜드 톤의 원형으로 표시한다
               modifiers.range_middle &&
                 "bg-bg-brand-weak text-fg-brand-solid hover:bg-bg-brand-weak",
               modifiers.disabled && "opacity-40 hover:bg-transparent",
