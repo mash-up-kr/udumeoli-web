@@ -133,7 +133,7 @@ const DETAIL_STICKER_Z_INDEX = 30
 const DETAIL_ACTION_Z_INDEX = 40
 const DETAIL_TOOLTIP_Z_INDEX = 50
 const CATEGORY_PIN_BADGE =
-  "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
+  "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h8-1 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const CATEGORY_PIN_COUNT_BADGE =
   "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
@@ -442,7 +442,7 @@ const RegionAddMarkers = React.memo(function RegionAddMarkerLayer({
             <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
               <img src={iconAddSrc} alt="" className="size-5" />
             </span>
-            <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+            <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
               {formatRegionName(name)}
             </span>
           </div>
@@ -481,7 +481,7 @@ const CollaborationProgressMarkers = React.memo(
                   <img src={iconAddSrc} alt="" className="size-5" />
                 )}
               </span>
-              <span className="text-h9 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
+              <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
               {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
