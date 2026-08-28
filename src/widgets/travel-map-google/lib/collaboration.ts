@@ -226,8 +226,9 @@ const STICKER_VISIT_LIMIT = 2
 /**
  * 키워드 스티커를 붙일 여행 — "한 지역 내 두 번째 여행까지, 세 번째 여행부터는 노출 X".
  *
- * 회차는 **지역 전체 여행** 기준으로 세고(내가 안 낀 여행도 회차를 차지한다),
- * 그중 내가 기록한 여행에만 이모지가 붙는다 (#5 "내가 기록 안 했을 경우 이모지 & 색상 노출 안 함").
+ * 회차는 **지역 전체 여행** 기준으로 센다. 스티커는 팟 전체 여행에 붙는다 —
+ * 지도 집계 API(#123) 이후 색칠·1단계 아이콘이 팟 전체 기준이라, 내 기록 여부로
+ * 거르면 초대로 합류한 팟에서 색칠만 되고 2·3단계 아이콘이 사라진다.
  * trips는 최신순이라 회차를 세려면 오래된 순으로 뒤집는다.
  */
 export function visibleStickerTrips(
@@ -239,7 +240,7 @@ export function visibleStickerTrips(
   for (const trip of [...trips].reverse()) {
     const nth = (visitCounts.get(trip.region) ?? 0) + 1
     visitCounts.set(trip.region, nth)
-    if (nth > STICKER_VISIT_LIMIT || !trip.hasMine) continue
+    if (nth > STICKER_VISIT_LIMIT) continue
     visible.push(trip)
   }
 

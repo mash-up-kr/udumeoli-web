@@ -115,7 +115,7 @@ describe("visibleStickerTrips", () => {
     ])
   })
 
-  it("회차는 지역 전체 여행 기준 — 내가 안 낀 여행도 회차를 차지한다", () => {
+  it("회차는 지역 전체 여행 기준 — 팟원만 기록한 여행도 회차를 차지하고 노출된다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         // 1차: 내가 기록 / 2차: 팟원만 / 3차: 내가 기록 → 3차는 회차 초과라 제외
@@ -135,10 +135,11 @@ describe("visibleStickerTrips", () => {
 
     expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
       "강릉시|2026-07-01|2026-07-01",
+      "강릉시|2026-08-01|2026-08-01",
     ])
   })
 
-  it("내가 아직 기록하지 않은 여행은 스티커 노출 대상에서 제외한다", () => {
+  it("내가 기록하지 않은 팟원 여행에도 스티커를 노출한다 — 색칠(팟 전체 기준)과 일치", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("mine", "강릉시", "2026-08-01", "user-1", {
@@ -154,6 +155,7 @@ describe("visibleStickerTrips", () => {
 
     expect(visibleStickerTrips(trips).map((trip) => trip.region)).toEqual([
       "강릉시",
+      "동해시",
     ])
   })
 })
