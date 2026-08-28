@@ -4,6 +4,7 @@ import { overlay } from "overlay-kit"
 import { ChevronRight, Ellipsis, Trash2, XIcon } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
+import { Input } from "@/shared/ui/input"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { Profile } from "@/shared/ui/profile"
@@ -41,8 +42,11 @@ export interface PhotoViewerOptions {
   photos: Array<PhotoViewerItem>
   /** 처음 보여줄 사진 id (기본: 첫 장) */
   initialId?: string
-  /** 더보기 > 수정하기 — 미지정 시 준비 중 안내 토스트 */
-  onEdit?: (photo: PhotoViewerItem) => void
+  /** 더보기 > 수정하기로 코멘트 저장 시 호출 — resolve되면 완료 토스트 + 말풍선 갱신. 미지정 시 준비 중 안내 토스트 */
+  onEditComment?: (
+    photo: PhotoViewerItem,
+    comment: string
+  ) => Promise<void> | void
   /** 삭제 확정 시 호출 — resolve되면 완료 토스트 후 뷰어를 닫는다 */
   onDelete?: (photo: PhotoViewerItem) => Promise<void> | void
 }
@@ -105,6 +109,72 @@ function confirmDeletePhoto(): Promise<boolean> {
   ))
 }
 
+/** 코멘트 수정 팝업 — 저장=새 코멘트, 취소·X·바깥클릭=null */
+function EditCommentDialog({
+  initial,
+  close,
+  unmount,
+}: {
+  initial: string
+  close: (result: string | null) => void
+  unmount: () => void
+}) {
+  const [value, setValue] = React.useState(initial)
+  return (
+    <DialogContent
+      showCloseButton={false}
+      onCloseAutoFocus={() => unmount()}
+      className="w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
+    >
+      <button
+        type="button"
+        aria-label="닫기"
+        onClick={() => close(null)}
+        className="absolute top-4 right-4 flex size-7 items-center justify-center text-fg-neutral-bold"
+      >
+        <XIcon className="size-5" />
+      </button>
+      <DialogHeader className="items-center gap-1 py-2 pt-4 text-center">
+        <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+          코멘트 수정하기
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          사진 한 줄 설명을 수정합니다.
+        </DialogDescription>
+      </DialogHeader>
+      {/* 업로드 스텝(PhotoStep)과 동일 스펙 — 40자, 같은 placeholder */}
+      <Input
+        value={value}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setValue(e.target.value)
+        }
+        placeholder="사진 한 줄 설명을 적고 친구와 공유해요"
+        maxLength={40}
+      />
+      <DialogFooter className="gap-3">
+        <ButtonCta
+          variant="secondary"
+          className="w-25 shrink-0"
+          onClick={() => close(null)}
+        >
+          취소
+        </ButtonCta>
+        <ButtonCta className="flex-1" onClick={() => close(value)}>
+          저장
+        </ButtonCta>
+      </DialogFooter>
+    </DialogContent>
+  )
+}
+
+function promptEditComment(initial: string): Promise<string | null> {
+  return overlay.openAsync<string | null>(({ isOpen, close, unmount }) => (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && close(null)}>
+      <EditCommentDialog initial={initial} close={close} unmount={unmount} />
+    </Dialog>
+  ))
+}
+
 /** 닉네임 뱃지 — 흰 pill에 프로필 + 닉네임 (+ 본인이면 ME!) (Figma case 01 · 3번) */
 function UploaderChip({ uploader }: { uploader: PhotoViewerUploader }) {
   return (
@@ -157,7 +227,7 @@ function PhotoViewerContent({
   /** 닫힘 애니메이션 종료 후 오버레이 정리 */
   unmount: () => void
 }) {
-  const { photos, initialId, onEdit, onDelete } = options
+  const { photos, initialId, onEditComment, onDelete } = options
   const initialIndex = Math.max(
     0,
     photos.findIndex((p) => p.id === initialId)
@@ -165,6 +235,10 @@ function PhotoViewerContent({
   const [index, setIndex] = React.useState(initialIndex)
   const [uiHidden, setUiHidden] = React.useState(false)
   const [menuOpen, setMenuOpen] = React.useState(false)
+  // 뷰어 열림 중 수정된 코멘트 (photoId → comment) — photos는 열 때 스냅샷이라 여기서 덧씌운다
+  const [editedComments, setEditedComments] = React.useState<
+    Record<string, string | undefined>
+  >({})
   const [failed, setFailed] = React.useState(false)
   const [retrySeq, setRetrySeq] = React.useState(0)
   // 렌더된 사진의 상/하단 y(px) — 뱃지·말풍선을 사진 가장자리에 붙이기 위한 측정값
@@ -180,6 +254,7 @@ function PhotoViewerContent({
 
   const photo = photos[index]
   const isMine = photo.uploader?.isMe ?? false
+  const comment = editedComments[photo.id] ?? photo.comment ?? ""
 
   // object-contain으로 렌더된 사진의 실제 상/하단 위치 계산 (letterbox ↔ full-bleed 대응)
   const measure = React.useCallback(() => {
@@ -234,14 +309,22 @@ function PhotoViewerContent({
     setUiHidden((v) => !v)
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     setMenuOpen(false)
-    if (onEdit) {
-      onEdit(photo)
+    if (!onEditComment) {
+      showToast({ message: "준비 중인 기능이에요" })
       return
     }
-    // TODO: 수정 화면(여행 기록) 미구현 — 연결되면 onEdit으로 이동 후 완료 토스트("수정이 완료됐어요.") 노출
-    showToast({ message: "준비 중인 기능이에요" })
+    const next = await promptEditComment(comment)
+    if (next === null) return
+    try {
+      await onEditComment(photo, next)
+    } catch {
+      showToast({ message: "수정에 실패했어요", icon: "alert" })
+      return
+    }
+    setEditedComments((prev) => ({ ...prev, [photo.id]: next }))
+    showToast({ message: "수정이 완료됐어요.", icon: "check" })
   }
 
   const handleDelete = async () => {
@@ -342,7 +425,7 @@ function PhotoViewerContent({
       ) : null}
 
       {/* 코멘트 말풍선 — 사진 아래 16px, 사진이 화면을 채우면 하단 136px 고정 */}
-      {photo.comment && imageBox && !failed ? (
+      {comment && imageBox && !failed ? (
         <div
           className={cn(
             "pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 transition-opacity",
@@ -352,7 +435,7 @@ function PhotoViewerContent({
             top: `min(${imageBox.bottom + 16}px, calc(100% - ${TOOLTIP_BOTTOM_FIXED + 32}px - env(safe-area-inset-bottom)))`,
           }}
         >
-          <CommentBubble comment={photo.comment} />
+          <CommentBubble comment={comment} />
         </div>
       ) : null}
 

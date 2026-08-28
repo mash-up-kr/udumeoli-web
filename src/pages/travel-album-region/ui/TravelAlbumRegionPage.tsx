@@ -24,6 +24,7 @@ import {
   useDeletePhoto,
   usePhotos,
   useRegionAlbumPhotos,
+  useUpdatePhotoComment,
 } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -43,6 +44,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
   const trips = React.useMemo(() => groupTrips(regionPhotos), [regionPhotos])
   const deletePhotoMutation = useDeletePhoto()
+  const updateCommentMutation = useUpdatePhotoComment()
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
   // 업로드 진행 중인 방문 key — 해당 카드의 내 빈 타일이 스켈레톤으로 전환
@@ -143,6 +145,14 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         }
       }),
       initialId: photo.id,
+      onEditComment: async (target, comment) => {
+        const targetPhoto = regionPhotos.find((p) => p.id === target.id)
+        if (targetPhoto)
+          await updateCommentMutation.mutateAsync({
+            photo: targetPhoto,
+            comment,
+          })
+      },
       onDelete: async (target) => {
         const targetPhoto = regionPhotos.find((p) => p.id === target.id)
         if (targetPhoto) await deletePhotoMutation.mutateAsync(targetPhoto)
