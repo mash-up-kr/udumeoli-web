@@ -1639,6 +1639,18 @@ function TravelMapGoogleInner({
   const handleRegionAction = React.useCallback(
     (name: string, applyZoomGate: boolean) => {
       const latestTrip = latestTripsByRegionRef.current.get(name)
+      // 폴리곤 클릭(applyZoomGate)은 [+] 마커가 보이는 지역에서만 동작 —
+      // 마커 노출 조건과 클릭 가능 조건을 한 함수로 일치시킨다
+      if (
+        applyZoomGate &&
+        !canShowAvailableRegionMarker({
+          zoomStage: zoomStageRef.current,
+          hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
+          region: name,
+        })
+      ) {
+        return
+      }
       const action = resolveRegionAction({
         latestTrip,
         zoomStage: zoomStageRef.current,
@@ -1668,6 +1680,12 @@ function TravelMapGoogleInner({
 
   const handleFeatureClick = React.useCallback(
     (name: string) => handleRegionAction(name, true),
+    [handleRegionAction]
+  )
+
+  // 협업 마커는 3단계에서만 렌더되는 명시적 클릭 대상이라 폴리곤용 [+] 게이트를 타지 않는다
+  const handleCollaborationMarkerClick = React.useCallback(
+    (name: string) => handleRegionAction(name, false),
     [handleRegionAction]
   )
 
@@ -1824,7 +1842,7 @@ function TravelMapGoogleInner({
 
         <CollaborationProgressMarkers
           markers={collaborationMarkers}
-          onRegionClick={handleFeatureClick}
+          onRegionClick={handleCollaborationMarkerClick}
         />
 
         {/* 0단계(국가) — 전국 대표 키워드 핀 + 여행 횟수 뱃지 */}
