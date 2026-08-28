@@ -23,6 +23,8 @@ export function DateStep({
         onSelect={(date) =>
           onRangeChange(date ? { from: date, to: undefined } : undefined)
         }
+        // 다녀온 날짜 기록이라 미래 날짜는 선택 불가
+        disabled={{ after: new Date() }}
         classNames={{ root: "travel-record-calendar w-full" }}
       />
     )
@@ -33,6 +35,8 @@ export function DateStep({
       mode="range"
       selected={range}
       onSelect={onRangeChange}
+      // 다녀온 날짜 기록이라 미래 날짜는 선택 불가
+      disabled={{ after: new Date() }}
       classNames={{ root: "travel-record-calendar w-full" }}
     />
   )

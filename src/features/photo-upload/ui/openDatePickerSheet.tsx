@@ -22,6 +22,8 @@ function DatePickerSheet({
         mode="single"
         selected={selected}
         onSelect={setSelected}
+        // 다녀온 날짜라 미래 날짜는 선택 불가
+        disabled={{ after: new Date() }}
         classNames={{ root: "w-full" }}
       />
       <ButtonCta
