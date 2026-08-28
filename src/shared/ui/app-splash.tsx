@@ -14,7 +14,14 @@ import skyBackgroundSrc from "@/shared/assets/sky-background.png"
  *
  * 랜딩(LandingPage)은 children으로 CTA를 얹어 같은 화면을 공유한다.
  */
-export function AppSplash({ children }: { children?: ReactNode }) {
+export function AppSplash({
+  children,
+  onMotionEnd,
+}: {
+  children?: ReactNode
+  /** 스플래시 영상 재생 완료(또는 로드 실패) 시 호출 — 랜딩이 CTA 노출 시점으로 쓴다 */
+  onMotionEnd?: () => void
+}) {
   return (
     <MobileLayout className="relative flex h-dvh flex-col items-center justify-center overflow-hidden bg-bg-neutral-subtle">
       <video
@@ -26,6 +33,8 @@ export function AppSplash({ children }: { children?: ReactNode }) {
         preload="auto"
         aria-hidden="true"
         className="absolute inset-0 size-full object-cover"
+        onEnded={onMotionEnd}
+        onError={onMotionEnd}
       />
       {children}
     </MobileLayout>

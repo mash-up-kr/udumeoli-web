@@ -1,3 +1,4 @@
+import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
 import { AppSplash } from "@/shared/ui/app-splash"
@@ -11,11 +12,26 @@ import iconKakaoSrc from "@/shared/assets/icon-kakao.svg"
  */
 export function LandingPage() {
   const router = useRouter()
+  const [splashDone, setSplashDone] = React.useState(false)
+  const finishSplash = () => setSplashDone(true)
+
+  // 저전력 모드 등 autoplay 차단 환경에선 ended가 안 와 CTA가 영영 안 뜬다 — 타임아웃 폴백 (영상 4초)
+  React.useEffect(() => {
+    const id = window.setTimeout(finishSplash, 5000)
+    return () => window.clearTimeout(id)
+  }, [])
+
   return (
     <RedirectIfAuthed>
-      <AppSplash>
-        {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위 */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
+      <AppSplash onMotionEnd={finishSplash}>
+        {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위. 스플래시 모션 종료 후 페이드인 */}
+        <div
+          className={
+            splashDone
+              ? "absolute inset-x-0 bottom-0 animate-in px-4 pb-[max(env(safe-area-inset-bottom),34px)] duration-300 fade-in-0"
+              : "hidden"
+          }
+        >
           {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
           <ButtonCta
             className="gap-2 bg-[#FDE500] text-[#3C1E1E]"
