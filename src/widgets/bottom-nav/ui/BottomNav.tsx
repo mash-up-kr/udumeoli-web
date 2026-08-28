@@ -33,15 +33,15 @@ function BottomNav({
       {...props}
     >
       <div className="flex items-center justify-between rounded-full border border-stroke-neutral-inverse bg-neutral-900 px-[21px] py-[13px]">
-        {/* 지도 시안 기준 여행 앨범 white/30 · 마이페이지 white/60 — 토큰에 없는 white alpha라 하드코딩.
-            앨범 페이지(1846-3645)에선 활성 탭 흰색 · 비활성 fg-neutral-subtle */}
+        {/* 새 시안(2897-19246) 기준 두 탭 모두 fg-neutral-subtle(#8e96a9)로 동일.
+            앨범 페이지(1846-3645)에선 활성 탭만 흰색 */}
         <button
           type="button"
           onClick={onAlbumClick}
           disabled={albumDisabled}
           className={cn(
             "flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px]",
-            active === "album" ? "text-white" : "text-white/30",
+            active === "album" ? "text-white" : "text-fg-neutral-subtle",
             albumDisabled && "cursor-default"
           )}
           aria-current={active === "album" ? "page" : undefined}
@@ -65,10 +65,7 @@ function BottomNav({
         <button
           type="button"
           onClick={onMyPageClick}
-          className={cn(
-            "flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px]",
-            active === "album" ? "text-fg-neutral-subtle" : "text-white/60"
-          )}
+          className="flex h-[49px] w-[84px] flex-col items-center justify-between py-[5px] text-fg-neutral-subtle"
         >
           {/* 마이페이지 아이콘 (시안 2897-19253 icon-person) — 활성/비활성 색을 따라가도록 currentColor */}
           <svg
