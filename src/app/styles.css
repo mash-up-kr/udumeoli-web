@@ -497,6 +497,11 @@
   html {
     @apply font-sans;
     }
+  /* Google Maps 컨테이너(.gm-style)가 Roboto를 지정해 마커 콘텐츠가 앱 폰트를
+     상속받지 못한다 — AdvancedMarker 전체를 Pretendard로 되돌린다 */
+  gmp-advanced-marker {
+    font-family: var(--font-sans);
+    }
 }
 
 @layer utilities {
