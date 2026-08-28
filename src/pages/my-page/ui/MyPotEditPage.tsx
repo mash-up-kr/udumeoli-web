@@ -213,9 +213,9 @@ function MyPotEditContent({ potId }: { potId: string }) {
 
     try {
       // title을 넣으면 카톡 등에서 "제목 - 본문"으로 이어 붙여 팟 이름이 중복 노출된다
+      // url을 따로 주면 공유 대상이 문구와 링크를 공백으로 이어 붙인다 — 줄바꿈을 위해 text에 포함
       await navigator.share({
-        text: `${pot.name} 여행팟에 초대합니다.`,
-        url: link,
+        text: `${pot.name} 여행팟에 초대합니다.\n${link}`,
       })
     } catch {
       // 사용자가 OS 공유 시트를 닫은 경우
