@@ -1780,7 +1780,8 @@ function TravelMapGoogleInner({
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
     if (zoomStage < 2 || decorating) return EMPTY_TRIP_PIN_MARKERS
-    const staged = zoomStage >= 3 ? visiblePins : cityStagePins(visiblePins)
+    // 2.5단계도 3단계처럼 오프셋 스티커로 — 핀을 centroid에 두면 [+] 마커와 겹친다 (QA)
+    const staged = zoomStage >= 2.5 ? visiblePins : cityStagePins(visiblePins)
     // 화면(+버퍼) 밖 여행은 AdvancedMarker DOM 자체를 만들지 않는다.
     // 좌표는 지역 centroid, 없으면 대표 사진 좌표(baseLat/baseLng) 기준
     if (!viewportBox) return EMPTY_TRIP_PIN_MARKERS
@@ -1788,7 +1789,7 @@ function TravelMapGoogleInner({
       isInsideBox(viewportBox, { lat: pin.baseLat, lng: pin.baseLng })
     )
   }, [decorating, viewportBox, visiblePins, zoomStage])
-  const showStickerOnlyPins = zoomStage >= 3
+  const showStickerOnlyPins = zoomStage >= 2.5
 
   const collaborationMarkers = React.useMemo<
     Array<CollaborationProgressMarker>
@@ -1924,7 +1925,7 @@ function TravelMapGoogleInner({
           </AdvancedMarker>
         ) : null}
 
-        {/* 시/군별 기록 마커는 2단계부터 핀 유지, 3단계부터 64px 스티커로 전환 */}
+        {/* 시/군별 기록 마커는 2단계부터 핀 유지, 2.5단계부터 64px 스티커로 전환 */}
         <TripStickerMarkers
           pins={visibleTripPins}
           stickerOnly={showStickerOnlyPins}
