@@ -104,7 +104,7 @@ export function NumberCode({
           onKeyDown={readOnly ? undefined : (e) => handleKeyDown(i, e)}
           onPaste={readOnly ? undefined : handlePaste}
           className={cn(
-            "h-[60px] w-full min-w-0 rounded-[12px] border border-stroke-neutral-weak bg-bg-neutral-subtle",
+            "h-[60px] w-full min-w-0 rounded-[12px] border border-stroke-neutral-subtle bg-bg-neutral-subtle",
             "text-center text-b2 text-fg-neutral-bold caret-transparent",
             "outline-none focus:border-stroke-neutral-bold",
             error &&
