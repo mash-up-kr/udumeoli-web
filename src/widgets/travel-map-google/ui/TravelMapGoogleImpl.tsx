@@ -476,13 +476,13 @@ const CollaborationProgressMarkers = React.memo(
             onClick={() => onRegionClick(name)}
           >
             <div className={MARKER_CONTENT}>
-              <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
-                {trip.hasMine ? (
+              {/* 연필은 "남은 등록했는데 나는 아직"일 때만 — 내가 등록한 지역은
+                  스티커와 겹치지 않게 아이콘 없이 카운터만 보여준다 (QA) */}
+              {!trip.hasMine ? (
+                <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
                   <PenLine className="size-4 text-fg-neutral-bold" />
-                ) : (
-                  <img src={iconAddSrc} alt="" className="size-5" />
-                )}
-              </span>
+                </span>
+              ) : null}
               <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
