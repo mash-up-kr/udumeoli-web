@@ -740,6 +740,8 @@ export type TravelMapImplProps = {
   onZoomStageChange?: (stage: ZoomStage) => void
   /** 값이 증가할 때마다 현재 중심을 유지한 채 3단계(상세) 줌으로 카메라 이동 — 줌인 가이드 클릭용 */
   zoomToDetailSignal?: number
+  /** 값이 증가할 때마다 한국 전체 뷰(KOREA_VIEW)로 카메라 이동 — 하단 내비 지구본 클릭용 */
+  recenterKoreaSignal?: number
   /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
   onTilesLoaded?: () => void
   /** 지역 폴리곤까지 다 그려진 시점 — 래퍼가 로딩 스켈레톤을 내리는 신호 */
@@ -1124,6 +1126,7 @@ function TravelMapGoogleInner({
   onRegionDetailChange,
   onZoomStageChange,
   zoomToDetailSignal,
+  recenterKoreaSignal,
   onTilesLoaded,
   onReady,
 }: TravelMapImplProps) {
@@ -1529,6 +1532,12 @@ function TravelMapGoogleInner({
       600
     )
   }, [runCameraMove, zoomToDetailSignal])
+
+  // 지구본 내비 클릭 — 지도를 다른 곳(외국 포함)으로 옮겨놨어도 한국 전체 뷰로 복귀
+  React.useEffect(() => {
+    if (!recenterKoreaSignal) return
+    runCameraMove(KOREA_VIEW, 600)
+  }, [recenterKoreaSignal, runCameraMove])
 
   // 팟 단위 1회 노출 — 온보딩 직후 첫 진입은 물론, 지도가 떠 있는 채로 새 팟에
   // 참여(currentPotId 변경)했을 때도 안내가 다시 뜬다. ref는 StrictMode 중복 실행 가드.

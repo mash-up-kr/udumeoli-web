@@ -85,6 +85,7 @@ function MapGooglePageContent() {
   const photoCount = useAllPhotos(currentPotId).length
   const [zoomGuideSeen, setZoomGuideSeen] = React.useState(hasSeenZoomGuide)
   const [zoomToDetailSignal, setZoomToDetailSignal] = React.useState(0)
+  const [recenterKoreaSignal, setRecenterKoreaSignal] = React.useState(0)
   React.useEffect(() => {
     if (zoomGuideSeen || mapZoomStage < 3) return
     markZoomGuideSeen()
@@ -108,6 +109,7 @@ function MapGooglePageContent() {
           onRegionDetailChange={setDetailRegion}
           onZoomStageChange={setMapZoomStage}
           zoomToDetailSignal={zoomToDetailSignal}
+          recenterKoreaSignal={recenterKoreaSignal}
         />
 
         {showMapChrome ? (
@@ -149,6 +151,7 @@ function MapGooglePageContent() {
                   albumDisabled={!canOpenAlbum}
                   onAlbumClick={openAlbum}
                   onMyPageClick={() => router.navigate({ to: "/my-page" })}
+                  onGlobeClick={() => setRecenterKoreaSignal((n) => n + 1)}
                 />
               </div>
             ) : null}
