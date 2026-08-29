@@ -9,27 +9,10 @@ import { Calendar } from "@/shared/ui/calendar"
 export function DateStep({
   range,
   onRangeChange,
-  revisit = false,
 }: {
   range: DateRange | undefined
   onRangeChange: (range: DateRange | undefined) => void
-  revisit?: boolean
 }) {
-  if (revisit) {
-    return (
-      <Calendar
-        mode="single"
-        selected={range?.from}
-        onSelect={(date) =>
-          onRangeChange(date ? { from: date, to: undefined } : undefined)
-        }
-        // 다녀온 날짜 기록이라 미래 날짜는 선택 불가
-        disabled={{ after: new Date() }}
-        classNames={{ root: "travel-record-calendar w-full" }}
-      />
-    )
-  }
-
   return (
     <Calendar
       mode="range"

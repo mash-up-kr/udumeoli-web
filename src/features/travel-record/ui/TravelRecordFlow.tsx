@@ -280,12 +280,7 @@ export function TravelRecordFlow({
           {visitLabel(nth, regionName)}
         </span>
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
-          {/* 첫 방문은 "기간", 재방문은 "날짜" (Figma 1836-15777 / 1836-15756) */}
-          {step === "date"
-            ? revisit
-              ? "다녀온 날짜를\n선택해 주세요"
-              : "다녀온 기간을\n선택해 주세요"
-            : null}
+          {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
           {step === "photo" && keyword ? (
             <>
@@ -320,11 +315,7 @@ export function TravelRecordFlow({
           )}
         >
           {step === "date" && !isCollaboration ? (
-            <DateStep
-              range={range}
-              onRangeChange={handleRangeChange}
-              revisit={revisit}
-            />
+            <DateStep range={range} onRangeChange={handleRangeChange} />
           ) : null}
 
           {step === "keyword" && !isCollaboration ? (
