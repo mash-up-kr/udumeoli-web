@@ -239,11 +239,12 @@ export function SignupPage() {
         let profileImageValue: number
         if (customFile) {
           // 커스텀 이미지: presigned URL 발급 → PUT 업로드 → imageId를 가입에 사용
-          const { imageId, uploadUrl } = await requestSignupImageUpload({
-            signupToken,
-            contentType: customFile.type,
-          })
-          await uploadImage(uploadUrl, customFile)
+          const { imageId, uploadUrl, encryptionHeaders } =
+            await requestSignupImageUpload({
+              signupToken,
+              contentType: customFile.type,
+            })
+          await uploadImage(uploadUrl, customFile, encryptionHeaders)
           profileImageValue = imageId
         } else {
           profileImageValue = (selectedAvatar ?? 0) + 1 // 프리셋 1~4
