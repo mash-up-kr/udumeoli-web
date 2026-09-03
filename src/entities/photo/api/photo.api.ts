@@ -284,15 +284,18 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     CREATE_IMAGE_UPLOAD_URL_MUTATION,
     { input: { contentType } }
   )
-  const { imageId, uploadUrl } = target.createImageUploadUrl
+  const { imageId, uploadUrl, encryptionHeaders } = target.createImageUploadUrl
 
-  // presigned URL은 발급 시 서명된 content-type 헤더를 그대로 요구한다.
-  // 응답의 encryptionHeaders(SSE-C)를 실으면 이미지별 DEK로 암호화 저장되지만,
-  // BE의 복호화 서빙(Go 서버 서명 URL) 미배포 상태라 암호화된 원본을 <img>가
-  // 못 읽어 앨범 사진이 깨진다 — 조회 경로 배포 후 헤더 spread를 복구할 것
+  // presigned URL은 발급 시 서명된 헤더(content-type + SSE-C encryptionHeaders)를
+  // 그대로 요구한다 — 헤더를 빼면 서명 불일치로 업로드 자체가 거부된다.
+  // 단, 암호화 저장된 원본은 BE 복호화 서빙(Go 서버 서명 URL) 배포 전까지
+  // <img>가 못 읽어 앨범에서 깨진다 — 조회 경로는 BE 배포 대기 중
   const uploaded = await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "Content-Type": contentType },
+    headers: {
+      "Content-Type": contentType,
+      ...Object.fromEntries(encryptionHeaders.map((h) => [h.key, h.value])),
+    },
     body: file,
   })
   if (!uploaded.ok) {

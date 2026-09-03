@@ -239,13 +239,13 @@ export function SignupPage() {
         let profileImageValue: number
         if (customFile) {
           // 커스텀 이미지: presigned URL 발급 → PUT 업로드 → imageId를 가입에 사용.
-          // 응답의 encryptionHeaders는 BE 복호화 서빙 배포 전까지 싣지 않는다
-          // (암호화 저장 시 <img>가 원본을 못 읽음 — photo.api.ts 동일 사유)
-          const { imageId, uploadUrl } = await requestSignupImageUpload({
-            signupToken,
-            contentType: customFile.type,
-          })
-          await uploadImage(uploadUrl, customFile)
+          // encryptionHeaders가 서명에 포함돼 내려오면 빼고 보낼 수 없다 (photo.api.ts 동일 사유)
+          const { imageId, uploadUrl, encryptionHeaders } =
+            await requestSignupImageUpload({
+              signupToken,
+              contentType: customFile.type,
+            })
+          await uploadImage(uploadUrl, customFile, encryptionHeaders)
           profileImageValue = imageId
         } else {
           profileImageValue = (selectedAvatar ?? 0) + 1 // 프리셋 1~4
