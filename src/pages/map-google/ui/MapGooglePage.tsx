@@ -79,7 +79,8 @@ function MapGooglePageContent() {
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
   const [mapZoomStage, setMapZoomStage] = React.useState<ZoomStage>(0)
   const showMapChrome = !decorating && detailRegion === null
-  const showPersistentMapActions = showMapChrome && mapZoomStage < 3
+  // 2.5단계(인기지역 [+] 선노출)부터 상세 취급 — 상단이 뒤로가기로 바뀐다
+  const showPersistentMapActions = showMapChrome && mapZoomStage < 2.5
 
   // 줌인 가이드(시안 2822-8047) — 사진 0장 && 줌 3단계 미만일 때만 노출,
   // 한 번이라도 3단계까지 줌인하면 localStorage 플래그로 영구 종료
@@ -138,7 +139,7 @@ function MapGooglePageContent() {
                   </div>
                 </>
               ) : (
-                // 3단계(상세)에서는 로고/팟 선택 대신 뒤로가기만 — 클릭 시 2단계로 줌아웃.
+                // 2.5단계 이상(상세)에서는 로고/팟 선택 대신 뒤로가기만 — 클릭 시 2단계로 줌아웃.
                 // h-[84px]: AppHeader(py-3 + 60px 로고 행)와 같은 높이라 전환 시 버튼 위치가 안 튄다
                 <div className="flex h-[84px] items-center px-4">
                   <ButtonIcon

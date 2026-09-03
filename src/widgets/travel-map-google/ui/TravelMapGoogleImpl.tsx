@@ -742,7 +742,7 @@ export type TravelMapImplProps = {
   zoomToDetailSignal?: number
   /** 값이 증가할 때마다 한국 전체 뷰(KOREA_VIEW)로 카메라 이동 — 하단 내비 지구본 클릭용 */
   recenterKoreaSignal?: number
-  /** 값이 증가할 때마다 현재 중심을 유지한 채 2단계(시 단위) 줌으로 줌아웃 — 3단계 상단 뒤로가기 클릭용 */
+  /** 값이 증가할 때마다 현재 중심을 유지한 채 2단계(시 단위) 줌으로 줌아웃 — 2.5단계 이상 상단 뒤로가기 클릭용 */
   zoomOutToCitySignal?: number
   /** Google 기본 지도 타일이 현재 카메라 영역까지 준비된 시점 */
   onTilesLoaded?: () => void
