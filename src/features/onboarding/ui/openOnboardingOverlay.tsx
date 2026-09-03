@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { overlay } from "overlay-kit"
 import { ArrowLeft } from "lucide-react"
 
@@ -196,6 +196,28 @@ function OnboardingOverlay({
   const [closing, setClosing] = useState(false)
   const { title, subtitle } = STEP_CONTENT[step - 1]
   const Graphic = STEP_GRAPHICS[step - 1]
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+
+  const goNext = () => {
+    if (step === 3) void finish()
+    else setStep((step + 1) as Step)
+  }
+
+  // 모바일 사용자가 "다음" 버튼 대신 좌우 스와이프로 넘기려는 행동 대응 —
+  // 버튼은 그대로 두고 스와이프를 추가 입력으로 받는다
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart.current === null || closing) return
+    const dx = e.changedTouches[0].clientX - touchStart.current.x
+    const dy = e.changedTouches[0].clientY - touchStart.current.y
+    touchStart.current = null
+    // 세로 스크롤·탭과 구분: 가로 이동이 우세하고 48px 이상일 때만 스와이프로 인정
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return
+    if (dx < 0) goNext()
+    else if (step > 1) setStep((step - 1) as Step)
+  }
 
   const finish = async () => {
     // 이동이 끝난 뒤 페이드아웃 — 먼저 걷으면 아래 깔린 이전 화면이 잠깐 비치고,
@@ -237,7 +259,11 @@ function OnboardingOverlay({
 
       {/* 낮은 화면에서는 spacer(flex-1)가 먼저 줄고, 그래도 넘치면 스크롤로 대응.
           343px 그래픽이 더 좁은 화면에서 가로 스크롤을 만들지 않게 x는 잘라낸다 */}
-      <div className="relative flex h-full flex-col overflow-x-hidden overflow-y-auto">
+      <div
+        className="relative flex h-full flex-col overflow-x-hidden overflow-y-auto"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
         {step > 1 && (
           <ButtonIcon
@@ -294,11 +320,7 @@ function OnboardingOverlay({
 
         <div className="shrink-0 px-4 pt-10 pb-8">
           {/* 마지막 스텝도 시안대로 "다음" (Figma 2632-37688) */}
-          <ButtonCta
-            onClick={step === 3 ? finish : () => setStep((step + 1) as Step)}
-          >
-            다음
-          </ButtonCta>
+          <ButtonCta onClick={goNext}>다음</ButtonCta>
         </div>
       </div>
     </div>
@@ -308,7 +330,7 @@ function OnboardingOverlay({
 /**
  * 첫 진입 온보딩 (Figma 2632-37599 → 2632-37636 → 2632-37661) —
  * 회원가입 완료 팝업의 확인 클릭 시 1회만 노출되는 3단계 풀스크린 안내.
- * "다음"으로 진행, 스텝 2·3에선 뒤로가기 가능.
+ * "다음" 또는 왼쪽 스와이프로 진행, 스텝 2·3에선 뒤로가기·오른쪽 스와이프로 되돌아갈 수 있다.
  *
  * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
  * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
