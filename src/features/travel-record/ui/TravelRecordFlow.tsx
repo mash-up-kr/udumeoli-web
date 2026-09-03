@@ -282,16 +282,9 @@ export function TravelRecordFlow({
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
           {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
-          {step === "photo" && keyword ? (
-            <>
-              <span className="underline" style={{ color: keyword.mapColor }}>
-                {keyword.label}!투어
-              </span>
-              {" 대표 사진 1장을\n업로드 해주세요"}
-            </>
-          ) : null}
-          {step === "photo" && !keyword
-            ? "대표 사진 1장을\n업로드 해주세요"
+          {/* 키워드명은 아래 스티커 칩과 중복이라 뺐다 — 1장 제한의 이유가 드러나는 카피로 */}
+          {step === "photo"
+            ? "여행을 떠올릴 수 있는\n사진 1장을 남겨주세요"
             : null}
         </h2>
         {step === "keyword" ? (
