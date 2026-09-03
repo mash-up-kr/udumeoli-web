@@ -11,7 +11,6 @@ import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
-import { useAllPhotos } from "@/entities/photo"
 import {
   TicketCard,
   fetchPartyPreview,
@@ -41,19 +40,12 @@ const JOIN_CODE_MESSAGES: Record<string, string> = {
   RATE_LIMITED: "잠시 후 다시 시도해 주세요",
 }
 
-// 코드 입력 CTA(참여하기) 바로 위에 에러 토스트 노출 (시안 y기준 106px)
-const CODE_TOAST_POSITION = "bottom-[106px]"
+// 토스트 위치 규칙(2차 UT): 하단 고정 요소 상단에서 16px 위.
+// 코드 입력 화면 CTA(참여하기) 위 — CTA bottom 32(pb-8) + 높이 56 + 16
+const CODE_TOAST_POSITION = "bottom-[104px]"
 
-// 참여 완료 토스트는 지도 하단 캐러셀 위 16px (시안 #1048-5977: 34 + 카드 192 + 16)
-const MAP_TOAST_POSITION = "bottom-[242px]"
-
-// 캐러셀(image-card-pattern)이 없는 첫 참여 상태에서는 하단 62px (시안 9_토스트_여행팟참여완료)
-const MAP_TOAST_POSITION_EMPTY = "bottom-[62px]"
-
-// 이미 참여중 안내 토스트 — 지도 하단 nav·캐러셀과 겹치지 않게 상단 중앙(헤더 아래).
-// 토스트 기본 bottom-8을 해제해야 top이 적용된다
-const MAP_TOAST_POSITION_TOP =
-  "top-[calc(env(safe-area-inset-top)+72px)] bottom-auto"
+// 지도 진입 후 뜨는 토스트 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
+const MAP_TOAST_POSITION = "bottom-[126px]"
 
 interface JoinPreview {
   name: string
@@ -162,9 +154,6 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   const confirmJoin = usePotStore((s) => s.confirmJoin)
   const selectPot = usePotStore((s) => s.selectPot)
   const joinPartyMutation = useJoinParty()
-  // 사진이 하나도 없으면 지도 하단 캐러셀이 안 떠서 완료 토스트를 아래로 내림
-  const currentPotId = usePotStore((s) => s.currentPotId)
-  const hasRegionCards = useAllPhotos(currentPotId).length > 0
   const currentUser = useSessionStore((s) => s.currentUser)
   const [code, setCode] = React.useState(initialCode ?? "")
   // [정책 #3] 검증 실패 시 에러 테두리 + CTA 비활성 — 다시 입력하면 해제
@@ -206,7 +195,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     showToast({
       message: `${pot.name}에 참여했어요 (${memberCount}/${POT_CAPACITY})`,
       icon: "check",
-      className: hasRegionCards ? MAP_TOAST_POSITION : MAP_TOAST_POSITION_EMPTY,
+      className: MAP_TOAST_POSITION,
     })
   }
 
@@ -232,7 +221,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     showToast({
       message: "이미 참여중인 여행팟이에요",
       icon: "alert-neutral",
-      className: MAP_TOAST_POSITION_TOP,
+      className: MAP_TOAST_POSITION,
     })
   }
 

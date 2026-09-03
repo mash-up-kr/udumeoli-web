@@ -40,7 +40,8 @@ function CreatedStep({
     } catch {
       // clipboard 미지원 환경에서도 토스트는 노출
     }
-    showToast({ message: "초대코드를 복사했어요" })
+    // 최하단 CTA(홈으로, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+    showToast({ message: "초대코드를 복사했어요", className: "bottom-[104px]" })
   }
 
   return (

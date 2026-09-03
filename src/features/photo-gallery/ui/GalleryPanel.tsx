@@ -163,18 +163,19 @@ export function GalleryPanel({
       showToast({
         message: uploadErrorMessage(error),
         icon: "alert",
-        className: expanded ? undefined : "bottom-[256px]",
+        className: expanded ? undefined : "bottom-[260px]",
       })
       return
     } finally {
       setUploadingDate(null)
     }
     setPoppedDate(date)
-    // 지도 뷰에선 패널(하단 244px 노출) 위로, 리스트 뷰(풀스크린)에선 기본 하단 위치
+    // 지도 뷰에선 패널(하단 244px 노출) 상단 위 16px, 리스트 뷰(풀스크린)에선 기본 하단 위치
+    // — 토스트 위치 규칙(2차 UT)
     showToast({
       message: "업로드가 완료됐어요",
       icon: "check",
-      className: expanded ? undefined : "bottom-[256px]",
+      className: expanded ? undefined : "bottom-[260px]",
     })
   }
 

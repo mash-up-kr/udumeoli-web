@@ -272,6 +272,8 @@ export function SignupPage() {
                 ? "이미 가입된 계정이에요. 다시 로그인해 주세요."
                 : "가입 시간이 만료됐어요. 다시 로그인해 주세요.",
             icon: "alert",
+            // 랜딩(카카오 CTA bottom 34 + 높이 56) 위 16px
+            className: "bottom-[106px]",
           })
           void router.navigate({ to: "/", replace: true })
           return
@@ -279,6 +281,8 @@ export function SignupPage() {
         showToast({
           message: "회원가입에 실패했어요. 다시 시도해 주세요.",
           icon: "alert",
+          // 가입 CTA(bottom 32=pb-8 + 높이 56) 위 16px
+          className: "bottom-[104px]",
         })
         return
       } finally {

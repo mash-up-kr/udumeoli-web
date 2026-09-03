@@ -1692,7 +1692,8 @@ function TravelMapGoogleInner({
         showToast({
           message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
           icon: "alert",
-          className: "bottom-[106px]",
+          // 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
+          className: "bottom-[126px]",
         })
         return
       }

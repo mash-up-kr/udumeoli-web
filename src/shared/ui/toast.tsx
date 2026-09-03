@@ -10,7 +10,12 @@ export interface ToastOptions {
   /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료). 기본 없음. */
   icon?: ToastIcon
   duration?: number
-  /** 위치 등 컨테이너 오버라이드 (예: 시트 CTA 위 `bottom-[106px]`). */
+  /**
+   * 위치 오버라이드. 위치 규칙(2차 UT 정리):
+   * - Case 1(하단 고정 요소 없음): 기본값 그대로 — 화면 최하단에서 34px 위
+   * - Case 2(하단 고정 버튼·탭바 등): 해당 요소 상단에서 16px 위 —
+   *   `bottom-[요소 bottom + 요소 높이 + 16px]`로 지정 (예: CTA 위 `bottom-[106px]`)
+   */
   className?: string
 }
 
@@ -69,9 +74,11 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
     <div
       className={cn(
         // z-[60]: 모달/시트(z-50, body 끝 portal)가 열려 있어도 토스트가 항상 위에 보이도록
+        // — 앱 내 최고 z는 50이라 토스트가 어떤 컴포넌트에도 가려지지 않는다.
+        // bottom-[34px]: Case 1(하단 고정 요소 없음) 기본 위치. Case 2는 className으로 오버라이드.
         // inset-x-0 + flex 중앙 정렬: left-1/2 방식은 abspos shrink-to-fit 폭이 뷰포트
         // 절반으로 잡혀 긴 메시지가 절반 폭에서 잘린다. 클릭은 아래로 통과(pill은 표시 전용).
-        "pointer-events-none fixed inset-x-0 bottom-8 z-[60] flex justify-center px-4",
+        "pointer-events-none fixed inset-x-0 bottom-[34px] z-[60] flex justify-center px-4",
         className
       )}
     >
