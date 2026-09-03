@@ -13,6 +13,7 @@ import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import {
   TicketCard,
+  TicketPrintStage,
   fetchPartyPreview,
   takePendingInviteCode,
   useJoinParty,
@@ -86,66 +87,48 @@ function ConfirmStep({
           확인해 주세요
         </h1>
       </main>
-      {/* 티켓 — px 고정 대신 화면 높이 비율 배치 (시안 3065-13366, 812 기준 카드 상단 y≈231 → 28.5%).
-          기종이 달라도 항상 화면의 같은 비율 지점에 뜬다 */}
-      <div className="pointer-events-none absolute inset-x-0 top-[28.5%] flex justify-center">
-        <div className="relative">
-          {/* 출력창 — 슬롯 라인(상단 edge) 위를 잘라 티켓이 프린터에서 인쇄되듯 내려온다.
-              좌우/하단 패딩은 카드 그림자·기울기 몫 */}
-          <div className="overflow-hidden px-10 pb-14">
-            <div className="animate-ticket-print motion-reduce:animate-none">
-              {/* 기본 클래스가 최종 안착 상태(-3.71° + 14px) — 애니메이션이 실행 중에만 덮어쓴다 */}
-              <div className="translate-y-[14px] rotate-[-3.71deg] animate-ticket-settle motion-reduce:animate-none">
-                <TicketCard
-                  name={preview.name}
-                  // preview 응답에 리더 필드가 없다 — 서버가 owner를 먼저 내려주는 순서에 의존해 첫 멤버 표기
-                  leaderName={preview.members.at(0)?.nickname ?? "-"}
-                  // 내가 앉을 자리 = 현재 인원 + 1
-                  seatLabel={String(preview.memberCount + 1).padStart(2, "0")}
-                  // 기울임은 안착 애니메이션 래퍼가 담당 — 카드 자체는 정방향으로 인쇄
-                  className="pointer-events-auto rotate-none"
+      <TicketPrintStage>
+        <TicketCard
+          name={preview.name}
+          // preview 응답에 리더 필드가 없다 — 서버가 owner를 먼저 내려주는 순서에 의존해 첫 멤버 표기
+          leaderName={preview.members.at(0)?.nickname ?? "-"}
+          // 내가 앉을 자리 = 현재 인원 + 1
+          seatLabel={String(preview.memberCount + 1).padStart(2, "0")}
+          // 기울임은 안착 애니메이션 래퍼(TicketPrintStage)가 담당 — 카드는 정방향으로 인쇄
+          className="pointer-events-auto rotate-none"
+        >
+          <p className="sr-only">초대코드 {code}</p>
+          {/* 코드 6칸 축소판 — 생성 완료 티켓 셀의 0.588배 (시안 2588-38033) */}
+          <div aria-hidden="true" className="flex gap-[3.5px]">
+            {code
+              .slice(0, CODE_LENGTH)
+              .split("")
+              .map((char, i) => (
+                <span
+                  key={i}
+                  className="flex h-5 w-[16.5px] items-center justify-center rounded-[5px] border border-neutral-200 bg-neutral-100 font-eng text-[9px] leading-none text-neutral-900"
                 >
-                  <p className="sr-only">초대코드 {code}</p>
-                  {/* 코드 6칸 축소판 — 생성 완료 티켓 셀의 0.588배 (시안 2588-38033) */}
-                  <div aria-hidden="true" className="flex gap-[3.5px]">
-                    {code
-                      .slice(0, CODE_LENGTH)
-                      .split("")
-                      .map((char, i) => (
-                        <span
-                          key={i}
-                          className="flex h-5 w-[16.5px] items-center justify-center rounded-[5px] border border-neutral-200 bg-neutral-100 font-eng text-[9px] leading-none text-neutral-900"
-                        >
-                          {char}
-                        </span>
-                      ))}
-                  </div>
-                  <ul className="flex flex-wrap items-center gap-x-[9px] gap-y-px">
-                    {preview.members.map((member) => (
-                      <li key={member.id} className="flex items-center gap-1">
-                        <Profile
-                          size="xs"
-                          src={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
-                          alt=""
-                        />
-                        {/* 12px/20px SemiBold — 대응 타이포 토큰 부재로 시안 수치 직접 지정 */}
-                        <span className="text-[12px] leading-5 font-semibold tracking-[-0.1px] text-neutral-900">
-                          {member.nickname}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </TicketCard>
-              </div>
-            </div>
+                  {char}
+                </span>
+              ))}
           </div>
-          {/* 프린터 슬롯 바 — 출력창 상단(잘리는 라인)에 걸쳐 있다가 인쇄가 끝나면 사라진다 */}
-          <div
-            aria-hidden
-            className="absolute top-0 left-1/2 h-[14px] w-[351px] -translate-x-1/2 -translate-y-1/2 animate-ticket-slot rounded-full bg-neutral-800 opacity-0 motion-reduce:animate-none"
-          />
-        </div>
-      </div>
+          <ul className="flex flex-wrap items-center gap-x-[9px] gap-y-px">
+            {preview.members.map((member) => (
+              <li key={member.id} className="flex items-center gap-1">
+                <Profile
+                  size="xs"
+                  src={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
+                  alt=""
+                />
+                {/* 12px/20px SemiBold — 대응 타이포 토큰 부재로 시안 수치 직접 지정 */}
+                <span className="text-[12px] leading-5 font-semibold tracking-[-0.1px] text-neutral-900">
+                  {member.nickname}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </TicketCard>
+      </TicketPrintStage>
       <div className="flex w-full gap-[10px] px-4 pb-8">
         <ButtonCta
           variant="secondary"
