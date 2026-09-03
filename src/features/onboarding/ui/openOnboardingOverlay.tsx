@@ -1,6 +1,5 @@
 import { useRef, useState } from "react"
 import { overlay } from "overlay-kit"
-import { ArrowLeft } from "lucide-react"
 
 import phoneMapSrc from "../assets/phone-map.jpg"
 import photoAlleySrc from "../assets/photo-alley.jpg"
@@ -13,7 +12,6 @@ import stickerHealingSrc from "@/shared/assets/map-stickers/healing.png"
 import stickerPhotoSrc from "@/shared/assets/map-stickers/photo.png"
 import skyBackgroundSrc from "@/shared/assets/sky-background.png"
 import { cn } from "@/shared/lib/utils"
-import { ButtonIcon } from "@/shared/ui/button-icon"
 import { ButtonCta } from "@/shared/ui/button-cta"
 
 const SEEN_KEY = "photato-onboarding-seen"
@@ -265,17 +263,6 @@ function OnboardingOverlay({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* 뒤로가기 — 좌상단 고정, 스텝 2·3에서만 노출 (본문 세로 중앙 정렬에 영향 없도록 absolute) */}
-        {step > 1 && (
-          <ButtonIcon
-            aria-label="이전 단계로"
-            className="absolute top-2 left-4 z-10"
-            onClick={() => setStep((step - 1) as Step)}
-          >
-            <ArrowLeft />
-          </ButtonIcon>
-        )}
-
         {/* 타이틀·그래픽 — 하단 컨트롤 위 영역의 세로 중앙에 고정 */}
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
           {/* 스텝 전환 시 가볍게 페이드 인 (시안에 모션 명세 없음) */}
@@ -331,7 +318,7 @@ function OnboardingOverlay({
 /**
  * 첫 진입 온보딩 (Figma 2632-37599 → 2632-37636 → 2632-37661) —
  * 회원가입 완료 팝업의 확인 클릭 시 1회만 노출되는 3단계 풀스크린 안내.
- * "다음" 또는 왼쪽 스와이프로 진행(완료는 버튼 전용), 스텝 2·3에선 뒤로가기·오른쪽 스와이프로 되돌아갈 수 있다.
+ * "다음" 또는 왼쪽 스와이프로 진행(완료는 버튼 전용), 스텝 2·3에선 오른쪽 스와이프로 되돌아갈 수 있다.
  *
  * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
  * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
