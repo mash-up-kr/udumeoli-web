@@ -20,7 +20,8 @@ export function LoginCallbackPage() {
     ran.current = true
 
     const fail = (message: string) => {
-      showToast({ message, icon: "alert" })
+      // 랜딩(카카오 CTA bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+      showToast({ message, icon: "alert", className: "bottom-[106px]" })
       void router.navigate({ to: "/", replace: true })
     }
 

@@ -54,17 +54,27 @@ export function exchangeLoginCode(code: string): Promise<ExchangeResponse> {
 export function requestSignupImageUpload(input: {
   signupToken: string
   contentType: string
-}): Promise<{ imageId: number; uploadUrl: string }> {
+}): Promise<{
+  imageId: number
+  uploadUrl: string
+  // SSE-C 헤더 — PUT에 그대로 실어야 이미지별 DEK로 암호화 저장된다.
+  // 배포 전 구서버 응답에는 없을 수 있어 optional
+  encryptionHeaders?: Array<{ key: string; value: string }>
+}> {
   return authPost("/api/auth/signup/image-upload-url", input)
 }
 
 export async function uploadImage(
   uploadUrl: string,
-  file: File
+  file: File,
+  encryptionHeaders: Array<{ key: string; value: string }> = []
 ): Promise<void> {
   const res = await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "Content-Type": file.type },
+    headers: {
+      "Content-Type": file.type,
+      ...Object.fromEntries(encryptionHeaders.map((h) => [h.key, h.value])),
+    },
     body: file,
   })
   if (!res.ok) throw new AuthApiError(res.status, "UPLOAD_FAILED", "")

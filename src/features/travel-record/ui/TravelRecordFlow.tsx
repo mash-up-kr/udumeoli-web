@@ -136,11 +136,11 @@ export function TravelRecordFlow({
       setRange(nextRange)
       if (!revisit || !nextRange?.from || revisitToastShownRef.current) return
       revisitToastShownRef.current = true
-      // 시안(1836-15756)은 캘린더 카드 위(상단 1/3 지점)에 띄운다 — 하단은 CTA·캘린더가 가린다
+      // 토스트 위치 규칙(2차 UT): 하단 CTA 위 16px (CTA bottom 34 + 높이 56 + 16)
       showToast({
         message: "이미 기록한 지역은 새로운 기록으로 쌓여요.",
         icon: "check",
-        className: "top-1/3 bottom-auto",
+        className: "bottom-[106px]",
       })
     },
     [revisit]
@@ -165,6 +165,7 @@ export function TravelRecordFlow({
       showToast({
         message: `${ALLOWED_PHOTO_LABEL} 형식 사진만 등록할 수 있어요.`,
         icon: "alert",
+        className: "bottom-[106px]",
       })
       return
     }
@@ -173,6 +174,7 @@ export function TravelRecordFlow({
       showToast({
         message: `사진은 최대 ${MAX_PHOTO_UPLOAD_MB}MB까지 등록할 수 있어요.`,
         icon: "alert",
+        className: "bottom-[106px]",
       })
       return
     }
@@ -223,13 +225,13 @@ export function TravelRecordFlow({
     if (keyword) setColor(currentPotId, region, keyword.fill)
     closeFlow()
     onComplete?.()
-    // 하단 지역 카드 캐러셀(≈246px) 위로 띄워 겹치지 않게 (Figma 1836-14957 #16)
+    // 플로우가 걷히고 지도 위에 뜬다 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
     showToast({
       message: isCollaboration
         ? "업로드가 완료됐어요"
         : `'${regionName}' 여행 Pinned 완료!`,
       icon: "check",
-      className: "bottom-[clamp(180px,32dvh,256px)]",
+      className: "bottom-[126px]",
     })
   }
 
@@ -282,16 +284,9 @@ export function TravelRecordFlow({
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
           {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}
-          {step === "photo" && keyword ? (
-            <>
-              <span className="underline" style={{ color: keyword.mapColor }}>
-                {keyword.label}!투어
-              </span>
-              {" 대표 사진 1장을\n업로드 해주세요"}
-            </>
-          ) : null}
-          {step === "photo" && !keyword
-            ? "대표 사진 1장을\n업로드 해주세요"
+          {/* 키워드명은 아래 스티커 칩과 중복이라 뺐다 — 1장 제한의 이유가 드러나는 카피로 */}
+          {step === "photo"
+            ? "여행을 떠올릴 수 있는\n사진 1장을 남겨주세요"
             : null}
         </h2>
         {step === "keyword" ? (

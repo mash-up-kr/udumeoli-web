@@ -34,8 +34,8 @@ const PRIVACY_URL =
   import.meta.env.VITE_PRIVACY_NOTION_URL ??
   "https://app.notion.com/p/3c9bee7f5996804f817eeae28111d964"
 
-// 스플래시(랜딩) CTA(카카오로 시작하기, 바닥 34px + 높이 56) 위 12px에 완료 토스트 노출
-const SPLASH_TOAST_POSITION = "bottom-[102px]"
+// 스플래시(랜딩) CTA(카카오로 시작하기, 바닥 34px + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+const SPLASH_TOAST_POSITION = "bottom-[106px]"
 
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"

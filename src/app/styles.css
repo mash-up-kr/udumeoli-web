@@ -461,6 +461,57 @@
             transform: scaleX(1.22);
         }
     }
+
+    /* 팟 참여 확인 티켓 — 프린터 출력 등장 (graphic_interaction GIF).
+       슬롯 라인 위를 overflow로 잘라 티켓이 아래로 인쇄되듯 내려오고,
+       다 나오면 슬롯이 사라지며 살짝 기울어(-3.71°) 안착한다.
+       translate/rotate 프로퍼티만 애니메이션 — 래퍼의 기본 클래스(최종 상태)를
+       실행 중에만 덮어써서 motion-reduce 시 최종 상태가 즉시 보인다 */
+    /* 안착(settle)은 인쇄가 끝나기 직전(1.55s)에 겹쳐 시작 — 멈췄다 꺾이는
+       끊김 없이 내려오던 관성 그대로 부드럽게 기울어진다 */
+    --animate-ticket-print: ticket-print 1.5s cubic-bezier(0.37, 0, 0.24, 1)
+        0.15s both;
+    --animate-ticket-settle: ticket-settle 0.8s cubic-bezier(0.3, 0, 0.2, 1)
+        1.55s both;
+    --animate-ticket-slot: ticket-slot 2s linear both;
+
+    @keyframes ticket-print {
+        from {
+            translate: 0 calc(-100% - 60px);
+        }
+        to {
+            translate: 0 0;
+        }
+    }
+
+    @keyframes ticket-settle {
+        from {
+            translate: 0 0;
+            rotate: 0deg;
+        }
+        55% {
+            translate: 0 16px;
+            rotate: -4.3deg;
+        }
+        80% {
+            translate: 0 13.5px;
+            rotate: -3.5deg;
+        }
+        to {
+            translate: 0 14px;
+            rotate: -3.71deg;
+        }
+    }
+
+    @keyframes ticket-slot {
+        0%,
+        80% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
 }
 
 @layer base {
@@ -552,6 +603,16 @@
             width: 32px;
             height: 32px;
         }
+    }
+
+    /* 기록 최종 확인(PreviewStep) 대표 사진 — 화면은 스크롤 없이 딱 맞아야 한다.
+       flex 레이아웃이 계산한 남는 높이(부모 100%)를 그대로 받아 정사각으로 그린다.
+       375 기준 최대 343(=px-4 제외 풀폭), 그보다 좁은 기기는 max-width가 폭을 막는다 */
+    .record-preview-photo-frame {
+        height: 100%;
+        max-height: 343px;
+        aspect-ratio: 1;
+        max-width: 100%;
     }
 
     .travel-record-calendar {

@@ -32,15 +32,15 @@ async function exportRecapImage(
     showToast({
       message: "이미지가 저장되었어요.",
       icon: "check",
-      // CTA 버튼 바로 위 (시안 1745-38757)
-      className: "bottom-[106px]",
+      // CTA(bottom 33 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+      className: "bottom-[105px]",
     })
   } catch (error) {
     console.error("리캡 이미지 저장 실패", error)
     showToast({
       message: "이미지 저장을 실패했어요. 다시 시도해 주세요.",
       icon: "alert",
-      className: "bottom-[106px]",
+      className: "bottom-[105px]",
     })
   }
 }

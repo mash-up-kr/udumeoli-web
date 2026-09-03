@@ -9,7 +9,12 @@ import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
-import { TicketCard, useCreateParty, usePotStore } from "@/entities/travel-pot"
+import {
+  TicketCard,
+  TicketPrintStage,
+  useCreateParty,
+  usePotStore,
+} from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 
 function CreatedStep({
@@ -40,12 +45,13 @@ function CreatedStep({
     } catch {
       // clipboard 미지원 환경에서도 토스트는 노출
     }
-    showToast({ message: "초대코드를 복사했어요" })
+    // 최하단 CTA(홈으로, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+    showToast({ message: "초대코드를 복사했어요", className: "bottom-[104px]" })
   }
 
   return (
     // 폼 → 완료 화면 교체가 한 프레임에 일어나 하단 CTA가 위로 '확' 튀어 보인다 — 화면째 페이드인
-    <MobileLayout className="flex min-h-dvh animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
+    <MobileLayout className="relative flex min-h-dvh animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
@@ -57,34 +63,34 @@ function CreatedStep({
           <br />
           여행팟이 만들어졌어요!
         </h1>
-        {/* 티켓 카드 — 시안(Figma 2588-38543) 상단 여백 43px */}
-        <div className="flex h-[375px] w-full justify-center">
-          <TicketCard
-            name={name}
-            leaderName={leaderName}
-            seatLabel="01"
-            className="mt-[43px]"
-          >
-            <p className="sr-only">초대코드 {code}</p>
-            <div aria-hidden="true" className="flex gap-[6px]">
-              {code
-                .slice(0, 6)
-                .split("")
-                .map((char, i) => (
-                  <span
-                    key={i}
-                    className="flex h-[34px] w-[28px] items-center justify-center rounded-[8px] border border-neutral-200 bg-neutral-100 font-eng text-e3 text-neutral-900"
-                  >
-                    {char}
-                  </span>
-                ))}
-            </div>
-            <p className="text-h9 text-neutral-900">
-              함께 여행할 친구들을 초대해 보세요!
-            </p>
-          </TicketCard>
-        </div>
       </main>
+      <TicketPrintStage>
+        <TicketCard
+          name={name}
+          leaderName={leaderName}
+          seatLabel="01"
+          // 기울임은 등장 애니메이션 래퍼(TicketPrintStage)가 담당 — 카드는 정방향으로 인쇄
+          className="pointer-events-auto rotate-none"
+        >
+          <p className="sr-only">초대코드 {code}</p>
+          <div aria-hidden="true" className="flex gap-[6px]">
+            {code
+              .slice(0, 6)
+              .split("")
+              .map((char, i) => (
+                <span
+                  key={i}
+                  className="flex h-[34px] w-[28px] items-center justify-center rounded-[8px] border border-neutral-200 bg-neutral-100 font-eng text-e3 text-neutral-900"
+                >
+                  {char}
+                </span>
+              ))}
+          </div>
+          <p className="text-h9 text-neutral-900">
+            함께 여행할 친구들을 초대해 보세요!
+          </p>
+        </TicketCard>
+      </TicketPrintStage>
       <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
         {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
         <Tooltip direction="bottom">

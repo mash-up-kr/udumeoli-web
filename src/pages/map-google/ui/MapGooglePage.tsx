@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
+import { ArrowLeft } from "lucide-react"
 
 import { hasSeenZoomGuide, markZoomGuideSeen } from "../lib/zoomGuide"
 import { ZoomInGuide } from "./ZoomInGuide"
@@ -11,6 +12,7 @@ import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { AppSplash } from "@/shared/ui/app-splash"
+import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
@@ -77,7 +79,8 @@ function MapGooglePageContent() {
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
   const [mapZoomStage, setMapZoomStage] = React.useState<ZoomStage>(0)
   const showMapChrome = !decorating && detailRegion === null
-  const showPersistentMapActions = showMapChrome && mapZoomStage < 3
+  // 2.5단계(인기지역 [+] 선노출)부터 상세 취급 — 상단이 뒤로가기로 바뀐다
+  const showPersistentMapActions = showMapChrome && mapZoomStage < 2.5
 
   // 줌인 가이드(시안 2822-8047) — 사진 0장 && 줌 3단계 미만일 때만 노출,
   // 한 번이라도 3단계까지 줌인하면 localStorage 플래그로 영구 종료
@@ -86,6 +89,7 @@ function MapGooglePageContent() {
   const [zoomGuideSeen, setZoomGuideSeen] = React.useState(hasSeenZoomGuide)
   const [zoomToDetailSignal, setZoomToDetailSignal] = React.useState(0)
   const [recenterKoreaSignal, setRecenterKoreaSignal] = React.useState(0)
+  const [zoomOutToCitySignal, setZoomOutToCitySignal] = React.useState(0)
   React.useEffect(() => {
     if (zoomGuideSeen || mapZoomStage < 3) return
     markZoomGuideSeen()
@@ -110,30 +114,43 @@ function MapGooglePageContent() {
           onZoomStageChange={setMapZoomStage}
           zoomToDetailSignal={zoomToDetailSignal}
           recenterKoreaSignal={recenterKoreaSignal}
+          zoomOutToCitySignal={zoomOutToCitySignal}
         />
 
         {showMapChrome ? (
           <>
             {/* 지도 상·하단 그라데이션 오버레이 — 시안 2466-8641 기반이되 높이·blur는 축소.
                 시안값(상단 163px·하단 303px + blur 2px)은 지도 핀까지 흐려져(QA)
-                헤더/내비 가독에 필요한 만큼만 남긴다. 하단은 내비와 같은 조건(줌 3단계 미만)에서만 노출 */}
+                헤더/내비 가독에 필요한 만큼만 남긴다 */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-white/80 to-transparent" />
-            {showPersistentMapActions ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[180px] bg-gradient-to-b from-transparent via-white/60 via-[36.47%] to-white opacity-90" />
-            ) : null}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[180px] bg-gradient-to-b from-transparent via-white/60 via-[36.47%] to-white opacity-90" />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
-              {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
-                  빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
-              <AppHeader potSelector={<PotSelector />} />
               {showPersistentMapActions ? (
-                // RECAP 버튼 — 시안 2897-28068 팟 선택 아래 우측, 팟 선택 필 하단과 10px 간격.
-                // 헤더(py-3=12px) 안에서 42px 필이 60px 로고 행에 센터 정렬돼 아래로 9px 여백이
-                // 더 생기므로, 9+12-11 = 10px이 되도록 -11px로 당긴다
-                <div className="-mt-[11px] flex justify-end px-4">
-                  <RecapButton className="pointer-events-auto" />
+                <>
+                  {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
+                      빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
+                  <AppHeader potSelector={<PotSelector />} />
+                  {/* RECAP 버튼 — 시안 2897-28068 팟 선택 아래 우측, 팟 선택 필 하단과 10px 간격.
+                      헤더(py-3=12px) 안에서 42px 필이 60px 로고 행에 센터 정렬돼 아래로 9px 여백이
+                      더 생기므로, 9+12-11 = 10px이 되도록 -11px로 당긴다 */}
+                  <div className="-mt-[11px] flex justify-end px-4">
+                    <RecapButton className="pointer-events-auto" />
+                  </div>
+                </>
+              ) : (
+                // 2.5단계 이상(상세)에서는 로고/팟 선택 대신 뒤로가기만 — 클릭 시 2단계로 줌아웃.
+                // h-[84px]: AppHeader(py-3 + 60px 로고 행)와 같은 높이라 전환 시 버튼 위치가 안 튄다
+                <div className="flex h-[84px] items-center px-4">
+                  <ButtonIcon
+                    aria-label="지도 축소"
+                    className="pointer-events-auto"
+                    onClick={() => setZoomOutToCitySignal((n) => n + 1)}
+                  >
+                    <ArrowLeft />
+                  </ButtonIcon>
                 </div>
-              ) : null}
+              )}
             </div>
 
             {showZoomGuide ? (
@@ -143,18 +160,17 @@ function MapGooglePageContent() {
               />
             ) : null}
 
-            {showPersistentMapActions ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
-                {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움 */}
-                <BottomNav
-                  className="pointer-events-auto"
-                  albumDisabled={!canOpenAlbum}
-                  onAlbumClick={openAlbum}
-                  onMyPageClick={() => router.navigate({ to: "/my-page" })}
-                  onGlobeClick={() => setRecenterKoreaSignal((n) => n + 1)}
-                />
-              </div>
-            ) : null}
+            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
+              {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움.
+                  줌 3단계에서도 유지한다 (2차 UT to-be: 하단 탭바는 전 단계 노출) */}
+              <BottomNav
+                className="pointer-events-auto"
+                albumDisabled={!canOpenAlbum}
+                onAlbumClick={openAlbum}
+                onMyPageClick={() => router.navigate({ to: "/my-page" })}
+                onGlobeClick={() => setRecenterKoreaSignal((n) => n + 1)}
+              />
+            </div>
           </>
         ) : null}
       </main>

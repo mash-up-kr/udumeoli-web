@@ -25,6 +25,8 @@ import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 
 const sectionTitleCls = "px-2 py-1 text-h8-1 text-neutral-500"
+// 최하단 CTA(팟 나가기, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+const POT_EDIT_TOAST_POSITION = "bottom-[104px]"
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
 
@@ -195,19 +197,31 @@ function MyPotEditContent({ potId }: { potId: string }) {
         name: trimmedName,
       })
     } catch {
-      showToast({ message: "이름 변경에 실패했어요", icon: "alert" })
+      showToast({
+        message: "이름 변경에 실패했어요",
+        icon: "alert",
+        className: POT_EDIT_TOAST_POSITION,
+      })
     }
   }
 
   const handleCopyCode = async () => {
     await copyToClipboard(pot.inviteCode)
-    showToast({ message: `[${pot.inviteCode}] 복사됨`, icon: "check" })
+    showToast({
+      message: `[${pot.inviteCode}] 복사됨`,
+      icon: "check",
+      className: POT_EDIT_TOAST_POSITION,
+    })
   }
 
   const handleShareInvite = async () => {
     const link = inviteLinkFor(pot.inviteCode)
     await copyToClipboard(link)
-    showToast({ message: "초대 링크가 복사됐어요", icon: "check" })
+    showToast({
+      message: "초대 링크가 복사됐어요",
+      icon: "check",
+      className: POT_EDIT_TOAST_POSITION,
+    })
 
     if (typeof navigator.share !== "function") return
 
@@ -245,6 +259,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
                     ? "팟원이 남아 있어 삭제할 수 없어요"
                     : "팟 삭제에 실패했어요",
                 icon: "alert",
+                className: POT_EDIT_TOAST_POSITION,
               })
               return
             }
@@ -280,6 +295,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
                     ? "팟장은 팟을 나갈 수 없어요"
                     : "팟 나가기에 실패했어요",
                 icon: "alert",
+                className: POT_EDIT_TOAST_POSITION,
               })
               return
             }

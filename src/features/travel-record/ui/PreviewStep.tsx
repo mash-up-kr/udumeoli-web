@@ -138,7 +138,7 @@ export function PreviewStep({
   onConfirm: () => void
 }) {
   return (
-    <div className="pointer-events-auto absolute inset-0 z-30 flex touch-pan-y [scrollbar-width:none] flex-col overflow-x-hidden overflow-y-auto overscroll-contain pb-6 [&::-webkit-scrollbar]:hidden">
+    <div className="pointer-events-auto absolute inset-0 z-30 flex flex-col overflow-hidden">
       {/* 지도가 비치는 프로스티드 글라스 — 키워드 색 미리보기(지역 폴리곤)가 아래 깔린다 */}
       <div className="absolute inset-0 bg-white/10 backdrop-blur-[12px]" />
 
@@ -189,8 +189,8 @@ export function PreviewStep({
         </ButtonIcon>
       </div>
 
-      {/* min-h-0 없이 flex-1 — 낮은 화면에서 내용이 넘치면 잘리는 대신 루트가 스크롤된다 */}
-      <div className="relative z-20 flex flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
+      {/* min-h-0 + flex-1 — 사진이 남는 높이에 맞춰 줄어들어 어떤 화면 높이에서도 스크롤이 없다 */}
+      <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
         {/* 날짜 칩 — 키워드 대표색(mapColor) 배경 (Figma Chip · H9).
             stroke는 지역 폴리곤 외곽선 팔레트라 키워드 색과 다르다 (사진이 디저트 빨강으로 보이던 원인) */}
         <span
@@ -214,8 +214,10 @@ export function PreviewStep({
           )}
         </h2>
 
-        {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침 */}
-        <div className="relative mt-8 w-full">
+        {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침.
+            낮은 화면에선 CTA가 스크롤 없이 보이도록 폭을 줄인다 (record-preview-photo-frame).
+            칩·스티커가 사진을 따라가도록 래퍼 자체를 줄인다 */}
+        <div className="record-preview-photo-frame relative mt-8">
           <img
             src={photoUrl}
             alt=""

@@ -57,6 +57,10 @@ const CREATE_IMAGE_UPLOAD_URL_MUTATION = /* GraphQL */ `
     createImageUploadUrl(input: $input) {
       imageId
       uploadUrl
+      encryptionHeaders {
+        key
+        value
+      }
     }
   }
 `
@@ -108,7 +112,12 @@ interface PartyTripsResponse {
 }
 
 interface CreateImageUploadUrlResponse {
-  createImageUploadUrl: { imageId: string; uploadUrl: string }
+  createImageUploadUrl: {
+    imageId: string
+    uploadUrl: string
+    // SSE-C 헤더 — PUT에 그대로 실어야 이미지별 DEK로 암호화 저장된다
+    encryptionHeaders: Array<{ key: string; value: string }>
+  }
 }
 
 interface CreateTripResponse {
@@ -275,12 +284,18 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     CREATE_IMAGE_UPLOAD_URL_MUTATION,
     { input: { contentType } }
   )
-  const { imageId, uploadUrl } = target.createImageUploadUrl
+  const { imageId, uploadUrl, encryptionHeaders } = target.createImageUploadUrl
 
-  // presigned URL은 발급 시 서명된 content-type 헤더를 그대로 요구한다
+  // presigned URL은 발급 시 서명된 헤더(content-type + SSE-C encryptionHeaders)를
+  // 그대로 요구한다 — 헤더를 빼면 서명 불일치로 업로드 자체가 거부된다.
+  // 단, 암호화 저장된 원본은 BE 복호화 서빙(Go 서버 서명 URL) 배포 전까지
+  // <img>가 못 읽어 앨범에서 깨진다 — 조회 경로는 BE 배포 대기 중
   const uploaded = await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "Content-Type": contentType },
+    headers: {
+      "Content-Type": contentType,
+      ...Object.fromEntries(encryptionHeaders.map((h) => [h.key, h.value])),
+    },
     body: file,
   })
   if (!uploaded.ok) {
