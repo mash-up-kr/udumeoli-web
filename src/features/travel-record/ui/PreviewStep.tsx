@@ -214,8 +214,10 @@ export function PreviewStep({
           )}
         </h2>
 
-        {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침 */}
-        <div className="relative mt-8 w-full">
+        {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침.
+            낮은 화면에선 CTA가 스크롤 없이 보이도록 폭을 줄인다 (record-preview-photo-frame).
+            칩·스티커가 사진을 따라가도록 래퍼 자체를 줄인다 */}
+        <div className="record-preview-photo-frame relative mt-8">
           <img
             src={photoUrl}
             alt=""
