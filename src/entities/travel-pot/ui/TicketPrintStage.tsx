@@ -4,8 +4,9 @@ import type { ReactNode } from "react"
  * TicketPrintStage — 티켓 등장 인터랙션 공통 래퍼 (graphic_interaction GIF).
  *
  * 슬롯 바에서 티켓이 아래로 인쇄되듯 등장하고, 출력이 끝나면 슬롯이 사라지며
- * -3.71°로 살짝 기울어 안착한다. 위치는 px 고정 대신 화면 높이 비율
- * (시안 3065-13366, 812 기준 카드 상단 y≈231 → 28.5%)로 잡아 기종 무관 동일 지점에 뜬다.
+ * -3.71°로 살짝 기울어 안착한다. 위치는 px 고정 대신 화면 높이 비율로 잡아
+ * 기종 무관 동일 지점에 뜬다 — 시안(3065-13366) 기준 28.5%였으나 안착 후
+ * 상단이 비어 보인다는 피드백으로 25%로 소폭 올림.
  * 부모는 position 컨텍스트(relative)여야 한다.
  *
  * children에는 TicketCard를 `rotate-none`으로 넣는다 — 기울임은 안착 애니메이션
@@ -13,7 +14,7 @@ import type { ReactNode } from "react"
  */
 export function TicketPrintStage({ children }: { children: ReactNode }) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-[28.5%] flex justify-center">
+    <div className="pointer-events-none absolute inset-x-0 top-[25%] flex justify-center">
       <div className="relative">
         {/* 출력창 — 슬롯 라인(상단 edge) 위를 잘라 티켓이 프린터에서 인쇄되듯 내려온다.
             좌우/하단 패딩은 카드 그림자·기울기 몫 */}
