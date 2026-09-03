@@ -605,13 +605,14 @@
         }
     }
 
-    /* 기록 최종 확인(PreviewStep) 대표 사진 — 낮은 화면에서 '지도에 기록하기' CTA가
-       스크롤 없이 보이도록 정사각 사진 폭(=높이)을 화면 높이에 맞춰 줄인다.
-       440px ≈ 고정 UI 몫(헤더 76 + 상단 여백 ~57 + 날짜 칩 28 + 타이틀 88
-       + 사진 위 여백 32 + 코멘트 52 + CTA 영역 114). 200px 아래로는 더 줄이지 않고
-       루트 스크롤로 보완한다 */
+    /* 기록 최종 확인(PreviewStep) 대표 사진 — 화면은 스크롤 없이 딱 맞아야 한다.
+       flex 레이아웃이 계산한 남는 높이(부모 100%)를 그대로 받아 정사각으로 그린다.
+       375 기준 최대 343(=px-4 제외 풀폭), 그보다 좁은 기기는 max-width가 폭을 막는다 */
     .record-preview-photo-frame {
-        width: min(100%, max(200px, calc(100dvh - 440px)));
+        height: 100%;
+        max-height: 343px;
+        aspect-ratio: 1;
+        max-width: 100%;
     }
 
     .travel-record-calendar {
