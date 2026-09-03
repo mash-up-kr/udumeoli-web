@@ -215,8 +215,9 @@ function OnboardingOverlay({
     touchStart.current = null
     // 세로 스크롤·탭과 구분: 가로 이동이 우세하고 48px 이상일 때만 스와이프로 인정
     if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return
-    if (dx < 0) goNext()
-    else if (step > 1) setStep((step - 1) as Step)
+    // 스와이프는 스텝 1~3 사이 이동만 — 마지막 스텝의 완료(다음 화면 이동)는 버튼 전용
+    if (dx < 0 && step < 3) setStep((step + 1) as Step)
+    else if (dx > 0 && step > 1) setStep((step - 1) as Step)
   }
 
   const finish = async () => {
@@ -330,7 +331,7 @@ function OnboardingOverlay({
 /**
  * 첫 진입 온보딩 (Figma 2632-37599 → 2632-37636 → 2632-37661) —
  * 회원가입 완료 팝업의 확인 클릭 시 1회만 노출되는 3단계 풀스크린 안내.
- * "다음" 또는 왼쪽 스와이프로 진행, 스텝 2·3에선 뒤로가기·오른쪽 스와이프로 되돌아갈 수 있다.
+ * "다음" 또는 왼쪽 스와이프로 진행(완료는 버튼 전용), 스텝 2·3에선 뒤로가기·오른쪽 스와이프로 되돌아갈 수 있다.
  *
  * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
  * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
