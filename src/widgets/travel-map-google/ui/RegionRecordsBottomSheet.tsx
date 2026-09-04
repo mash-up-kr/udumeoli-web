@@ -154,7 +154,10 @@ export function RegionRecordsBottomSheet({
   const livePhotos = useAllPhotos(potId).filter(
     (photo) => photo.region === region
   )
-  const regionPhotos = livePhotos.length > 0 ? livePhotos : photos
+  const regionPhotos =
+    livePhotos.length > 0
+      ? livePhotos
+      : photos.filter((photo) => photo.region === region)
   const latestTrip = groupTrips(regionPhotos)[0]
   const [expanded, setExpanded] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -273,9 +276,9 @@ export function RegionRecordsBottomSheet({
     }
     // 목표 위치를 지금 바로 써 넣는다 — 쉬는 값으로 한 프레임 되돌아갔다가
     // 리렌더 후 다시 움직이는 튐을 막는다
-    const next = outcome === "expand"
-    setY(restY(outcome === "settle" ? expanded : next))
-    if (outcome !== "settle") setExpanded(next)
+    const nextExpanded = outcome === "settle" ? expanded : outcome === "expand"
+    setY(restY(nextExpanded))
+    if (outcome !== "settle") setExpanded(nextExpanded)
   }
 
   const keywordCounts = new Map<string, number>()
