@@ -6,16 +6,21 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps"
 
+import {
+  PROVINCE_AGGREGATE_MAX_REGIONS,
+  buildProvinceAggregates,
+} from "../lib/province-markers"
+import { estimateTextWidth } from "../lib/recap-layout"
 import { getRecapMapView, getRecapScreenMapView } from "../lib/recap-map-config"
+import type { Point, RegionShape } from "../lib/province-markers"
 import type { RECAP_MAP_VIEW } from "../lib/recap-map-config"
 
-import type { Photo } from "@/entities/photo"
+import type { Photo, TravelKeyword } from "@/entities/photo"
 import { findKeyword, groupTrips } from "@/entities/photo"
-import { REGION_CODE_BY_NAME } from "@/shared/api/region-codes"
+import { formatProvinceBadgeName } from "@/entities/region"
 import { computeCentroid } from "@/shared/lib/geo"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 
-type Point = [number, number]
 type Project = (point: Point) => Point
 
 const MAP_OCEAN_COLOR = "#79d5e6"
@@ -28,6 +33,20 @@ const MARKER_ANCHOR = {
 }
 const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
 const MARKER_BADGE = { x: 21.5, y: -4.5 }
+/** 도 라벨 (시안 3229-11008) — 핀 아래 중앙 알약 */
+const PROVINCE_LABEL = { gap: 3, height: 12.5, fontSize: 7.5, paddingX: 4 }
+
+type RecapMarker = {
+  key: string
+  keyword: TravelKeyword
+  /** 시 단위 마커의 우상단 방문 횟수 뱃지 (1이면 감춤) */
+  count: number
+  /** 도 단위 마커의 하단 라벨 — "강원+2" */
+  label?: string
+  position: Point
+  geoPosition: Point
+}
+
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 const GOOGLE_MAP_ID =
   (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string | undefined) ||
@@ -82,16 +101,16 @@ function pathForFeature(feature: GeoJSON.Feature, project: Project): string {
     .join(" ")
 }
 
-function regionCode(photo: Photo): string | undefined {
-  return REGION_CODE_BY_NAME[photo.region]
+function featureRegion(feature: GeoJSON.Feature): string {
+  return String(feature.properties?.name ?? "")
 }
 
 function GoogleRecapLayer({
   geojson,
-  photosByCode,
+  fillKeywords,
 }: {
   geojson: GeoJSON.FeatureCollection
-  photosByCode: Map<string, Array<Photo>>
+  fillKeywords: Map<string, TravelKeyword>
 }) {
   const map = useMap()
 
@@ -101,8 +120,7 @@ function GoogleRecapLayer({
     const data = new google.maps.Data()
     data.addGeoJson(geojson)
     data.setStyle((feature) => {
-      const code = String(feature.getProperty("code") ?? "")
-      const keyword = findKeyword(photosByCode.get(code)?.at(-1)?.keyword)
+      const keyword = fillKeywords.get(String(feature.getId() ?? ""))
       return {
         fillColor: keyword?.mapColor ?? UNVISITED_REGION_COLOR,
         fillOpacity: keyword ? 0.68 : 0.08,
@@ -115,24 +133,20 @@ function GoogleRecapLayer({
     data.setMap(map)
 
     return () => data.setMap(null)
-  }, [geojson, map, photosByCode])
+  }, [fillKeywords, geojson, map])
 
   return null
 }
 
 function GoogleRecapMap({
   geojson,
-  photosByCode,
+  fillKeywords,
   markers,
   mapView,
 }: {
   geojson: GeoJSON.FeatureCollection
-  photosByCode: Map<string, Array<Photo>>
-  markers: Array<{
-    photo: Photo
-    count: number
-    geoPosition: Point
-  }>
+  fillKeywords: Map<string, TravelKeyword>
+  markers: Array<RecapMarker>
   mapView: typeof RECAP_MAP_VIEW
 }) {
   return (
@@ -146,38 +160,44 @@ function GoogleRecapMap({
         clickableIcons={false}
         style={{ width: "100%", height: "100%" }}
       >
-        <GoogleRecapLayer geojson={geojson} photosByCode={photosByCode} />
-        {markers.map(({ photo, count, geoPosition }) => {
-          const keyword = findKeyword(photo.keyword)
-          if (!keyword) return null
-          return (
-            <AdvancedMarker
-              key={`google-${photo.id}`}
-              position={{ lat: geoPosition[1], lng: geoPosition[0] }}
-            >
-              <div className="relative size-10">
-                <img
-                  src={keyword.mapPinSrc}
-                  alt=""
-                  className="absolute inset-0 size-full"
-                />
-                <img
-                  src={keyword.mapStickerSrc}
-                  alt=""
-                  className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 object-contain"
-                />
-                {count > 1 ? (
-                  <span
-                    className="absolute -top-1 -right-2 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 text-white"
-                    style={{ backgroundColor: keyword.mapColor }}
-                  >
-                    {count}
-                  </span>
-                ) : null}
-              </div>
-            </AdvancedMarker>
-          )
-        })}
+        <GoogleRecapLayer geojson={geojson} fillKeywords={fillKeywords} />
+        {markers.map(({ key, keyword, count, label, geoPosition }) => (
+          <AdvancedMarker
+            key={`google-${key}`}
+            position={{ lat: geoPosition[1], lng: geoPosition[0] }}
+          >
+            {/* AdvancedMarker 기본 앵커는 컨텐츠 박스의 bottom-center다 — 라벨을
+                흐름에 두면 박스가 커져 핀이 지역 중심 위로 떠버린다. 저장 SVG처럼
+                핀 끝이 중심에 오도록 라벨은 absolute로 박스 밖에 건다. */}
+            <div className="relative size-10">
+              <img
+                src={keyword.mapPinSrc}
+                alt=""
+                className="absolute inset-0 size-full"
+              />
+              <img
+                src={keyword.mapStickerSrc}
+                alt=""
+                className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 object-contain"
+              />
+              {label ? (
+                <span
+                  className="absolute top-full left-1/2 mt-[3px] -translate-x-1/2 rounded-full px-1.5 text-[10px] leading-4 whitespace-nowrap text-white"
+                  style={{ backgroundColor: keyword.mapColor }}
+                >
+                  {label}
+                </span>
+              ) : count > 1 ? (
+                <span
+                  className="absolute -top-1 -right-2 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 text-white"
+                  style={{ backgroundColor: keyword.mapColor }}
+                >
+                  {count}
+                </span>
+              ) : null}
+            </div>
+          </AdvancedMarker>
+        ))}
       </GoogleMap>
     </APIProvider>
   )
@@ -260,35 +280,117 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     () => (nation ? pathForFeature(nation, project) : ""),
     [nation, project]
   )
-  const photosByCode = React.useMemo(() => {
+  const photosByRegion = React.useMemo(() => {
     const grouped = new Map<string, Array<Photo>>()
     for (const photo of photos) {
-      const code = regionCode(photo)
-      if (!code) continue
-      const regionPhotos = grouped.get(code)
+      const regionPhotos = grouped.get(photo.region)
       if (regionPhotos) {
         regionPhotos.push(photo)
       } else {
-        grouped.set(code, [photo])
+        grouped.set(photo.region, [photo])
       }
     }
     return grouped
   }, [photos])
 
-  const markers = React.useMemo(() => {
-    const byCode = new Map<string, { photo: Photo; count: number }>()
-    for (const [code, regionPhotos] of photosByCode) {
-      const trips = groupTrips(regionPhotos)
-      const photo = trips[0]?.photos.at(-1)
-      if (photo) byCode.set(code, { photo, count: trips.length })
+  /**
+   * feature id → 그 지역의 사진. 이름이 같은 지역이 둘 있어서(강원·경남 고성군)
+   * 이름으로 칠하면 엉뚱한 곳까지 물든다 — 먼저 나오는 feature 하나만 잡는다.
+   * ponytail: photo.region이 코드로 바뀌면 이 dedupe는 지운다.
+   */
+  const photosByFeature = React.useMemo(() => {
+    const matched = new Map<string, Array<Photo>>()
+    const usedRegions = new Set<string>()
+    for (const { feature } of projectedFeatures) {
+      const region = featureRegion(feature)
+      const regionPhotos = photosByRegion.get(region)
+      if (!regionPhotos || usedRegions.has(region)) continue
+      usedRegions.add(region)
+      matched.set(String(feature.id), regionPhotos)
     }
-    return projectedFeatures.flatMap(({ feature, center, geoCenter }) => {
-      const code = String(feature.properties?.code ?? "")
-      const item = byCode.get(code)
-      if (!item || !center || !geoCenter) return []
-      return [{ ...item, position: center, geoPosition: geoCenter }]
+    return matched
+  }, [photosByRegion, projectedFeatures])
+
+  const regionShapes = React.useMemo<Array<RegionShape>>(
+    () =>
+      projectedFeatures.map(({ feature, center, geoCenter }) => ({
+        id: String(feature.id),
+        province: feature.properties?.province as string | undefined,
+        center,
+        geoCenter,
+        photos: photosByFeature.get(String(feature.id)) ?? [],
+      })),
+    [photosByFeature, projectedFeatures]
+  )
+
+  const cityMarkers = React.useMemo<Array<RecapMarker>>(
+    () =>
+      regionShapes.flatMap(
+        ({ id, center, geoCenter, photos: regionPhotos }) => {
+          if (regionPhotos.length === 0 || !center || !geoCenter) return []
+          const trips = groupTrips(regionPhotos)
+          const photo = trips[0]?.photos.at(-1)
+          const keyword = findKeyword(photo?.keyword)
+          if (!keyword) return []
+          return [
+            {
+              key: id,
+              keyword,
+              count: trips.length,
+              position: center,
+              geoPosition: geoCenter,
+            },
+          ]
+        }
+      ),
+    [regionShapes]
+  )
+
+  const provinceAggregates = React.useMemo(
+    () => buildProvinceAggregates(regionShapes),
+    [regionShapes]
+  )
+
+  const useProvinceView =
+    photosByFeature.size > 0 &&
+    photosByFeature.size <= PROVINCE_AGGREGATE_MAX_REGIONS &&
+    provinceAggregates.length > 0
+
+  const markers = React.useMemo<Array<RecapMarker>>(() => {
+    if (!useProvinceView) return cityMarkers
+    return provinceAggregates.flatMap((aggregate) => {
+      const keyword = findKeyword(aggregate.keyword)
+      if (!keyword) return []
+      return [
+        {
+          key: `province-${aggregate.province}`,
+          keyword,
+          count: aggregate.regionCount,
+          label: `${formatProvinceBadgeName(aggregate.province)}+${aggregate.regionCount}`,
+          position: aggregate.position,
+          geoPosition: aggregate.geoPosition,
+        },
+      ]
     })
-  }, [photosByCode, projectedFeatures])
+  }, [cityMarkers, provinceAggregates, useProvinceView])
+
+  // 도 단위 모드에선 도 전체를 대표 키워드 색으로 칠한다 (시안 3229-11008)
+  const fillKeywords = React.useMemo(() => {
+    const fills = new Map<string, TravelKeyword>()
+    if (useProvinceView) {
+      for (const aggregate of provinceAggregates) {
+        const keyword = findKeyword(aggregate.keyword)
+        if (!keyword) continue
+        for (const region of aggregate.regions) fills.set(region, keyword)
+      }
+      return fills
+    }
+    for (const [id, regionPhotos] of photosByFeature) {
+      const keyword = findKeyword(regionPhotos.at(-1)?.keyword)
+      if (keyword) fills.set(id, keyword)
+    }
+    return fills
+  }, [photosByFeature, provinceAggregates, useProvinceView])
 
   return (
     <div
@@ -300,7 +402,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         <div className="absolute inset-0 z-0 overflow-hidden rounded-[30px]">
           <GoogleRecapMap
             geojson={geojson}
-            photosByCode={photosByCode}
+            fillKeywords={fillKeywords}
             markers={markers}
             mapView={screenMapView}
           />
@@ -321,12 +423,10 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
           data-recap-ocean
         />
         {projectedFeatures.map(({ feature, path }, index) => {
-          const code = String(feature.properties?.code ?? "")
-          const photo = photosByCode.get(code)?.at(-1)
-          const keyword = findKeyword(photo?.keyword)
+          const keyword = fillKeywords.get(String(feature.id))
           return (
             <path
-              key={`${code}-${index}`}
+              key={`${String(feature.id)}-${index}`}
               d={path}
               fill={keyword?.mapColor ?? UNVISITED_REGION_COLOR}
               fillOpacity={keyword ? "0.82" : "0.94"}
@@ -349,14 +449,16 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
             pointerEvents="none"
           />
         ) : null}
-        {markers.map(({ photo, count, position }) => {
-          const keyword = findKeyword(photo.keyword)
-          if (!keyword) return null
+        {markers.map(({ key, keyword, count, label, position }) => {
           const markerX = position[0] - MARKER_ANCHOR.x
           const markerY = position[1] - MARKER_ANCHOR.y
           const badgeWidth = count > 9 ? 16 : 13.7
+          const labelWidth = label
+            ? estimateTextWidth(label, PROVINCE_LABEL.fontSize) +
+              PROVINCE_LABEL.paddingX * 2
+            : 0
           return (
-            <g key={photo.id} transform={`translate(${markerX} ${markerY})`}>
+            <g key={key} transform={`translate(${markerX} ${markerY})`}>
               <image
                 href={keyword.mapPinSrc}
                 x={MARKER_PIN.x}
@@ -377,7 +479,30 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                     : "xMidYMid slice"
                 }
               />
-              {count > 1 ? (
+              {label ? (
+                <g
+                  transform={`translate(${MARKER_ANCHOR.x - labelWidth / 2} ${MARKER_ANCHOR.y + PROVINCE_LABEL.gap})`}
+                >
+                  <rect
+                    width={labelWidth}
+                    height={PROVINCE_LABEL.height}
+                    rx={PROVINCE_LABEL.height / 2}
+                    fill={keyword.mapColor}
+                  />
+                  <text
+                    x={labelWidth / 2}
+                    y={
+                      PROVINCE_LABEL.height / 2 + PROVINCE_LABEL.fontSize * 0.36
+                    }
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize={PROVINCE_LABEL.fontSize}
+                    fontWeight="500"
+                  >
+                    {label}
+                  </text>
+                </g>
+              ) : count > 1 ? (
                 <g transform={`translate(${MARKER_BADGE.x} ${MARKER_BADGE.y})`}>
                   <rect
                     width={badgeWidth}
