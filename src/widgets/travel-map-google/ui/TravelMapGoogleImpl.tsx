@@ -16,7 +16,7 @@ import {
   Map as GoogleMap,
   useMap,
 } from "@vis.gl/react-google-maps"
-import { ArrowRight, Check, PenLine, UserRound, X } from "lucide-react"
+import { ArrowRight, UserRound } from "lucide-react"
 
 import {
   buildCollaborationTrips,
@@ -45,6 +45,7 @@ import {
 } from "../lib/regionDataLayer"
 import { getRecordCameraPadding } from "../lib/cameraPadding"
 import { createImageFillOverlay } from "../lib/ImageFillOverlay"
+import { RegionRecordsBottomSheet } from "./RegionRecordsBottomSheet"
 import type { LatLngBox } from "../lib/viewportBounds"
 import type { ZoomStage } from "../lib/zoomStage"
 import type { CollaborationTrip } from "../lib/collaboration"
@@ -52,12 +53,14 @@ import type { RegionDataLayer } from "../lib/regionDataLayer"
 import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 
 import type { RegionFill } from "@/entities/region"
-import type {
-  CollaborationRecordSeed,
-  DecoratePreview,
-} from "@/features/travel-record"
+import type { DecoratePreview } from "@/features/travel-record"
 import type { TravelKeyword } from "@/entities/photo"
-import { findKeyword, useAllPhotos } from "@/entities/photo"
+import {
+  findKeyword,
+  uploadErrorMessage,
+  useAllPhotos,
+  useCreatePhoto,
+} from "@/entities/photo"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
 import {
   selectCurrentPotMembers,
@@ -67,15 +70,14 @@ import {
 import { useSessionStore } from "@/entities/user"
 import { showToast } from "@/shared/ui/toast"
 import { hasSeenMapTips, openMapTipsOverlay } from "@/features/onboarding"
+import { pickImageFile } from "@/features/photo-upload"
 import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 import { REGION_NAME_BY_CODE } from "@/shared/api/region-codes"
 import { cn } from "@/shared/lib/utils"
-import { ButtonCta } from "@/shared/ui/button-cta"
-import { DialogTitle } from "@/shared/ui/dialog"
-import { openModal } from "@/shared/ui/modal"
+import { openBottomSheet } from "@/shared/ui/bottom-sheet"
 
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 // mapId 미발급 시 Google이 제공하는 프로토타이핑용 데모 ID로 대체 (AdvancedMarker는 mapId 필수)
@@ -171,8 +173,6 @@ type ProvinceAggregate = {
   lng: number
 }
 
-type CollaborationRecordDraft = CollaborationRecordSeed &
-  Pick<CollaborationTrip, "key" | "region">
 type CollaborationProgressMarker = Centroid & { trip: CollaborationTrip }
 type TripPinMarker = {
   trip: CollaborationTrip
@@ -232,20 +232,6 @@ function provinceNameByCode(code: string): string | undefined {
 
 function formatProvinceBadgeName(province: string): string {
   return PROVINCE_BADGE_LABELS[province] ?? formatRegionName(province)
-}
-
-function formatShortTripRange(startDate: string, endDate: string): string {
-  const [startYear, startMonth, startDay] = startDate.split("-")
-  const [, endMonth, endDay] = endDate.split("-")
-  if (!startYear || !startMonth || !startDay) return startDate
-  const yy = startYear.slice(2)
-  if (startDate === endDate || !endMonth || !endDay) {
-    return `${yy}.${startMonth}.${startDay}`
-  }
-  if (startMonth === endMonth) {
-    return `${yy}.${startMonth}.${startDay}~${endDay}`
-  }
-  return `${yy}.${startMonth}.${startDay}~${endMonth}.${endDay}`
 }
 
 function MapStickerGraphic({
@@ -377,47 +363,6 @@ function MapPillTooltip({
   )
 }
 
-function RecordTripConfirmContent({
-  trip,
-  regionName,
-  onClose,
-  onConfirm,
-}: {
-  trip: CollaborationTrip
-  regionName: string
-  onClose: () => void
-  onConfirm: () => void
-}) {
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="닫기"
-        className="absolute top-4 right-4 flex size-7 items-center justify-center text-fg-neutral-subtle"
-        onClick={onClose}
-      >
-        <X className="size-5" />
-      </button>
-      <div className="flex flex-col items-center gap-4 pt-3 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
-          <Check className="size-6 text-fg-neutral-bold" />
-        </span>
-        <div className="flex flex-col gap-2 py-2">
-          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
-            {formatShortTripRange(trip.startDate, trip.endDate)}
-            <br />
-            해당 날짜에 {regionName}을 다녀온게 맞나요?
-          </DialogTitle>
-          <p className="text-b6 text-fg-neutral-subtle">
-            맞다면, 여행 기록을 시작할게요
-          </p>
-        </div>
-      </div>
-      <ButtonCta onClick={onConfirm}>맞아요</ButtonCta>
-    </>
-  )
-}
-
 const RegionAddMarkers = React.memo(function RegionAddMarkerLayer({
   markers,
   onStartDecorate,
@@ -476,13 +421,6 @@ const CollaborationProgressMarkers = React.memo(
             onClick={() => onRegionClick(name)}
           >
             <div className={MARKER_CONTENT}>
-              {/* 연필은 "남은 등록했는데 나는 아직"일 때만 — 내가 등록한 지역은
-                  스티커와 겹치지 않게 아이콘 없이 카운터만 보여준다 (QA) */}
-              {!trip.hasMine ? (
-                <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
-                  <PenLine className="size-4 text-fg-neutral-bold" />
-                </span>
-              ) : null}
               <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
@@ -833,6 +771,8 @@ function MapController({
   // 초기화 effect가 map만 보고 도니, 콜백은 ref 경유로 최신값을 읽는다
   const onReadyRef = React.useRef(onReady)
   onReadyRef.current = onReady
+  const onFeatureClickRef = React.useRef(onFeatureClick)
+  onFeatureClickRef.current = onFeatureClick
 
   // 지도 인스턴스별 초기화 — StrictMode 이중 마운트나 리마운트로 vis.gl이 지도를
   // 재생성하면 새 인스턴스에 레이어/리스너를 다시 붙여야 하므로 "1회 가드" 대신
@@ -871,7 +811,7 @@ function MapController({
             if (decoratingRef.current) return
             // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
             if ((map.getZoom() ?? 0) < BOUNDARY_ZOOM) return
-            onFeatureClick(name)
+            onFeatureClickRef.current(name)
           },
         })
         dataLayerRef.current = dataLayer
@@ -996,7 +936,6 @@ function MapController({
     overlayRef,
     centroidsRef,
     fillsRef,
-    onFeatureClick,
     setCentroids,
     setViewportCentroids,
     setViewportBox,
@@ -1139,6 +1078,7 @@ function TravelMapGoogleInner({
     (s) => s.pots.find((pot) => pot.id === s.currentPotId)?.name ?? "우리 팟"
   )
   const photos = useAllPhotos(currentPotId)
+  const createPhotoMutation = useCreatePhoto()
   const mapOverviewQuery = usePartyMapOverview(currentPotId)
   const mapOverview = mapOverviewQuery.data
   const fills = useRegionColorStore(
@@ -1176,8 +1116,6 @@ function TravelMapGoogleInner({
   >([])
   // 화면(+버퍼) 범위 — 여행 마커를 이 안쪽만 렌더한다
   const [viewportBox, setViewportBox] = React.useState<LatLngBox | null>(null)
-  const [collaborationRecordDraft, setCollaborationRecordDraft] =
-    React.useState<CollaborationRecordDraft | null>(null)
   const [mapReady, setMapReady] = React.useState(false)
   // 팁 안내의 시작하기 콜백이 렌더 시점과 무관하게 준비 여부를 읽기 위한 ref
   const mapReadyRef = React.useRef(false)
@@ -1600,59 +1538,34 @@ function TravelMapGoogleInner({
     }
   }, [mapReady, runCameraMove])
 
-  const startCollaborationRecord = React.useCallback(
-    (trip: CollaborationTrip) => {
-      if (!currentUserId) return
-      setCollaborationRecordDraft({
-        key: trip.key,
-        region: trip.region,
-        startDate: trip.startDate,
-        endDate: trip.endDate,
-        ...(trip.keyword ? { keyword: trip.keyword } : {}),
-        ...(trip.tripId ? { tripId: trip.tripId } : {}),
-      })
-      startDecorate(trip.region, "photo")
-    },
-    [currentUserId, startDecorate]
-  )
-
-  const openCollaborationConfirm = React.useCallback(
-    (trip: CollaborationTrip) => {
-      openModal(
-        ({ close }) => (
-          <RecordTripConfirmContent
-            trip={trip}
-            regionName={formatRegionName(trip.region)}
-            onClose={() => {
-              setDismissedRecordTipKey(null)
-              close()
-            }}
-            onConfirm={() => {
-              setDismissedRecordTipKey(null)
-              close()
-              startCollaborationRecord(trip)
-            }}
-          />
-        ),
-        {
-          showCloseButton: false,
-          className:
-            "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
-        }
-      )
-    },
-    [startCollaborationRecord]
-  )
-
   const latestTripsByRegionRef = React.useRef(latestTripsByRegion)
   React.useEffect(() => {
     latestTripsByRegionRef.current = latestTripsByRegion
   }, [latestTripsByRegion])
 
-  const openCollaborationConfirmRef = React.useRef(openCollaborationConfirm)
-  React.useEffect(() => {
-    openCollaborationConfirmRef.current = openCollaborationConfirm
-  }, [openCollaborationConfirm])
+  const addPhotoToExistingTrip = React.useCallback(
+    (trip: CollaborationTrip) => {
+      if (!currentUserId || createPhotoMutation.isPending) return
+      pickImageFile(async (previewUrl, file) => {
+        try {
+          await createPhotoMutation.mutateAsync({
+            potId: currentPotId,
+            region: trip.region,
+            date: trip.startDate,
+            ...(trip.tripId ? { tripId: trip.tripId } : {}),
+            ...(trip.keyword ? { keyword: trip.keyword } : {}),
+            uploaderId: currentUserId,
+            file,
+            previewUrl,
+          })
+          showToast({ message: "업로드가 완료됐어요", icon: "check" })
+        } catch (error) {
+          showToast({ message: uploadErrorMessage(error), icon: "alert" })
+        }
+      })
+    },
+    [createPhotoMutation, currentPotId, currentUserId]
+  )
 
   const startDecorateRef = React.useRef(startDecorate)
   React.useEffect(() => {
@@ -1670,7 +1583,7 @@ function TravelMapGoogleInner({
         applyZoomGate &&
         !canShowAvailableRegionMarker({
           zoomStage: zoomStageRef.current,
-          hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
+          hasTrip: Boolean(latestTrip),
           region: name,
         })
       ) {
@@ -1683,25 +1596,36 @@ function TravelMapGoogleInner({
       })
 
       if (action === "ignore") return
-      if (action === "confirm-join") {
-        // latestTrip은 confirm-join일 때만 필요하고, 그 분기는 존재를 보장한다
-        if (latestTrip) openCollaborationConfirmRef.current(latestTrip)
-        return
-      }
-      if (action === "blocked-toast") {
-        showToast({
-          message: "모두가 기록해야 다음 여행을 기록할 수 있어요!",
-          icon: "alert",
-          // 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
-          className: "bottom-[126px]",
-        })
+      if (action === "view-records") {
+        openBottomSheet(
+          ({ close }) => (
+            <RegionRecordsBottomSheet
+              region={name}
+              members={partyMembers}
+              photos={latestTrip?.photos ?? []}
+              onClose={close}
+              onAddPhoto={() => {
+                if (latestTrip) addPhotoToExistingTrip(latestTrip)
+              }}
+            />
+          ),
+          {
+            showCloseButton: false,
+            // 시트 본체가 배경·라운드를 그린다 — 래퍼가 칠하면 닫힘 애니메이션에 흰 잔상이 남는다.
+            // 래퍼는 시트 최대 높이만큼 커졌으므로 pointer-events를 시트 본체에만 남겨,
+            // 낮은 단계에서 시트 위 빈 영역이 지도 탭을 가로채지 않게 한다.
+            // Radix DismissableLayer가 인라인 pointer-events:auto를 박으므로 !가 필요하다.
+            className:
+              "pointer-events-none! overflow-hidden bg-transparent p-0 data-open:duration-[420ms] data-closed:duration-[240ms]",
+            showOverlay: false,
+          }
+        )
         return
       }
 
-      setCollaborationRecordDraft(null)
       startDecorateRef.current(name)
     },
-    []
+    [addPhotoToExistingTrip, partyMembers]
   )
 
   const handleFeatureClick = React.useCallback(
@@ -1721,7 +1645,7 @@ function TravelMapGoogleInner({
       const latestTrip = latestTripsByRegion.get(name)
       return canShowAvailableRegionMarker({
         zoomStage,
-        hasIncompleteTrip: Boolean(latestTrip && !latestTrip.isComplete),
+        hasTrip: Boolean(latestTrip),
         region: name,
       })
     })
@@ -1889,7 +1813,7 @@ function TravelMapGoogleInner({
         {/* 1단계(전국) — 기록이 있는 도마다 대표 키워드 핀 + 여행 횟수 뱃지 */}
         <ProvinceAggregateMarkers aggregates={visibleProvinceAggregates} />
 
-        {/* 시군구가 보이는 2단계 이상에서만 — 도/국가 단위 뷰에선 기록하기 툴팁을 숨긴다 */}
+        {/* 내가 아직 기록하지 않은 지역은 모든 상세 줌에서 지역명 기록 툴팁으로 안내한다 */}
         {zoomStage >= 2 && visibleRecordTip?.center ? (
           <AdvancedMarker
             position={{
@@ -1900,28 +1824,20 @@ function TravelMapGoogleInner({
             collisionBehavior={DETAIL_MARKER_COLLISION}
             zIndex={DETAIL_TOOLTIP_Z_INDEX}
             clickable
-            title={
-              zoomStage >= 3
-                ? "탭해서 기록하기"
-                : `‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`
-            }
+            title={`‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`}
             onClick={() => {
               setDismissedRecordTipKey(visibleRecordTip.trip.key)
-              openCollaborationConfirm(visibleRecordTip.trip)
+              handleRegionAction(visibleRecordTip.trip.region, false)
             }}
           >
             <div className="-translate-y-8">
               <MapPillTooltip className="gap-1" withCaret>
-                {zoomStage >= 3 ? (
-                  "탭해서 기록하기"
-                ) : (
-                  <span className="flex items-center gap-1">
-                    {`‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`}
-                    <span className="flex size-4 items-center justify-center rounded-full bg-bg-neutral-weak text-fg-neutral-bold">
-                      <ArrowRight className="size-3" />
-                    </span>
+                <span className="flex items-center gap-1">
+                  {`‘${formatRegionName(visibleRecordTip.trip.region)}’ 기록하기`}
+                  <span className="flex size-4 items-center justify-center rounded-full bg-bg-neutral-weak text-fg-neutral-bold">
+                    <ArrowRight className="size-3" />
                   </span>
-                )}
+                </span>
               </MapPillTooltip>
             </div>
           </AdvancedMarker>
@@ -2012,19 +1928,12 @@ function TravelMapGoogleInner({
 
       {decorating && decoratingCentroid ? (
         <TravelRecordFlow
-          key={`${decorating}-${collaborationRecordDraft?.key ?? "new"}`}
+          key={decorating}
           region={decorating}
           center={{
             lat: decoratingCentroid.lat,
             lng: decoratingCentroid.lng,
           }}
-          collaborationTrip={
-            collaborationRecordDraft?.region === decorating
-              ? collaborationRecordDraft
-              : null
-          }
-          onClose={() => setCollaborationRecordDraft(null)}
-          onComplete={() => setCollaborationRecordDraft(null)}
         />
       ) : null}
     </div>
