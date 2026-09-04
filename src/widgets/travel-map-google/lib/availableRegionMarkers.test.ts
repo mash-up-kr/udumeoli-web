@@ -7,7 +7,7 @@ describe("canShowAvailableRegionMarker", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 2,
-        hasIncompleteTrip: false,
+        hasTrip: false,
         region: "강릉시",
       })
     ).toBe(false)
@@ -15,7 +15,7 @@ describe("canShowAvailableRegionMarker", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 1,
-        hasIncompleteTrip: false,
+        hasTrip: false,
         region: "강릉시",
       })
     ).toBe(false)
@@ -25,7 +25,7 @@ describe("canShowAvailableRegionMarker", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 2.5,
-        hasIncompleteTrip: false,
+        hasTrip: false,
         region: "강릉시",
       })
     ).toBe(true)
@@ -33,27 +33,27 @@ describe("canShowAvailableRegionMarker", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 2.5,
-        hasIncompleteTrip: false,
+        hasTrip: false,
         region: "옥천군",
       })
     ).toBe(false)
   })
 
-  it("3단계에서는 진행 중인 여행이 없는 모든 지역의 [+] 버튼을 노출한다", () => {
+  it("3단계에서는 기록이 없는 모든 지역의 [+] 버튼을 노출한다", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 3,
-        hasIncompleteTrip: false,
+        hasTrip: false,
         region: "옥천군",
       })
     ).toBe(true)
   })
 
-  it("진행 중인 여행이 있는 지역은 협업 액션 마커가 담당하므로 제외한다", () => {
+  it("이미 기록된 지역은 완료 여부와 관계없이 두 번째 [+]를 노출하지 않는다", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 3,
-        hasIncompleteTrip: true,
+        hasTrip: true,
         region: "강릉시",
       })
     ).toBe(false)
@@ -61,7 +61,7 @@ describe("canShowAvailableRegionMarker", () => {
     expect(
       canShowAvailableRegionMarker({
         zoomStage: 2.5,
-        hasIncompleteTrip: true,
+        hasTrip: true,
         region: "강릉시",
       })
     ).toBe(false)

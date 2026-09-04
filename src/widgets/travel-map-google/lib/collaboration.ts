@@ -188,19 +188,16 @@ export function mostPickedKeyword(
 export type RegionAction =
   /** 아무 반응 없음 — 줌 1·2단계의 미완료 지역 (Figma 1836-15937 #4) */
   | "ignore"
-  /** 날짜 확인 팝업 → 팟원이 만든 여행에 합류 (#5) */
-  | "confirm-join"
-  /** "모두가 기록해야 다음 여행을 기록할 수 있어요!" 토스트 (#7) */
-  | "blocked-toast"
+  /** 이미 기록한 지역의 팟 기록 바텀시트 */
+  | "view-records"
   /** 새 여행 등록 플로우 (#8, 기록이 없는 지역 포함) */
   | "start-record"
 
 /**
  * 지역을 눌렀을 때 무엇을 할지 — 폴리곤·키워드 스티커·협업 마커가 공유하는 단일 정책.
  *
- * 판단 기준은 "누른 대상"이 아니라 그 지역의 **최신 여행**이다. 스티커는 지역당 최대
- * 2개라 과거 완료 여행 스티커가 남아 있는데, 그걸 기준으로 삼으면 최신 여행이 미완료인
- * 지역에서도 다음 여행이 열려 "팟원 전원이 완료해야 N+1 등록 가능"(#6) 규칙이 뚫린다.
+ * 판단 기준은 "누른 대상"이 아니라 그 지역의 **최신 여행**이다. 과거 완료 여행 기록이
+ * 남아 있어도 최신 여행이 미완료인 지역에서는 새 등록이 열리지 않아야 한다.
  */
 export function resolveRegionAction({
   latestTrip,
@@ -215,21 +212,19 @@ export function resolveRegionAction({
 }): RegionAction {
   if (!latestTrip) return "start-record"
   if (applyZoomGate && !latestTrip.isComplete && zoomStage < 3) return "ignore"
-  if (!latestTrip.hasMine) return "confirm-join"
-  if (!latestTrip.isComplete) return "blocked-toast"
-  return "start-record"
+  return "view-records"
 }
 
-/** 한 지역 내 두 번째 여행까지만 이모티콘 노출 (Figma 1836-15937 #1-1) */
-const STICKER_VISIT_LIMIT = 2
+/** 한 팟의 한 지역당 대표 기록 하나만 지도 스티커로 노출한다. */
+const STICKER_VISIT_LIMIT = 1
 
 /**
- * 키워드 스티커를 붙일 여행 — "한 지역 내 두 번째 여행까지, 세 번째 여행부터는 노출 X".
+ * 키워드 스티커를 붙일 여행 — 중복 데이터가 남아도 최신이 아닌 기록은 지도에서 숨긴다.
  *
  * 회차는 **지역 전체 여행** 기준으로 센다. 스티커는 팟 전체 여행에 붙는다 —
  * 지도 집계 API(#123) 이후 색칠·1단계 아이콘이 팟 전체 기준이라, 내 기록 여부로
  * 거르면 초대로 합류한 팟에서 색칠만 되고 2·3단계 아이콘이 사라진다.
- * trips는 최신순이라 회차를 세려면 오래된 순으로 뒤집는다.
+ * trips는 최신순이라 각 지역의 첫 기록이 최신 대표 기록이다.
  */
 export function visibleStickerTrips(
   trips: Array<CollaborationTrip>
@@ -237,10 +232,9 @@ export function visibleStickerTrips(
   const visitCounts = new Map<string, number>()
   const visible: Array<CollaborationTrip> = []
 
-  for (const trip of [...trips].reverse()) {
-    const nth = (visitCounts.get(trip.region) ?? 0) + 1
-    visitCounts.set(trip.region, nth)
-    if (nth > STICKER_VISIT_LIMIT) continue
+  for (const trip of trips) {
+    if ((visitCounts.get(trip.region) ?? 0) >= STICKER_VISIT_LIMIT) continue
+    visitCounts.set(trip.region, (visitCounts.get(trip.region) ?? 0) + 1)
     visible.push(trip)
   }
 

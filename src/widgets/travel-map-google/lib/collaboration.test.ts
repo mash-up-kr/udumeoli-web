@@ -92,7 +92,7 @@ describe("buildCollaborationTrips", () => {
 })
 
 describe("visibleStickerTrips", () => {
-  it("한 지역의 첫·두 번째 여행만 이모지 대상 — 세 번째 여행부터는 제외한다", () => {
+  it("한 지역의 대표 여행 하나만 이모지 대상으로 노출한다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("third", "강릉시", "2026-09-01", "user-1", {
@@ -110,15 +110,14 @@ describe("visibleStickerTrips", () => {
     })
 
     expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
-      "강릉시|2026-07-01|2026-07-01",
-      "강릉시|2026-08-01|2026-08-01",
+      "강릉시|2026-09-01|2026-09-01",
     ])
   })
 
   it("회차는 지역 전체 여행 기준 — 팟원만 기록한 여행도 회차를 차지하고 노출된다", () => {
     const trips = buildCollaborationTrips({
       photos: [
-        // 1차: 내가 기록 / 2차: 팟원만 / 3차: 내가 기록 → 3차는 회차 초과라 제외
+        // 중복 데이터가 있어도 지역 대표 기록 하나만 지도에 노출한다
         photo("first-me", "강릉시", "2026-07-01", "user-1", {
           keyword: "PHOTO",
         }),
@@ -134,8 +133,7 @@ describe("visibleStickerTrips", () => {
     })
 
     expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
-      "강릉시|2026-07-01|2026-07-01",
-      "강릉시|2026-08-01|2026-08-01",
+      "강릉시|2026-09-01|2026-09-01",
     ])
   })
 
@@ -154,8 +152,8 @@ describe("visibleStickerTrips", () => {
     })
 
     expect(visibleStickerTrips(trips).map((trip) => trip.region)).toEqual([
-      "강릉시",
       "동해시",
+      "강릉시",
     ])
   })
 })
@@ -191,10 +189,10 @@ describe("resolveRegionAction", () => {
         zoomStage: 3,
         applyZoomGate: false,
       })
-    ).toBe("blocked-toast")
+    ).toBe("view-records")
   })
 
-  it("최신 여행이 완료면 다음 여행 등록을 연다", () => {
+  it("최신 여행이 완료면 기존 기록을 연다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("me", "강릉시", "2026-07-01", "user-1"),
@@ -211,10 +209,10 @@ describe("resolveRegionAction", () => {
         zoomStage: 3,
         applyZoomGate: true,
       })
-    ).toBe("start-record")
+    ).toBe("view-records")
   })
 
-  it("내가 아직 기록하지 않은 여행은 확인 팝업으로 보낸다", () => {
+  it("기록 중인 지역도 기존 기록 시트를 연다", () => {
     const trips = buildCollaborationTrips({
       photos: [photo("other", "강릉시", "2026-07-01", "m-1")],
       members,
@@ -227,7 +225,27 @@ describe("resolveRegionAction", () => {
         zoomStage: 3,
         applyZoomGate: true,
       })
-    ).toBe("confirm-join")
+    ).toBe("view-records")
+  })
+
+  it("완료된 지역은 내가 기록하지 않았어도 기존 기록을 연다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        photo("other-1", "강릉시", "2026-07-01", "m-1"),
+        photo("other-2", "강릉시", "2026-07-01", "m-2"),
+        photo("other-3", "강릉시", "2026-07-01", "user-1"),
+      ],
+      members,
+      currentUserId: "outside-user",
+    })
+    const latest = latestTripByRegion(trips).get("강릉시")
+    expect(
+      resolveRegionAction({
+        latestTrip: latest,
+        zoomStage: 3,
+        applyZoomGate: true,
+      })
+    ).toBe("view-records")
   })
 
   it("줌 3단계 미만 폴리곤 클릭은 미완료 지역에서 아무 반응이 없다", () => {
@@ -251,7 +269,7 @@ describe("resolveRegionAction", () => {
         zoomStage: 2,
         applyZoomGate: false,
       })
-    ).toBe("confirm-join")
+    ).toBe("view-records")
   })
 
   it("기록이 없는 지역은 바로 등록 플로우로 보낸다", () => {
