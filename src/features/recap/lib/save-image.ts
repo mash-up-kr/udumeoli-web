@@ -2,8 +2,13 @@
 
 import specialGothicFontUrl from "@fontsource/special-gothic-condensed-one/files/special-gothic-condensed-one-latin-400-normal.woff2"
 
-import { RECAP_CARD_LAYOUT, RECAP_CARD_SIZE } from "./recap-layout"
+import {
+  RECAP_CARD_LAYOUT,
+  RECAP_CARD_SIZE,
+  estimateTextWidth,
+} from "./recap-layout"
 import { getRecapMapView } from "./recap-map-config"
+import { RECAP_COUNTRY_LABEL } from "./recap-model"
 import type { RECAP_MAP_VIEW } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
@@ -159,23 +164,90 @@ function softenFallbackMap(svgMarkup: string): string {
   return new XMLSerializer().serializeToString(document.documentElement)
 }
 
+const HEADING_FONT = "Special Gothic Condensed One, Anton, sans-serif"
+const LABEL_FONT = "Pretendard, Apple SD Gothic Neo, Arial, sans-serif"
+function estimateLabelWidth(text: string, fontSize: number): number {
+  return (
+    estimateTextWidth(text, fontSize) + RECAP_CARD_LAYOUT.labels.paddingX * 2
+  )
+}
+
+type LabelRow = Array<{ text: string; width: number }>
+
+/** Figma의 flex-wrap 재현 — maxWidth를 넘으면 다음 줄로 넘긴다 */
+function wrapLabels(texts: Array<string>, fontSize: number): Array<LabelRow> {
+  const { gap, maxWidth } = RECAP_CARD_LAYOUT.labels
+  const rows: Array<LabelRow> = []
+  let row: LabelRow = []
+  let rowWidth = 0
+
+  for (const text of texts) {
+    const width = Math.min(estimateLabelWidth(text, fontSize), maxWidth)
+    const nextWidth = row.length === 0 ? width : rowWidth + gap + width
+    if (row.length > 0 && nextWidth > maxWidth) {
+      rows.push(row)
+      row = [{ text, width }]
+      rowWidth = width
+      continue
+    }
+    row.push({ text, width })
+    rowWidth = nextWidth
+  }
+  if (row.length > 0) rows.push(row)
+  return rows
+}
+
+function labelPillMarkup(
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  fillOpacity: string
+): string {
+  const { height, fontSize, paddingX } = RECAP_CARD_LAYOUT.labels
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${height / 2}" fill="#232936" fill-opacity="${fillOpacity}"/><text x="${x + paddingX}" y="${y + height / 2 + fontSize * 0.36}" fill="white" font-family="${LABEL_FONT}" font-size="${fontSize}" font-weight="500">${escapeXml(text)}</text>`
+}
+
 export function buildRecapTextMarkup(model: RecapCardModel): string {
-  const days = escapeXml(String(model.totalDays))
+  const { padding, heading, labels } = RECAP_CARD_LAYOUT
   const pins = escapeXml(String(model.pinCount))
-  const labels = model.members
-    .map((member, index) => {
-      const x = RECAP_CARD_LAYOUT.members.left
-      const y =
-        RECAP_CARD_LAYOUT.members.top +
-        index *
-          (RECAP_CARD_LAYOUT.members.rowHeight +
-            RECAP_CARD_LAYOUT.members.rowGap)
-      const width = Math.min(Math.max(member.length * 6 + 16, 28), 104)
-      return `<rect x="${x}" y="${y}" width="${width}" height="${RECAP_CARD_LAYOUT.members.rowHeight}" rx="6.5" fill="#232936" fill-opacity=".4"/><text x="${x + width / 2}" y="${y + 9}" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="7" font-weight="500">@${escapeXml(member)}</text>`
+
+  const headingMarkup =
+    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
+    `<text x="${padding}" y="${heading.countryBaseline}" font-family="${HEADING_FONT}" font-size="${heading.countryFontSize}" font-weight="400" fill="#141820">${escapeXml(RECAP_COUNTRY_LABEL)}</text>`
+
+  // 팟 이름 라벨 위에 닉네임 줄들이 쌓인다 — 아래에서 위로 쌓아 하단 여백을 고정한다
+  const rows = wrapLabels(
+    model.members.map((member) => `@${member}`),
+    labels.fontSize
+  )
+  const blockHeight =
+    (rows.length + 1) * labels.height + rows.length * labels.gap
+  const top = RECAP_CARD_SIZE.height - labels.bottom - blockHeight
+
+  const potMarkup = labelPillMarkup(
+    model.potName,
+    labels.left,
+    top,
+    estimateLabelWidth(model.potName, labels.fontSize),
+    "1"
+  )
+
+  const memberMarkup = rows
+    .map((row, rowIndex) => {
+      const y = top + (rowIndex + 1) * (labels.height + labels.gap)
+      let x = labels.left
+      return row
+        .map(({ text, width }) => {
+          const markup = labelPillMarkup(text, x, y, width, "0.4")
+          x += width + labels.gap
+          return markup
+        })
+        .join("")
     })
     .join("")
 
-  return `<text x="${RECAP_CARD_LAYOUT.heading.left}" y="${RECAP_CARD_LAYOUT.heading.firstBaseline}" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="${RECAP_CARD_LAYOUT.heading.fontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${days}</tspan><tspan dx="4" fill="#232936"> DAYS</tspan></text><text x="${RECAP_CARD_LAYOUT.heading.left}" y="${RECAP_CARD_LAYOUT.heading.secondBaseline}" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="${RECAP_CARD_LAYOUT.heading.fontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${pins}</tspan><tspan dx="4" fill="#232936"> PINNNED</tspan></text>${labels}`
+  return `${headingMarkup}${potMarkup}${memberMarkup}`
 }
 
 async function buildExportSvg(

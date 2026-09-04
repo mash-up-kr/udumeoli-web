@@ -5,6 +5,7 @@ import { useRecapStats } from "../api/queries"
 import { RECAP_CARD_LAYOUT, cardPercent } from "../lib/recap-layout"
 import { createRecapImageBlob, saveRecapImage } from "../lib/save-image"
 import { computeRecapStats } from "../lib/stats"
+import { RECAP_COUNTRY_LABEL, RECAP_COUNTRY_NAME } from "../lib/recap-model"
 import { RecapMapPreview } from "./RecapMapPreview"
 import type { RecapCardModel } from "../lib/recap-model"
 
@@ -16,10 +17,15 @@ import { ButtonIcon } from "@/shared/ui/button-icon"
 import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { Tooltip } from "@/shared/ui/tooltip"
+import { cn } from "@/shared/lib/utils"
 import { USE_MOCK } from "@/shared/api/client"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import recapLocationIconSrc from "@/shared/assets/icon-recap-location.svg"
 import photoMapSrc from "@/shared/assets/photo-map.jpg"
+
+/** 카드 좌하단 라벨 (시안 3196-5847) — 카드 폭 270 기준 값을 cqw로 환산 */
+const RECAP_LABEL_PILL =
+  "truncate rounded-full px-[1.85cqw] py-[0.93cqw] text-[3.24cqw] leading-[4.63cqw] whitespace-nowrap text-white backdrop-blur-[4px]"
 
 async function exportRecapImage(
   element: HTMLElement | null,
@@ -83,7 +89,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     [photos]
   )
   const recapStatsQuery = useRecapStats(currentPotId)
-  const { totalDays, pinCount } = USE_MOCK
+  const { pinCount } = USE_MOCK
     ? localStats
     : (recapStatsQuery.data ?? localStats)
   const orderedMembers = React.useMemo(
@@ -97,12 +103,11 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   )
   const recapModel = React.useMemo<RecapCardModel>(
     () => ({
-      totalDays,
       pinCount,
       potName,
       members: orderedMembers.map((member) => member.nickname),
     }),
-    [orderedMembers, pinCount, potName, totalDays]
+    [orderedMembers, pinCount, potName]
   )
 
   React.useEffect(() => {
@@ -185,7 +190,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
               </div>
             </div>
             <Tooltip>
-              <span className="text-fg-brand-solid">{totalDays}일</span> 동안{" "}
+              {RECAP_COUNTRY_NAME}에서{" "}
               <span className="text-fg-brand-solid">{pinCount}개의 핀</span>을
               만들었어요
             </Tooltip>
@@ -199,28 +204,23 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-285px)] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
+            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-285px)] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
           >
             <div
               className="absolute z-10"
               style={{
                 top: cardPercent(RECAP_CARD_LAYOUT.heading.top, 480),
-                left: cardPercent(RECAP_CARD_LAYOUT.heading.left, 270),
+                left: cardPercent(RECAP_CARD_LAYOUT.padding, 270),
               }}
             >
-              <div className="flex flex-col font-eng text-[32px] leading-9 font-normal tracking-normal text-[#141820]">
-                <div className="flex items-end gap-1 whitespace-nowrap">
-                  <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
-                    {totalDays}
-                  </span>
-                  <span>DAYS</span>
-                </div>
-                <div className="flex items-end gap-1 whitespace-nowrap">
-                  <span className="text-fg-brand-solid [-webkit-text-stroke:0.5px_#232936]">
-                    {pinCount}
-                  </span>
+              <div className="flex flex-col gap-[0.93cqw] font-eng font-normal tracking-normal text-[#141820]">
+                <div className="flex items-end gap-[0.93cqw] text-[10.19cqw] leading-[10.19cqw] whitespace-nowrap">
+                  <span className="text-fg-brand-solid">{pinCount}</span>
                   <span>PINNNED</span>
                 </div>
+                <span className="text-[8.33cqw] leading-[8.33cqw] whitespace-nowrap">
+                  {RECAP_COUNTRY_LABEL}
+                </span>
               </div>
             </div>
             <img
@@ -245,21 +245,31 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
             <div
-              className="absolute z-10 flex flex-col items-start gap-1"
+              className="absolute z-10 flex flex-col items-start gap-[0.93cqw]"
               style={{
-                top: cardPercent(RECAP_CARD_LAYOUT.members.top, 480),
-                left: cardPercent(RECAP_CARD_LAYOUT.members.left, 270),
-                maxWidth: cardPercent(RECAP_CARD_LAYOUT.members.width, 270),
+                bottom: cardPercent(RECAP_CARD_LAYOUT.labels.bottom, 480),
+                left: cardPercent(RECAP_CARD_LAYOUT.labels.left, 270),
+                maxWidth: cardPercent(RECAP_CARD_LAYOUT.labels.maxWidth, 270),
               }}
             >
-              {orderedMembers.map((member) => (
-                <span
-                  key={member.id}
-                  className="max-w-full truncate rounded-full bg-[#232936]/40 px-2 py-[2px] text-[9px] leading-[12px] whitespace-nowrap text-white backdrop-blur-[4px]"
-                >
-                  @{member.nickname}
-                </span>
-              ))}
+              <span
+                className={cn(RECAP_LABEL_PILL, "bg-[#232936] font-semibold")}
+              >
+                {potName}
+              </span>
+              <div className="flex flex-wrap gap-[0.93cqw]">
+                {orderedMembers.map((member) => (
+                  <span
+                    key={member.id}
+                    className={cn(
+                      RECAP_LABEL_PILL,
+                      "max-w-full bg-[#232936]/40"
+                    )}
+                  >
+                    @{member.nickname}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
