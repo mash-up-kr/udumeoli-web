@@ -14,7 +14,9 @@ export const RECAP_MAP_VIEW: RecapMapView = {
 } as const
 
 export const RECAP_MAINLAND_MAP_VIEW: RecapMapView = {
-  center: { lat: 36.3, lng: 127.5 },
+  // 육지 경도 범위는 126.1~129.6 — 중심을 127.5로 두면 동해안(포항·경주)이
+  // 카드 오른쪽 밖으로 잘린다. Static Maps가 정수 줌만 받아 줌은 7로 고정.
+  center: { lat: 36.3, lng: 127.9 },
   zoom: 7,
   width: 360,
   height: 640,
