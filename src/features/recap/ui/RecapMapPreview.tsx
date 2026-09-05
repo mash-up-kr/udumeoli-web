@@ -26,15 +26,25 @@ type Project = (point: Point) => Point
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
 const REGION_BORDER_COLOR = "#f8fffb"
-const MARKER_PIN = { x: 4.75, y: 0.6, width: 22, height: 25.5 }
+/**
+ * 마커 치수 (시안 3196-5847, 432×768 기준을 카드 폭 270에 맞춰 0.625배).
+ * 화면(AdvancedMarker)과 저장 SVG가 같은 값을 쓴다 — 미리보기 = 저장 이미지.
+ */
+const MARKER_BOX = { width: 28.75, height: 23.13 }
+const MARKER_PIN = { x: 4.375, y: 0, width: 20, height: 23.13 }
 const MARKER_ANCHOR = {
   x: MARKER_PIN.x + MARKER_PIN.width / 2,
   y: MARKER_PIN.y + MARKER_PIN.height,
 }
-const MARKER_STICKER = { x: 6.65, y: 2.75, width: 18.2, height: 18.2 }
-const MARKER_BADGE = { x: 21.5, y: -4.5 }
+const MARKER_STICKER = { x: 6.875, y: 2.5, width: 15, height: 15 }
+const MARKER_BADGE = { x: 18.75, y: -3.75, height: 12.5, fontSize: 7.5 }
 /** 도 라벨 (시안 3229-11008) — 핀 아래 중앙 알약 */
-const PROVINCE_LABEL = { gap: 3, height: 12.5, fontSize: 7.5, paddingX: 4 }
+const PROVINCE_LABEL = { gap: 3, height: 12.5, fontSize: 7.5, paddingX: 2.5 }
+
+/** 카드 폭 270 기준 값을 컨테이너 쿼리 단위로 — 카드가 줄어도 마커가 같이 줄어든다 */
+function cqw(value: number): string {
+  return `${(value / 270) * 100}cqw`
+}
 
 type RecapMarker = {
   key: string
@@ -169,28 +179,62 @@ function GoogleRecapMap({
             {/* AdvancedMarker 기본 앵커는 컨텐츠 박스의 bottom-center다 — 라벨을
                 흐름에 두면 박스가 커져 핀이 지역 중심 위로 떠버린다. 저장 SVG처럼
                 핀 끝이 중심에 오도록 라벨은 absolute로 박스 밖에 건다. */}
-            <div className="relative size-10">
+            <div
+              className="relative"
+              style={{
+                width: cqw(MARKER_BOX.width),
+                height: cqw(MARKER_BOX.height),
+              }}
+            >
               <img
                 src={keyword.mapPinSrc}
                 alt=""
-                className="absolute inset-0 size-full"
+                className="absolute max-w-none object-contain"
+                style={{
+                  left: cqw(MARKER_PIN.x),
+                  top: cqw(MARKER_PIN.y),
+                  width: cqw(MARKER_PIN.width),
+                  height: cqw(MARKER_PIN.height),
+                }}
               />
               <img
                 src={keyword.mapStickerSrc}
                 alt=""
-                className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 object-contain"
+                className="absolute max-w-none object-contain"
+                style={{
+                  left: cqw(MARKER_STICKER.x),
+                  top: cqw(MARKER_STICKER.y),
+                  width: cqw(MARKER_STICKER.width),
+                  height: cqw(MARKER_STICKER.height),
+                }}
               />
               {label ? (
                 <span
-                  className="absolute top-full left-1/2 mt-[3px] -translate-x-1/2 rounded-full px-1.5 text-[10px] leading-4 whitespace-nowrap text-white"
-                  style={{ backgroundColor: keyword.mapColor }}
+                  className="absolute left-1/2 -translate-x-1/2 rounded-full whitespace-nowrap text-white"
+                  style={{
+                    backgroundColor: keyword.mapColor,
+                    top: cqw(MARKER_BOX.height + PROVINCE_LABEL.gap),
+                    height: cqw(PROVINCE_LABEL.height),
+                    lineHeight: cqw(PROVINCE_LABEL.height),
+                    paddingInline: cqw(PROVINCE_LABEL.paddingX),
+                    fontSize: cqw(PROVINCE_LABEL.fontSize),
+                  }}
                 >
                   {label}
                 </span>
               ) : count > 1 ? (
                 <span
-                  className="absolute -top-1 -right-2 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 text-white"
-                  style={{ backgroundColor: keyword.mapColor }}
+                  className="absolute rounded-full text-center whitespace-nowrap text-white"
+                  style={{
+                    backgroundColor: keyword.mapColor,
+                    left: cqw(MARKER_BADGE.x),
+                    top: cqw(MARKER_BADGE.y),
+                    height: cqw(MARKER_BADGE.height),
+                    minWidth: cqw(MARKER_BADGE.height),
+                    lineHeight: cqw(MARKER_BADGE.height),
+                    paddingInline: cqw(PROVINCE_LABEL.paddingX),
+                    fontSize: cqw(MARKER_BADGE.fontSize),
+                  }}
                 >
                   {count}
                 </span>
@@ -452,7 +496,11 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         {markers.map(({ key, keyword, count, label, position }) => {
           const markerX = position[0] - MARKER_ANCHOR.x
           const markerY = position[1] - MARKER_ANCHOR.y
-          const badgeWidth = count > 9 ? 16 : 13.7
+          const badgeWidth = Math.max(
+            MARKER_BADGE.height,
+            estimateTextWidth(String(count), MARKER_BADGE.fontSize) +
+              PROVINCE_LABEL.paddingX * 2
+          )
           const labelWidth = label
             ? estimateTextWidth(label, PROVINCE_LABEL.fontSize) +
               PROVINCE_LABEL.paddingX * 2
@@ -498,6 +546,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                     fill="white"
                     fontSize={PROVINCE_LABEL.fontSize}
                     fontWeight="500"
+                    data-recap-text="1"
                   >
                     {label}
                   </text>
@@ -506,16 +555,16 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                 <g transform={`translate(${MARKER_BADGE.x} ${MARKER_BADGE.y})`}>
                   <rect
                     width={badgeWidth}
-                    height="13.69"
-                    rx="6.85"
+                    height={MARKER_BADGE.height}
+                    rx={MARKER_BADGE.height / 2}
                     fill={keyword.mapColor}
                   />
                   <text
                     x={badgeWidth / 2}
-                    y="9.3"
+                    y={MARKER_BADGE.height / 2 + MARKER_BADGE.fontSize * 0.36}
                     textAnchor="middle"
                     fill="white"
-                    fontSize="5.62"
+                    fontSize={MARKER_BADGE.fontSize}
                     fontWeight="500"
                   >
                     {count}
