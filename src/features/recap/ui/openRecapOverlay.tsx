@@ -206,7 +206,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(100dvh-285px)] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
+            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(var(--app-vh)_-_285px)] w-[min(320px,calc(var(--app-vw)_-_32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
           >
             <div
               className="absolute z-10"

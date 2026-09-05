@@ -105,7 +105,7 @@ function MapGooglePageContent() {
   if (!ready || !hasPot) return <AppSplash />
 
   return (
-    <MobileLayout className="flex h-dvh flex-col">
+    <MobileLayout className="flex h-[var(--app-vh)] flex-col">
       <main className="relative flex-1">
         <TravelMapGoogle
           className="absolute inset-0"

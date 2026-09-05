@@ -41,7 +41,7 @@ export function AppSplash({
   }, [onMotionEnd])
 
   return (
-    <MobileLayout className="relative flex h-dvh flex-col items-center justify-center overflow-hidden bg-bg-neutral-subtle">
+    <MobileLayout className="relative flex h-[var(--app-vh)] flex-col items-center justify-center overflow-hidden bg-bg-neutral-subtle">
       {autoplayBlocked ? (
         <img
           src={skyBackgroundSrc}

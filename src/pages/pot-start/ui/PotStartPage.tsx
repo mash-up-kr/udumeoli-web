@@ -77,7 +77,7 @@ export function PotStartPage({ inviteCode }: { inviteCode?: string }) {
   const goBack = () => openOnboardingOverlay({ force: true })
 
   return (
-    <MobileLayout className="flex min-h-dvh animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
+    <MobileLayout className="flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />

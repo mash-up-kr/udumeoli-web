@@ -262,7 +262,7 @@ function MyPageContent() {
   }
 
   return (
-    <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <Header
         title="마이페이지"
         onIconClick={() =>

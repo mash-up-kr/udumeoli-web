@@ -54,6 +54,11 @@
 }
 
 :root {
+    /* 앱이 기준으로 삼는 화면 크기. 기본은 뷰포트지만, 데스크탑 안내 UI의 폰 프레임이
+       자기 크기로 덮어써서 그 안에서는 프레임이 곧 화면이 된다 (DesktopGuide).
+       앱 코드는 100dvh/100vw 대신 반드시 이 변수를 쓴다. */
+    --app-vh: 100dvh;
+    --app-vw: 100dvw;
     /* 시맨틱 토큰 → 디자인 시스템 팔레트 매핑 (v1.0.0) */
     --background: #ffffff; /* neutral-0 */
     --foreground: #141820; /* neutral-900 */
@@ -563,7 +568,7 @@
         }
 
         .travel-record-photo-frame {
-            height: min(382px, calc(100dvh - 410px));
+            height: min(382px, calc(var(--app-vh) - 410px));
             width: auto;
             max-width: 100%;
         }

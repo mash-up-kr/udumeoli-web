@@ -309,7 +309,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
   }
 
   return (
-    <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <Header title={pot.name} onIconClick={goMyPage} />
 
       <main className="flex flex-1 flex-col px-4 pt-2 pb-8">
