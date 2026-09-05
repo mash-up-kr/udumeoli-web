@@ -13,6 +13,8 @@ import type { RECAP_MAP_VIEW } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
 const EXPORT_SCALE = 4
+const LABEL_FONT =
+  "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif"
 const GOOGLE_STATIC_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
   | string
   | undefined
@@ -56,6 +58,20 @@ async function exportFontStyle(): Promise<string> {
       return ""
     })
   return exportFontStylePromise
+}
+
+/** 캔버스 fillText 전에 웹폰트 로드를 보장한다 (dynamic subset은 지연 로드된다) */
+async function ensureLabelFont(): Promise<void> {
+  const fonts = document.fonts as FontFaceSet | undefined
+  if (!fonts) return
+  try {
+    await Promise.all([
+      fonts.load(`500 10px ${LABEL_FONT}`, "가나다"),
+      fonts.ready,
+    ])
+  } catch (error) {
+    console.warn("리캡 한글 폰트를 준비하지 못했어요", error)
+  }
 }
 
 async function inlineSvgImages(svgMarkup: string): Promise<string> {
@@ -165,7 +181,6 @@ function softenFallbackMap(svgMarkup: string): string {
 }
 
 const HEADING_FONT = "Special Gothic Condensed One, Anton, sans-serif"
-const LABEL_FONT = "Pretendard, Apple SD Gothic Neo, Arial, sans-serif"
 function estimateLabelWidth(text: string, fontSize: number): number {
   return (
     estimateTextWidth(text, fontSize) + RECAP_CARD_LAYOUT.labels.paddingX * 2
@@ -205,7 +220,7 @@ function labelPillMarkup(
   fillOpacity: string
 ): string {
   const { height, fontSize, paddingX } = RECAP_CARD_LAYOUT.labels
-  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${height / 2}" fill="#232936" fill-opacity="${fillOpacity}"/><text x="${x + paddingX}" y="${y + height / 2 + fontSize * 0.36}" fill="white" font-family="${LABEL_FONT}" font-size="${fontSize}" font-weight="500">${escapeXml(text)}</text>`
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${height / 2}" fill="#232936" fill-opacity="${fillOpacity}"/><text x="${x + paddingX}" y="${y + height / 2 + fontSize * 0.36}" fill="white" font-family="${LABEL_FONT}" font-size="${fontSize}" font-weight="500" data-recap-text="1">${escapeXml(text)}</text>`
 }
 
 export function buildRecapTextMarkup(model: RecapCardModel): string {
@@ -271,7 +286,7 @@ async function buildExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}<g>${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -295,10 +310,70 @@ async function buildFallbackExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}${mapWithBackground}<rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+}
+
+interface CanvasText {
+  x: number
+  y: number
+  fontSize: number
+  fontWeight: string
+  fill: string
+  anchor: string
+  text: string
+}
+
+/** 조상 <g>의 translate를 누적한다 — 마커 라벨은 두 겹으로 감싸여 있다 */
+function accumulatedTranslate(node: Element): [number, number] {
+  let x = 0
+  let y = 0
+  for (let n: Element | null = node; n; n = n.parentElement) {
+    const transform = n.getAttribute("transform")
+    const match = transform?.match(
+      /translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)/
+    )
+    if (match) {
+      x += Number(match[1])
+      y += Number(match[2])
+    }
+  }
+  return [x, y]
+}
+
+/**
+ * SVG를 <img>로 래스터화하면 문서 폰트(Pretendard)가 넘어가지 않아 한글이
+ * 시스템 기본 글꼴로 떨어진다. 한글 text는 SVG에서 빼고 캔버스에 직접 그린다 —
+ * 캔버스 fillText는 문서 폰트를 그대로 쓴다.
+ * SVG 그대로 공유하는 폴백 경로를 위해 원본 markup에는 text를 남겨둔다.
+ */
+function extractCanvasTexts(svgMarkup: string): {
+  svg: string
+  texts: Array<CanvasText>
+} {
+  const document_ = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
+  const nodes = [...document_.querySelectorAll("[data-recap-text]")]
+  const texts = nodes.map((node) => {
+    const [dx, dy] = accumulatedTranslate(node)
+    return {
+      x: Number(node.getAttribute("x") ?? 0) + dx,
+      y: Number(node.getAttribute("y") ?? 0) + dy,
+      fontSize: Number(node.getAttribute("font-size") ?? 10),
+      fontWeight: node.getAttribute("font-weight") ?? "400",
+      fill: node.getAttribute("fill") ?? "#000",
+      anchor: node.getAttribute("text-anchor") ?? "start",
+      text: node.textContent,
+    }
+  })
+  nodes.forEach((node) => node.remove())
+  return {
+    svg: new XMLSerializer().serializeToString(document_.documentElement),
+    texts,
+  }
 }
 
 async function svgToBlob(svgMarkup: string): Promise<Blob> {
+  const { svg: svgWithoutText, texts } = extractCanvasTexts(svgMarkup)
+  svgMarkup = svgWithoutText
   const image = new Image()
   image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`
   await new Promise<void>((resolve, reject) => {
@@ -313,6 +388,20 @@ async function svgToBlob(svgMarkup: string): Promise<Blob> {
   if (!context) throw new Error("이미지 캔버스를 만들 수 없어요")
   context.scale(EXPORT_SCALE, EXPORT_SCALE)
   context.drawImage(image, 0, 0, 270, 480)
+
+  await ensureLabelFont()
+  context.textBaseline = "alphabetic"
+  for (const item of texts) {
+    context.font = `${item.fontWeight} ${item.fontSize}px ${LABEL_FONT}`
+    context.fillStyle = item.fill
+    context.textAlign =
+      item.anchor === "middle"
+        ? "center"
+        : item.anchor === "end"
+          ? "right"
+          : "left"
+    context.fillText(item.text, item.x, item.y)
+  }
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png")

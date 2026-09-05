@@ -44,12 +44,33 @@ export function cardPercent(value: number, size: number): string {
 }
 
 const CJK = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/
+/** 저장 이미지의 한글은 캔버스에서 이 폰트로 그려진다 — 폭도 같은 폰트로 재야 맞다 */
+const LABEL_FONT =
+  "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif"
+
+let measureContext: CanvasRenderingContext2D | null | undefined
+
+function canvasMeasure(text: string, fontSize: number): number | null {
+  if (measureContext === undefined) {
+    measureContext =
+      typeof document === "undefined"
+        ? null
+        : document.createElement("canvas").getContext("2d")
+  }
+  if (!measureContext?.measureText) return null
+  measureContext.font = `500 ${fontSize}px ${LABEL_FONT}`
+  const width = measureContext.measureText(text).width
+  // jsdom 등 폰트 메트릭이 없는 환경은 0을 준다
+  return width > 0 ? width : null
+}
 
 /**
- * SVG는 텍스트 폭을 재주지 않는다 — 한글 1em·그 외 0.55em으로 근사한다.
- * ponytail: 실측이 필요해지면 canvas measureText로 교체.
+ * 라벨 텍스트 폭. 캔버스 measureText로 실측하고, 못 재는 환경(SSR·jsdom)에서는
+ * 한글 1em·그 외 0.55em으로 근사한다.
  */
 export function estimateTextWidth(text: string, fontSize: number): number {
+  const measured = canvasMeasure(text, fontSize)
+  if (measured !== null) return measured
   let units = 0
   for (const character of text) units += CJK.test(character) ? 1 : 0.55
   return units * fontSize
