@@ -128,7 +128,22 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* 폰 프레임이 앱의 화면 기준이 되는 구간 (--breakpoint-frame: 480px와 같은 값).
+   480px 미만에서는 프레임이 display:contents라 박스가 없는데, 변수는 상속되므로
+   여기서 덮어쓰면 실제 휴대폰에서 화면이 32px씩 줄어든다. 그래서 미디어 쿼리로 가둔다. */
+@media (min-width: 480px) {
+    [data-app-frame] {
+        --app-vw: min(440px, calc(100dvw - 32px));
+        --app-vh: min(956px, calc(100dvh - 32px));
+    }
+}
+
 @theme {
+    /* 데스크탑 안내형 UI (시안 3099-62530) */
+    /* 폰 프레임(440)이 여백과 함께 들어가는 최소 폭 — 실제 휴대폰(≤430)은 여기 안 걸린다 */
+    --breakpoint-frame: 480px;
+    /* 좌측 안내 500 + 간격 300 + 폰 440 + 좌우 여백 200 */
+    --breakpoint-desktop: 1440px;
     /* ===== Color Palette (Design System v1.0.0) ===== */
     --color-neutral-0: #ffffff;
     --color-neutral-50: #f7f8fa;

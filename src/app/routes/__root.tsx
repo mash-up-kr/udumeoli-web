@@ -3,8 +3,9 @@ import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { OverlayProvider } from "overlay-kit"
-
 import appCss from "../styles.css?url"
+import { DesktopGuide } from "@/widgets/desktop-guide"
+
 import { QueryProvider } from "@/shared/api/QueryProvider"
 import { PwaRuntime } from "@/shared/ui/pwa-runtime"
 
@@ -78,7 +79,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <PwaRuntime />
         <QueryProvider>
-          <OverlayProvider>{children}</OverlayProvider>
+          <DesktopGuide>
+            <OverlayProvider>{children}</OverlayProvider>
+          </DesktopGuide>
         </QueryProvider>
         <TanStackDevtools
           config={{ position: "bottom-right" }}
