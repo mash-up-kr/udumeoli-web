@@ -89,7 +89,9 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
     [photos]
   )
   const recapStatsQuery = useRecapStats(currentPotId)
-  const { pinCount } = USE_MOCK
+  // 지도는 지역당 스티커 1개만 그린다(visibleStickerTrips) — 툴팁·카드의 "핀 개수"는
+  // 여행 횟수가 아니라 기록한 지역 수다 (시안 3065-17817 #1 "핀(장소) 총 개수")
+  const { regionCount: pinCount } = USE_MOCK
     ? localStats
     : (recapStatsQuery.data ?? localStats)
   const orderedMembers = React.useMemo(
