@@ -20,7 +20,7 @@ const sheetVariants = cva(
         default: "gap-6 rounded-t-[40px] px-5 py-[22px]",
         floating:
           "bottom-4 w-[calc(100%-2rem)] max-w-[343px] gap-4 rounded-[32px] bg-bg-neutral-weak p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
-        full: "h-[calc(100dvh-54px)] gap-4 rounded-t-[32px] pt-4",
+        full: "h-[calc(var(--app-vh)_-_54px)] gap-4 rounded-t-[32px] pt-4",
       },
     },
     defaultVariants: { variant: "default" },

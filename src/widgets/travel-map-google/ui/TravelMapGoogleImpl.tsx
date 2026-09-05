@@ -92,10 +92,10 @@ const GOOGLE_MAP_ID =
 // 국가 단일 핀 화면에서 시작하고, 한 번 줌인하면 도 단위 집계로 넘어간다
 const KOREA_VIEW = { lat: 36.55, lng: 127.2, zoom: 4.8 }
 
-// 기록 시작 기본 위치 — 여름 휴가 데이터가 몰리는 강원도 (Figma 1836-15911 #2).
-// zoom은 [+ 지역] 버튼이 보이는 3단계(PARTY_ZOOM)로 바로 진입해 지역을 고를 수 있게 한다.
+// 기록 시작 기본 위치 — 서울. (원래 시안 Figma 1836-15911 #2는 강원도였다)
+// zoom은 [+ 지역] 버튼이 보이는 3단계(DETAIL_ENTER_ZOOM=9)로 바로 진입해 지역을 고를 수 있게 한다.
 // ponytail: 초기값 고정, 실제 방문 데이터가 쌓이면 최다 방문 권역으로 교체
-const GANGWON_VIEW = { lat: 37.6, lng: 128.5, zoom: 9.5 }
+const SEOUL_VIEW = { lat: 37.5665, lng: 126.978, zoom: 9.5 }
 
 // 여행 팁 안내가 떠 있는 동안 블러 뒤로 비치는 배경 전용 뷰 — 초기 국가 뷰(4.8)는
 // 한국이 너무 작아서, 본토가 화면을 채우는 줌으로 당겨 배경답게 보이게 한다
@@ -1490,7 +1490,7 @@ function TravelMapGoogleInner({
       onStart: () => {
         pendingTipsBackdropRef.current = false
         setRecordTipDismissedForSession(true)
-        if (mapReadyRef.current) runCameraMove(GANGWON_VIEW, 600)
+        if (mapReadyRef.current) runCameraMove(SEOUL_VIEW, 600)
         else pendingTipsCameraRef.current = true
       },
     })
@@ -1503,11 +1503,11 @@ function TravelMapGoogleInner({
 
   React.useEffect(() => {
     if (!mapReady) return
-    // 시작하기가 먼저 눌렸으면 강원 이동이 우선 — 배경 확대는 건너뛴다
+    // 시작하기가 먼저 눌렸으면 서울 이동이 우선 — 배경 확대는 건너뛴다
     if (pendingTipsCameraRef.current) {
       pendingTipsCameraRef.current = false
       pendingTipsBackdropRef.current = false
-      runCameraMove(GANGWON_VIEW, 600)
+      runCameraMove(SEOUL_VIEW, 600)
       return
     }
     if (pendingTipsBackdropRef.current) {
@@ -1882,13 +1882,13 @@ function TravelMapGoogleInner({
       ) : null}
 
       {/* 안내를 봤지만 아직 아무것도 기록하지 않은 유저에게 진입점을 다시 노출 (Figma 1836-15911 #1-1).
-          하단 내비(약 75px) 위에 띄우고, 누르면 기본 위치(강원도)로 줌인해 지역을 고르게 한다 */}
+          하단 내비(약 75px) 위에 띄우고, 누르면 기본 위치(서울)로 줌인해 지역을 고르게 한다 */}
       {showRecordTip ? (
         <button
           type="button"
           onClick={() => {
             setRecordTipDismissedForSession(true)
-            runCameraMove(GANGWON_VIEW, 600)
+            runCameraMove(SEOUL_VIEW, 600)
           }}
           className={cn(
             "absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-bg-neutral-inverse px-4 py-2 whitespace-nowrap shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",

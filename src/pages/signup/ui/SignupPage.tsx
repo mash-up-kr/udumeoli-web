@@ -320,7 +320,7 @@ export function SignupPage() {
   }
 
   return (
-    <MobileLayout className="flex min-h-dvh flex-col">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col">
       <Header direction="center" icon={false} title="프로필 선택" />
 
       <main className="flex flex-1 flex-col items-center gap-5 px-4 pt-7">
@@ -352,7 +352,7 @@ export function SignupPage() {
         </p>
 
         {/* 간격: 375px에서 16px(디자인 기준), 화면이 넓어지면 뷰포트 따라 최대 40px까지 확장 */}
-        <div className="flex w-full items-center justify-center gap-[clamp(1rem,calc((100vw-311px)/4),2.5rem)]">
+        <div className="flex w-full items-center justify-center gap-[clamp(1rem,calc((var(--app-vw)_-_311px)/4),2.5rem)]">
           {PRESET_AVATARS.map((src, i) => (
             <button
               key={i}

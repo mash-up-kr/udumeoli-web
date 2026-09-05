@@ -179,16 +179,16 @@ export function RegionRecordsBottomSheet({
   // transform만 바뀌므로 매 프레임 레이아웃 없이 컴포지터에서 처리된다.
   const initialHeight =
     members.length === 2
-      ? "29dvh"
+      ? "calc(var(--app-vh) * 0.29)"
       : members.length >= 5
-        ? "calc(100dvh - 94px)"
+        ? "calc(var(--app-vh) - 94px)"
         : members.length === 1
-          ? "52dvh"
-          : "61dvh"
+          ? "calc(var(--app-vh) * 0.52)"
+          : "calc(var(--app-vh) * 0.61)"
   const restY = (isExpanded: boolean) =>
     isExpanded
       ? "0px"
-      : `max(0px, calc(min(720px, 100dvh - 32px) - ${initialHeight}))`
+      : `max(0px, calc(min(720px, var(--app-vh) - 32px) - ${initialHeight}))`
 
   const setY = (value: string) =>
     sheetRef.current?.style.setProperty("--sheet-y", value)
@@ -311,7 +311,7 @@ export function RegionRecordsBottomSheet({
         event.stopPropagation()
       }}
       style={{ "--sheet-y": restY(expanded) } as CSSProperties}
-      className="pointer-events-auto flex h-[min(720px,calc(100dvh-32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[28px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent]"
+      className="pointer-events-auto flex h-[min(720px,calc(var(--app-vh)_-_32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[28px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent]"
     >
       <button
         type="button"

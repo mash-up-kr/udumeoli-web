@@ -46,7 +46,7 @@ function TravelAlbumPageContent() {
   }, [photos, myId])
 
   return (
-    <MobileLayout className="flex min-h-dvh flex-col bg-bg-neutral-subtle">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <div className="pt-[env(safe-area-inset-top)]">
         <AppHeader potSelector={<PotSelector />} />
       </div>

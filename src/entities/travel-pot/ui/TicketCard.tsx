@@ -18,13 +18,25 @@ export function TicketCard({
   name,
   leaderName,
   seatLabel,
+  fields,
+  fieldsFit = "equal",
   className,
   children,
 }: {
   name: string
-  leaderName: string
+  leaderName?: string
   /** SEAT 칸 값 — 생성 완료는 "01", 참여 확인은 내가 앉을 자리 번호. */
-  seatLabel: string
+  seatLabel?: string
+  /**
+   * 항공권 필드 4칸 [라벨, 값]. 기본값은 팟 티켓(SEAT·LEADER·BOARDING·DATE)이라
+   * 팟 화면은 name·leaderName·seatLabel만 넘기면 된다.
+   */
+  fields?: Array<[string, string]>
+  /**
+   * 항공권 필드 칸 폭. "equal"(기본)은 4등분 + 말줄임, "content"는 내용 길이대로 —
+   * 값 길이가 제각각인 안내 문구용 (시안 3099-62530).
+   */
+  fieldsFit?: "equal" | "content"
   /** 페이지별 상단 여백 등 외곽 배치 조정. */
   className?: string
   /** 하단 스텁 좌측(210px 폭) 내용 — 코드/안내문 또는 코드/멤버 목록. */
@@ -88,19 +100,37 @@ export function TicketCard({
             {name}
           </p>
         </div>
-        <div className="mt-4 flex rounded-[12px] bg-blue-100 px-4 py-3">
-          {[
-            ["SEAT", seatLabel],
-            ["LEADER", leaderName],
-            ["BOARDING", "NOW!"],
-            ["DATE", dateLabel],
-          ].map(([label, value]) => (
-            <div key={label} className="flex min-w-0 flex-1 flex-col gap-[2px]">
+        <div
+          className={cn(
+            "mt-4 flex rounded-[12px] bg-blue-100 px-4 py-3",
+            fieldsFit === "content" && "justify-between gap-4"
+          )}
+        >
+          {(
+            fields ?? [
+              ["SEAT", seatLabel ?? ""],
+              ["LEADER", leaderName ?? ""],
+              ["BOARDING", "NOW!"],
+              ["DATE", dateLabel],
+            ]
+          ).map(([label, value]) => (
+            <div
+              key={label}
+              className={cn(
+                "flex flex-col gap-[2px]",
+                fieldsFit === "content" ? "shrink-0" : "min-w-0 flex-1"
+              )}
+            >
               {/* #4d708f — 팔레트에 없는 시안 고정 라벨색 (Figma 2588-38577) */}
               <span className="font-eng text-[10px] leading-normal text-[#4d708f]">
                 {label}
               </span>
-              <span className="truncate text-h9 font-bold text-blue-900">
+              <span
+                className={cn(
+                  "text-h9 font-bold text-blue-900",
+                  fieldsFit === "content" ? "whitespace-nowrap" : "truncate"
+                )}
+              >
                 {value}
               </span>
             </div>

@@ -2,6 +2,7 @@ import * as React from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { XIcon } from "lucide-react"
+import { usePortalContainer } from "@/shared/ui/portal-container"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/button"
 
@@ -18,9 +19,18 @@ function DialogTrigger({
 }
 
 function DialogPortal({
+  container,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+  // 데스크탑 안내 UI에서는 폰 프레임 안으로 붙는다 — 없으면 Radix 기본값(body)
+  const fallbackContainer = usePortalContainer()
+  return (
+    <DialogPrimitive.Portal
+      data-slot="dialog-portal"
+      container={container ?? fallbackContainer ?? undefined}
+      {...props}
+    />
+  )
 }
 
 function DialogClose({
