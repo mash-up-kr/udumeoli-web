@@ -99,7 +99,6 @@ export function TravelRecordFlow({
   const [photoFile, setPhotoFile] = React.useState<File | null>(null)
   const [comment, setComment] = React.useState("")
   const photoInputRef = React.useRef<HTMLInputElement>(null)
-  const revisitToastShownRef = React.useRef(false)
 
   const keyword = findKeyword(keywordId ?? undefined)
   const regionName = formatRegionName(region)
@@ -129,22 +128,6 @@ export function TravelRecordFlow({
     )
     return index === -1 ? trips.length : trips.length - index
   }, [photos, region, collaborationTrip])
-  const revisit = nth > 1
-
-  const handleRangeChange = React.useCallback(
-    (nextRange: DateRange | undefined) => {
-      setRange(nextRange)
-      if (!revisit || !nextRange?.from || revisitToastShownRef.current) return
-      revisitToastShownRef.current = true
-      // 토스트 위치 규칙(2차 UT): 하단 CTA 위 16px (CTA bottom 34 + 높이 56 + 16)
-      showToast({
-        message: "이미 기록한 지역은 새로운 기록으로 쌓여요.",
-        icon: "check",
-        className: "bottom-[106px]",
-      })
-    },
-    [revisit]
-  )
 
   const handleBack = () => {
     if (isCollaboration && step === "photo") closeFlow()
@@ -310,7 +293,7 @@ export function TravelRecordFlow({
           )}
         >
           {step === "date" && !isCollaboration ? (
-            <DateStep range={range} onRangeChange={handleRangeChange} />
+            <DateStep range={range} onRangeChange={setRange} />
           ) : null}
 
           {step === "keyword" && !isCollaboration ? (

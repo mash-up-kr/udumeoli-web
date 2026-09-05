@@ -2,12 +2,19 @@
 
 import specialGothicFontUrl from "@fontsource/special-gothic-condensed-one/files/special-gothic-condensed-one-latin-400-normal.woff2"
 
-import { RECAP_CARD_LAYOUT, RECAP_CARD_SIZE } from "./recap-layout"
+import {
+  RECAP_CARD_LAYOUT,
+  RECAP_CARD_SIZE,
+  estimateTextWidth,
+} from "./recap-layout"
 import { getRecapMapView } from "./recap-map-config"
+import { RECAP_COUNTRY_LABEL } from "./recap-model"
 import type { RECAP_MAP_VIEW } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
 const EXPORT_SCALE = 4
+const LABEL_FONT =
+  "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif"
 const GOOGLE_STATIC_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
   | string
   | undefined
@@ -51,6 +58,20 @@ async function exportFontStyle(): Promise<string> {
       return ""
     })
   return exportFontStylePromise
+}
+
+/** 캔버스 fillText 전에 웹폰트 로드를 보장한다 (dynamic subset은 지연 로드된다) */
+async function ensureLabelFont(): Promise<void> {
+  const fonts = document.fonts as FontFaceSet | undefined
+  if (!fonts) return
+  try {
+    await Promise.all([
+      fonts.load(`500 10px ${LABEL_FONT}`, "가나다"),
+      fonts.ready,
+    ])
+  } catch (error) {
+    console.warn("리캡 한글 폰트를 준비하지 못했어요", error)
+  }
 }
 
 async function inlineSvgImages(svgMarkup: string): Promise<string> {
@@ -159,23 +180,89 @@ function softenFallbackMap(svgMarkup: string): string {
   return new XMLSerializer().serializeToString(document.documentElement)
 }
 
+const HEADING_FONT = "Special Gothic Condensed One, Anton, sans-serif"
+function estimateLabelWidth(text: string, fontSize: number): number {
+  return (
+    estimateTextWidth(text, fontSize) + RECAP_CARD_LAYOUT.labels.paddingX * 2
+  )
+}
+
+type LabelRow = Array<{ text: string; width: number }>
+
+/** Figma의 flex-wrap 재현 — maxWidth를 넘으면 다음 줄로 넘긴다 */
+function wrapLabels(texts: Array<string>, fontSize: number): Array<LabelRow> {
+  const { gap, maxWidth } = RECAP_CARD_LAYOUT.labels
+  const rows: Array<LabelRow> = []
+  let row: LabelRow = []
+  let rowWidth = 0
+
+  for (const text of texts) {
+    const width = Math.min(estimateLabelWidth(text, fontSize), maxWidth)
+    const nextWidth = row.length === 0 ? width : rowWidth + gap + width
+    if (row.length > 0 && nextWidth > maxWidth) {
+      rows.push(row)
+      row = [{ text, width }]
+      rowWidth = width
+      continue
+    }
+    row.push({ text, width })
+    rowWidth = nextWidth
+  }
+  if (row.length > 0) rows.push(row)
+  return rows
+}
+
+function labelPillMarkup(
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  fillOpacity: string
+): string {
+  const { height, fontSize, paddingX } = RECAP_CARD_LAYOUT.labels
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${height / 2}" fill="#232936" fill-opacity="${fillOpacity}"/><text x="${x + paddingX}" y="${y + height / 2 + fontSize * 0.36}" fill="white" font-family="${LABEL_FONT}" font-size="${fontSize}" font-weight="500" data-recap-text="1">${escapeXml(text)}</text>`
+}
+
 export function buildRecapTextMarkup(model: RecapCardModel): string {
-  const days = escapeXml(String(model.totalDays))
+  const { padding, heading, labels } = RECAP_CARD_LAYOUT
   const pins = escapeXml(String(model.pinCount))
-  const labels = model.members
-    .map((member, index) => {
-      const x = RECAP_CARD_LAYOUT.members.left
-      const y =
-        RECAP_CARD_LAYOUT.members.top +
-        index *
-          (RECAP_CARD_LAYOUT.members.rowHeight +
-            RECAP_CARD_LAYOUT.members.rowGap)
-      const width = Math.min(Math.max(member.length * 6 + 16, 28), 104)
-      return `<rect x="${x}" y="${y}" width="${width}" height="${RECAP_CARD_LAYOUT.members.rowHeight}" rx="6.5" fill="#232936" fill-opacity=".4"/><text x="${x + width / 2}" y="${y + 9}" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="7" font-weight="500">@${escapeXml(member)}</text>`
+
+  const headingMarkup =
+    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
+    `<text x="${padding}" y="${heading.countryBaseline}" font-family="${HEADING_FONT}" font-size="${heading.countryFontSize}" font-weight="400" fill="#141820">${escapeXml(RECAP_COUNTRY_LABEL)}</text>`
+
+  // 팟 이름 라벨 위에 닉네임 줄들이 쌓인다 — 아래에서 위로 쌓아 하단 여백을 고정한다
+  const rows = wrapLabels(
+    model.members.map((member) => `@${member}`),
+    labels.fontSize
+  )
+  const blockHeight =
+    (rows.length + 1) * labels.height + rows.length * labels.gap
+  const top = RECAP_CARD_SIZE.height - labels.bottom - blockHeight
+
+  const potMarkup = labelPillMarkup(
+    model.potName,
+    labels.left,
+    top,
+    estimateLabelWidth(model.potName, labels.fontSize),
+    "1"
+  )
+
+  const memberMarkup = rows
+    .map((row, rowIndex) => {
+      const y = top + (rowIndex + 1) * (labels.height + labels.gap)
+      let x = labels.left
+      return row
+        .map(({ text, width }) => {
+          const markup = labelPillMarkup(text, x, y, width, "0.4")
+          x += width + labels.gap
+          return markup
+        })
+        .join("")
     })
     .join("")
 
-  return `<text x="${RECAP_CARD_LAYOUT.heading.left}" y="${RECAP_CARD_LAYOUT.heading.firstBaseline}" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="${RECAP_CARD_LAYOUT.heading.fontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${days}</tspan><tspan dx="4" fill="#232936"> DAYS</tspan></text><text x="${RECAP_CARD_LAYOUT.heading.left}" y="${RECAP_CARD_LAYOUT.heading.secondBaseline}" font-family="Special Gothic Condensed One, Anton, sans-serif" font-size="${RECAP_CARD_LAYOUT.heading.fontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="#232936" stroke-width="0.5" paint-order="stroke">${pins}</tspan><tspan dx="4" fill="#232936"> PINNNED</tspan></text>${labels}`
+  return `${headingMarkup}${potMarkup}${memberMarkup}`
 }
 
 async function buildExportSvg(
@@ -199,7 +286,7 @@ async function buildExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}<g>${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -223,10 +310,70 @@ async function buildFallbackExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" rx="32" fill="#79d5e6" stroke="#232936" stroke-width="2"/>${staticMapMarkup}${mapWithBackground}<rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+}
+
+interface CanvasText {
+  x: number
+  y: number
+  fontSize: number
+  fontWeight: string
+  fill: string
+  anchor: string
+  text: string
+}
+
+/** 조상 <g>의 translate를 누적한다 — 마커 라벨은 두 겹으로 감싸여 있다 */
+function accumulatedTranslate(node: Element): [number, number] {
+  let x = 0
+  let y = 0
+  for (let n: Element | null = node; n; n = n.parentElement) {
+    const transform = n.getAttribute("transform")
+    const match = transform?.match(
+      /translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)/
+    )
+    if (match) {
+      x += Number(match[1])
+      y += Number(match[2])
+    }
+  }
+  return [x, y]
+}
+
+/**
+ * SVG를 <img>로 래스터화하면 문서 폰트(Pretendard)가 넘어가지 않아 한글이
+ * 시스템 기본 글꼴로 떨어진다. 한글 text는 SVG에서 빼고 캔버스에 직접 그린다 —
+ * 캔버스 fillText는 문서 폰트를 그대로 쓴다.
+ * SVG 그대로 공유하는 폴백 경로를 위해 원본 markup에는 text를 남겨둔다.
+ */
+function extractCanvasTexts(svgMarkup: string): {
+  svg: string
+  texts: Array<CanvasText>
+} {
+  const document_ = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
+  const nodes = [...document_.querySelectorAll("[data-recap-text]")]
+  const texts = nodes.map((node) => {
+    const [dx, dy] = accumulatedTranslate(node)
+    return {
+      x: Number(node.getAttribute("x") ?? 0) + dx,
+      y: Number(node.getAttribute("y") ?? 0) + dy,
+      fontSize: Number(node.getAttribute("font-size") ?? 10),
+      fontWeight: node.getAttribute("font-weight") ?? "400",
+      fill: node.getAttribute("fill") ?? "#000",
+      anchor: node.getAttribute("text-anchor") ?? "start",
+      text: node.textContent,
+    }
+  })
+  nodes.forEach((node) => node.remove())
+  return {
+    svg: new XMLSerializer().serializeToString(document_.documentElement),
+    texts,
+  }
 }
 
 async function svgToBlob(svgMarkup: string): Promise<Blob> {
+  const { svg: svgWithoutText, texts } = extractCanvasTexts(svgMarkup)
+  svgMarkup = svgWithoutText
   const image = new Image()
   image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`
   await new Promise<void>((resolve, reject) => {
@@ -241,6 +388,20 @@ async function svgToBlob(svgMarkup: string): Promise<Blob> {
   if (!context) throw new Error("이미지 캔버스를 만들 수 없어요")
   context.scale(EXPORT_SCALE, EXPORT_SCALE)
   context.drawImage(image, 0, 0, 270, 480)
+
+  await ensureLabelFont()
+  context.textBaseline = "alphabetic"
+  for (const item of texts) {
+    context.font = `${item.fontWeight} ${item.fontSize}px ${LABEL_FONT}`
+    context.fillStyle = item.fill
+    context.textAlign =
+      item.anchor === "middle"
+        ? "center"
+        : item.anchor === "end"
+          ? "right"
+          : "left"
+    context.fillText(item.text, item.x, item.y)
+  }
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png")
