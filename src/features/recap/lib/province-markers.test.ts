@@ -4,13 +4,17 @@ import { buildProvinceAggregates } from "./province-markers"
 import type { RegionShape } from "./province-markers"
 import type { Photo } from "@/entities/photo"
 
-function photo(region: string, keyword: Photo["keyword"]): Photo {
+function photo(
+  region: string,
+  keyword: Photo["keyword"],
+  date = "2026-01-01"
+): Photo {
   return {
-    id: `${region}-${keyword}`,
+    id: `${region}-${keyword}-${date}`,
     lat: 0,
     lng: 0,
     thumbnailUrl: "",
-    date: "2026-01-01",
+    date,
     uploaderId: "u1",
     region,
     potId: "p1",
@@ -81,6 +85,25 @@ describe("buildProvinceAggregates", () => {
 
     expect(aggregates[0].keyword).toBe("HEALING")
     expect(aggregates[0].regionCount).toBe(2)
+  })
+
+  it("키워드가 동수면 가장 최근 여행의 키워드를 쓴다", () => {
+    // 배열 순서와 무관하게 날짜로 판단해야 한다 (홈 지도와 같은 규칙)
+    const [gangwon] = buildProvinceAggregates(
+      shapes({
+        "1": [photo("강릉시", "FOOD", "2026-03-01")],
+        "2": [photo("속초시", "HEALING", "2026-05-01")],
+      })
+    )
+    expect(gangwon.keyword).toBe("HEALING")
+
+    const [flipped] = buildProvinceAggregates(
+      shapes({
+        "1": [photo("강릉시", "FOOD", "2026-07-01")],
+        "2": [photo("속초시", "HEALING", "2026-05-01")],
+      })
+    )
+    expect(flipped.keyword).toBe("FOOD")
   })
 
   it("기록이 없으면 빈 배열", () => {

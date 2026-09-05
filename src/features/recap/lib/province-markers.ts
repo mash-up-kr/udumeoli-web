@@ -32,20 +32,30 @@ export interface ProvinceAggregate {
   geoPosition: Point
 }
 
-/** 도 대표 키워드 — 그 도에서 가장 많이 고른 키워드 (동수면 먼저 나온 쪽) */
+/**
+ * 도 대표 키워드 — 최다 선택, 동수면 가장 최근 여행.
+ * 홈 지도 1단계와 같은 규칙 (widgets/travel-map-google/lib/collaboration.ts의 mostPickedKeyword).
+ * 사진 배열 순서는 보장되지 않아 여기서 최신순으로 정렬한 뒤 센다.
+ */
 function pickDominantKeyword(
   photos: Array<Photo>
 ): TravelKeywordId | undefined {
+  const recentFirst = [...photos].sort((a, b) =>
+    (b.endDate ?? b.date).localeCompare(a.endDate ?? a.date)
+  )
   const counts = new Map<TravelKeywordId, number>()
-  for (const photo of photos) {
+  for (const photo of recentFirst) {
     if (!photo.keyword) continue
     counts.set(photo.keyword, (counts.get(photo.keyword) ?? 0) + 1)
   }
+  // 최신순 순회 + 초과일 때만 교체 → 동수면 먼저 만난(더 최근) 키워드가 남는다
   let best: TravelKeywordId | undefined
   let bestCount = 0
-  for (const [keyword, count] of counts) {
+  for (const photo of recentFirst) {
+    if (!photo.keyword) continue
+    const count = counts.get(photo.keyword) ?? 0
     if (count > bestCount) {
-      best = keyword
+      best = photo.keyword
       bestCount = count
     }
   }
