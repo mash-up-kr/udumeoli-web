@@ -1,9 +1,10 @@
-const CACHE_NAME = "pinnned-shell-v3"
+const CACHE_NAME = "pinnned-shell-v4"
 const APP_SHELL = [
   "/",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
+  "/apple-touch-icon.png",
   "/favicon.svg",
   "/splash.mp4",
 ]

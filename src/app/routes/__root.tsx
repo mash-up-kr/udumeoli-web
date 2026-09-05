@@ -57,7 +57,12 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "manifest", href: "/manifest.json" },
-      { rel: "apple-touch-icon", href: "/favicon.svg" },
+      // iOS는 apple-touch-icon으로 SVG를 받지 않는다 — 180×180 PNG로 지정
+      {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: "/apple-touch-icon.png",
+      },
     ],
     scripts: [{ children: CLARITY_SNIPPET }],
   }),
