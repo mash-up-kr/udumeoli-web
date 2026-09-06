@@ -456,10 +456,7 @@ function PhotoViewerContent({
             top: `min(${imageBox.bottom + 16}px, calc(100% - ${TOOLTIP_BOTTOM_FIXED + 32}px - env(safe-area-inset-bottom)))`,
           }}
         >
-          <CommentBubble
-            comment={comment}
-            {...(photo.keywordIconSrc ? { iconSrc: photo.keywordIconSrc } : {})}
-          />
+          <CommentBubble comment={comment} iconSrc={photo.keywordIconSrc} />
         </div>
       ) : null}
 
