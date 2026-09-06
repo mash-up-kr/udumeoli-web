@@ -570,6 +570,11 @@
     }
   html {
     @apply font-sans;
+    /* 문서 바운스 차단 — 바텀시트를 끌 때 앱 전체가 딸려 오는 걸 막는다.
+       시트 본문의 overscroll-contain은 쉬는 상태에서 스크롤 여지가 없어(restOffset)
+       무효라, 체이닝이 도착하는 뷰포트 쪽에서 끊는다.
+       body가 아니라 html이어야 뷰포트로 전파된다. 안드로이드 당겨서 새로고침도 함께 꺼진다. */
+    overscroll-behavior: none;
     }
   /* Google Maps 컨테이너(.gm-style)가 Roboto를 지정해 마커 콘텐츠가 앱 폰트를
      상속받지 못한다 — AdvancedMarker 전체를 Pretendard로 되돌린다 */

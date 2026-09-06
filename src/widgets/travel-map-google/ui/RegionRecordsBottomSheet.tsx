@@ -134,9 +134,11 @@ function RecordTile({
         className
       )}
     >
+      {/* draggable=false — 사진을 끌면 네이티브 이미지 드래그가 붙어 시트 드래그가 끊긴다 */}
       <img
         src={photo.thumbnailUrl}
         alt={`${member.nickname}의 ${keyword?.label ?? "여행"} 사진`}
+        draggable={false}
         className="absolute inset-0 size-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 to-transparent" />
@@ -392,7 +394,7 @@ export function RegionRecordsBottomSheet({
         event.stopPropagation()
       }}
       style={{ "--sheet-y": restY(expanded) } as CSSProperties}
-      className="pointer-events-auto flex h-[min(720px,calc(var(--app-vh)_-_32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[28px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent]"
+      className="pointer-events-auto flex h-[min(720px,calc(var(--app-vh)_-_32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[28px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
     >
       <button
         type="button"
