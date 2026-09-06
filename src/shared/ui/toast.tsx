@@ -7,7 +7,7 @@ export type ToastIcon = "alert" | "alert-neutral" | "check" | "check-neutral"
 
 export interface ToastOptions {
   message: string
-  /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료) / check-neutral(검정 ✓, 종료 안내). 기본 없음. */
+  /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료) / check-neutral(검정 ✓, 완료 안내). 기본 없음. */
   icon?: ToastIcon
   duration?: number
   /**

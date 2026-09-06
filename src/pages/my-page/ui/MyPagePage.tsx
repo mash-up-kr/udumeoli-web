@@ -205,7 +205,8 @@ function MyPageContent() {
     await router.navigate({ to: "/" })
     showToast({
       message: "로그아웃이 완료됐어요.",
-      icon: "alert-neutral",
+      // 검정 ✓ — 완료 안내 (Figma 3065-20961)
+      icon: "check-neutral",
       className: SPLASH_TOAST_POSITION,
     })
   }

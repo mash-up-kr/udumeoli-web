@@ -50,13 +50,13 @@ export const WithAlertIcon: Story = {
   ),
 }
 
-/** 안내 알림 아이콘 (검정 !) — 로그아웃 완료 등. */
+/** 안내 알림 아이콘 (검정 !) — 이미 참여중인 팟 안내 등. */
 export const WithNeutralAlertIcon: Story = {
   render: () => (
     <Button
       onClick={() =>
         showToast({
-          message: "로그아웃이 완료됐어요.",
+          message: "이미 참여중인 여행팟이에요",
           icon: "alert-neutral",
         })
       }
@@ -79,18 +79,18 @@ export const WithCheckIcon: Story = {
   ),
 }
 
-/** 종료 안내 체크 아이콘 (검정 ✓) — 계정 삭제 완료 등. */
+/** 완료 안내 체크 아이콘 (검정 ✓) — 로그아웃·계정 삭제 완료 등 스플래시 위 토스트. */
 export const WithNeutralCheckIcon: Story = {
   render: () => (
     <Button
       onClick={() =>
         showToast({
-          message: "계정 삭제가 완료되었습니다. 감사합니다.",
+          message: "로그아웃이 완료됐어요.",
           icon: "check-neutral",
         })
       }
     >
-      종료 안내 토스트
+      완료 안내 토스트
     </Button>
   ),
 }
