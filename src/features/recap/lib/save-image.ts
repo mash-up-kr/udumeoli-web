@@ -124,7 +124,7 @@ function buildLocationIconMarkup(element: HTMLElement): string {
   return `<image href="${escapeXml(source)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
 }
 
-async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
+async function buildStaticMapMarkup(): Promise<string> {
   if (!GOOGLE_STATIC_MAPS_KEY) return ""
 
   const fetchMap = async (view: typeof RECAP_MAP_VIEW) => {
@@ -139,6 +139,12 @@ async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
     params.append("style", "feature:all|element:labels|visibility:off")
     params.append("style", "feature:road|element:geometry|visibility:off")
     params.append("style", "feature:transit|element:geometry|visibility:off")
+    // 국경·시도·시군구 경계선 모두 제거 — 지역 구분은 우리 색칠이 한다.
+    // 전국 뷰라 북한·일본까지 프레임에 들어오는데, 경계선까지 그리면 주제가 흐려진다.
+    params.append(
+      "style",
+      "feature:administrative|element:geometry|visibility:off"
+    )
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
     )
@@ -147,11 +153,7 @@ async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
   }
 
   try {
-    const mapView =
-      element.querySelector<HTMLElement>("[data-recap-map]")?.dataset
-        .recapMapView === "mainland"
-        ? getRecapMapView(false)
-        : getRecapMapView(true)
+    const mapView = getRecapMapView()
     const mainMap = await fetchMap(mapView)
     return `<image href="${mainMap}" x="0" y="0" width="270" height="480" preserveAspectRatio="xMidYMid slice"/>`
   } catch (error) {
@@ -166,6 +168,9 @@ async function buildStaticMapMarkup(element: HTMLElement): Promise<string> {
 function removeMapBackground(svgMarkup: string): string {
   const document = new DOMParser().parseFromString(svgMarkup, "image/svg+xml")
   document.querySelector("[data-recap-ocean]")?.remove()
+  // 해안선은 정적 지도에 이미 있다 — 우리 흰 외곽선까지 얹으면 이중으로 두꺼워진다.
+  // 정적 지도를 못 불러온 폴백(softenFallbackMap)에서는 육지 구분용으로 남긴다.
+  document.querySelector("[data-recap-nation]")?.remove()
   document.querySelectorAll("[data-recap-unvisited]").forEach((path) => {
     path.setAttribute("fill-opacity", "0.28")
   })
@@ -281,12 +286,12 @@ async function buildExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
 
   const locationIconMarkup = buildLocationIconMarkup(element)
-  const staticMapMarkup = await buildStaticMapMarkup(element)
+  const staticMapMarkup = await buildStaticMapMarkup()
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -305,12 +310,12 @@ async function buildFallbackExportSvg(
     .replaceAll('xlink:href="/', `xlink:href="${window.location.origin}/`)
     .replace(/^<svg[^>]*>|<\/svg>$/g, "")
 
-  const staticMapMarkup = await buildStaticMapMarkup(element)
+  const staticMapMarkup = await buildStaticMapMarkup()
   const mapWithBackground = staticMapMarkup
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient><clipPath id="recap-card-clip"><rect width="270" height="480" rx="32"/></clipPath></defs><rect width="270" height="480" rx="32" fill="#79d5e6"/><g clip-path="url(#recap-card-clip)">${staticMapMarkup}${mapWithBackground}</g><rect x="1" y="1" width="268" height="478" rx="31" fill="none" stroke="#232936" stroke-width="2"/><rect width="270" height="480" rx="32" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
 }
 
 interface CanvasText {

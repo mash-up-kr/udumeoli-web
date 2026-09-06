@@ -11,7 +11,7 @@ import {
   buildProvinceAggregates,
 } from "../lib/province-markers"
 import { estimateTextWidth } from "../lib/recap-layout"
-import { getRecapMapView, getRecapScreenMapView } from "../lib/recap-map-config"
+import { getRecapMapView } from "../lib/recap-map-config"
 import type { Point, RegionShape } from "../lib/province-markers"
 import type { RECAP_MAP_VIEW } from "../lib/recap-map-config"
 
@@ -130,10 +130,13 @@ function GoogleRecapLayer({
     const data = new google.maps.Data()
     data.addGeoJson(geojson)
     data.setStyle((feature) => {
-      const keyword = fillKeywords.get(String(feature.getId() ?? ""))
+      const id = String(feature.getId() ?? "")
+      const keyword = fillKeywords.get(id)
+      // 독도는 우리가 그려 넣은 최소 크기 섬이라 미기록 투명도(0.08)면 보이지 않는다
+      const isDokdo = id === DOKDO_FEATURE_ID
       return {
         fillColor: keyword?.mapColor ?? UNVISITED_REGION_COLOR,
-        fillOpacity: keyword ? 0.68 : 0.08,
+        fillOpacity: keyword ? 0.68 : isDokdo ? 0.85 : 0.08,
         strokeColor: REGION_BORDER_COLOR,
         strokeOpacity: keyword ? 0.32 : 0.08,
         strokeWeight: 1,
@@ -247,6 +250,42 @@ function GoogleRecapMap({
   )
 }
 
+/**
+ * 독도 — 실제 폭이 200m라 이 줌(카드 1유닛 ≈ 2.6km)에서는 지도 타일에도, 우리
+ * geojson에도 남지 않는다(loadKoreaGeoJson이 서브픽셀 섬을 버린다). 영토가 빠져
+ * 보이지 않도록 카드에서만 보이는 최소 크기 원으로 직접 그린다.
+ *
+ * 색칠·마커·집계에는 참여시키지 않는다 — province를 비워 도 단위 중심 계산이
+ * 동쪽으로 끌려가지 않게 하고, 이름도 실제 지역명과 겹치지 않게 둔다.
+ */
+const DOKDO_FEATURE_ID = "dokdo"
+const DOKDO = { lat: 37.2429, lng: 131.8664, radiusDeg: 0.028 }
+
+function withDokdo(
+  collection: GeoJSON.FeatureCollection
+): GeoJSON.FeatureCollection {
+  const ring: Array<GeoJSON.Position> = []
+  for (let i = 0; i <= 16; i += 1) {
+    const angle = (i / 16) * 2 * Math.PI
+    ring.push([
+      DOKDO.lng + Math.cos(angle) * DOKDO.radiusDeg,
+      DOKDO.lat + (Math.sin(angle) * DOKDO.radiusDeg) / 1.25,
+    ])
+  }
+  return {
+    ...collection,
+    features: [
+      ...collection.features,
+      {
+        type: "Feature",
+        id: DOKDO_FEATURE_ID,
+        properties: { name: "독도" },
+        geometry: { type: "Polygon", coordinates: [ring] },
+      },
+    ],
+  }
+}
+
 export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   photos,
   className,
@@ -272,7 +311,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     void loadKoreaGeoJson()
       .then((geo) => {
         if (active) {
-          setGeojson(geo.municipalities)
+          setGeojson(withDokdo(geo.municipalities))
           setNation(geo.nation)
           onReady?.()
         }
@@ -288,22 +327,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     }
   }, [onError, onReady, retryKey])
 
-  const includeIslands = React.useMemo(
-    () =>
-      photos.some(
-        ({ lat, lng }) =>
-          lng >= 130 || (lat <= 34.5 && lng >= 125 && lng <= 127.5)
-      ),
-    [photos]
-  )
-  const mapView = React.useMemo(
-    () => getRecapMapView(includeIslands),
-    [includeIslands]
-  )
-  const screenMapView = React.useMemo(
-    () => getRecapScreenMapView(includeIslands),
-    [includeIslands]
-  )
+  const mapView = getRecapMapView()
   const project = React.useMemo(() => makeProject(mapView), [mapView])
   const projectedFeatures = React.useMemo(
     () =>
@@ -437,18 +461,14 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   }, [photosByFeature, provinceAggregates, useProvinceView])
 
   return (
-    <div
-      className={className}
-      data-recap-map
-      data-recap-map-view={includeIslands ? "full" : "mainland"}
-    >
+    <div className={className} data-recap-map>
       {geojson.features.length > 0 && !hasError ? (
         <div className="absolute inset-0 z-0 overflow-hidden rounded-[30px]">
           <GoogleRecapMap
             geojson={geojson}
             fillKeywords={fillKeywords}
             markers={markers}
-            mapView={screenMapView}
+            mapView={mapView}
           />
         </div>
       ) : null}
@@ -468,13 +488,14 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         />
         {projectedFeatures.map(({ feature, path }, index) => {
           const keyword = fillKeywords.get(String(feature.id))
+          const isDokdo = String(feature.id) === DOKDO_FEATURE_ID
           return (
             <path
               key={`${String(feature.id)}-${index}`}
               d={path}
               fill={keyword?.mapColor ?? UNVISITED_REGION_COLOR}
               fillOpacity={keyword ? "0.82" : "0.94"}
-              data-recap-unvisited={keyword ? undefined : "true"}
+              data-recap-unvisited={keyword || isDokdo ? undefined : "true"}
               stroke={REGION_BORDER_COLOR}
               strokeOpacity="0.12"
               strokeWidth="0.35"
@@ -485,6 +506,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         {nationPath ? (
           <path
             d={nationPath}
+            data-recap-nation
             fill="none"
             stroke="#ffffff"
             strokeOpacity="0.9"
