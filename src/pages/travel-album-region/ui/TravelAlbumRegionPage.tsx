@@ -137,10 +137,12 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     openPhotoViewer({
       photos: ordered.map((p) => {
         const uploader = uploaderOf(p)
+        const keywordIconSrc = findKeyword(p.keyword)?.emojiSrc
         return {
           id: p.id,
           imageUrl: p.thumbnailUrl,
           ...(p.comment != null ? { comment: p.comment } : {}),
+          ...(keywordIconSrc ? { keywordIconSrc } : {}),
           ...(uploader ? { uploader } : {}),
         }
       }),

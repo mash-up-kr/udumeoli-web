@@ -34,6 +34,8 @@ export interface PhotoViewerItem {
   imageUrl: string
   /** 사진 하단 말풍선에 노출되는 코멘트 */
   comment?: string
+  /** 말풍선 좌측 키워드(테마) 스티커 — 업로드 시 고른 키워드의 그래픽 (Figma 3176-63722) */
+  keywordIconSrc?: string
   /** 업로더 정보 — 없으면 닉네임 뱃지를 숨긴다 (단순 이미지 보기) */
   uploader?: PhotoViewerUploader
 }
@@ -198,10 +200,26 @@ function UploaderChip({ uploader }: { uploader: PhotoViewerUploader }) {
   )
 }
 
-/** 코멘트 말풍선 — 흰 pill + 위쪽 화살표 (Figma case 01 · 4번) */
-function CommentBubble({ comment }: { comment: string }) {
+/** 코멘트 말풍선 — 흰 pill + 위쪽 화살표, 좌측 키워드 스티커 20px (Figma 3176-63722 · case 01 · 4번) */
+function CommentBubble({
+  comment,
+  iconSrc,
+}: {
+  comment: string
+  iconSrc?: string
+}) {
   return (
-    <span className="relative flex h-8 items-center rounded-full bg-bg-neutral-weak px-3 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
+    <span
+      className={cn(
+        "relative flex h-8 items-center rounded-full bg-bg-neutral-weak drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]",
+        // 시안: 아이콘 x8 · 텍스트 x30(gap 2) · 우측 8. 스티커 없는 사진은 텍스트만 12 여백
+        iconSrc ? "gap-0.5 px-2" : "px-3"
+      )}
+    >
+      {/* object-cover: food.png만 4:3이라 정사각 슬롯에 맞춰 크롭 */}
+      {iconSrc ? (
+        <img src={iconSrc} alt="" className="size-5 shrink-0 object-cover" />
+      ) : null}
       <svg
         aria-hidden
         viewBox="80 12 18 12"
@@ -438,7 +456,10 @@ function PhotoViewerContent({
             top: `min(${imageBox.bottom + 16}px, calc(100% - ${TOOLTIP_BOTTOM_FIXED + 32}px - env(safe-area-inset-bottom)))`,
           }}
         >
-          <CommentBubble comment={comment} />
+          <CommentBubble
+            comment={comment}
+            {...(photo.keywordIconSrc ? { iconSrc: photo.keywordIconSrc } : {})}
+          />
         </div>
       ) : null}
 
