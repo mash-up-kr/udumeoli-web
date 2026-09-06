@@ -16,7 +16,7 @@ const meta: Meta<typeof TravelRecordFlow> = {
     docs: {
       description: {
         component:
-          "여행 기록 플로우 (Figma 1836-15911) — 기간 → 키워드 → 사진·코멘트 → 최종 확인. 지도 위 오버레이라 실제로는 지도가 배경에 깔린다.",
+          "여행 기록 플로우 (Figma 1836-15911) — 키워드 → 사진·코멘트 → 최종 확인. 지도 위 오버레이라 실제로는 지도가 배경에 깔린다.",
       },
     },
   },
@@ -62,11 +62,15 @@ function Frame({ step }: { step: RecordStep }) {
   )
 }
 
-/** 1단계 — 다녀온 기간 선택 (Figma 1836-15777) */
+/**
+ * 다녀온 기간 선택 (Figma 1836-15777).
+ * 기획 변경으로 현재 플로우(RECORD_STEPS)에서는 빠져 있다 — 스토어에 단계를 직접 넣어
+ * 렌더한 것이라, 되돌릴 때 어떤 화면이 돌아오는지 확인하는 용도로 남겨 둔다.
+ */
 export const DateSelect: Story = { render: () => <Frame step="date" /> }
 
 /**
- * 2단계 — 여행 대표 키워드 선택 (Figma 1836-16473).
- * 키워드를 고르고 확인을 누르면 3단계(사진·코멘트)까지 이어서 볼 수 있다.
+ * 1단계 — 여행 대표 키워드 선택 (Figma 1836-16473).
+ * 키워드를 고르고 확인을 누르면 2단계(사진·코멘트)까지 이어서 볼 수 있다.
  */
 export const KeywordSelect: Story = { render: () => <Frame step="keyword" /> }

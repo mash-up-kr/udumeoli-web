@@ -1,7 +1,11 @@
 import * as React from "react"
 
 import { visitLabel } from "../lib/format"
-import { useRecordStore } from "../model/record.store"
+import {
+  RECORD_STEPS,
+  recordStepAt,
+  useRecordStore,
+} from "../model/record.store"
 import { DateStep } from "./DateStep"
 import { KeywordStep } from "./KeywordStep"
 import { PhotoStep } from "./PhotoStep"
@@ -58,8 +62,12 @@ function parseISODate(iso: string): Date | undefined {
   return new Date(year, month - 1, day)
 }
 
+/** 기간 선택이 플로우에 남아 있는지 — RECORD_STEPS 한 곳만 고치면 여기까지 따라온다 */
+const hasDateStep = RECORD_STEPS.includes("date")
+
 /**
- * 여행 기록 플로우 (기간 → 키워드 → 사진·코멘트 → 확인) — Figma 1836-15911.
+ * 여행 기록 플로우 (키워드 → 사진·코멘트 → 확인) — Figma 1836-15911.
+ * 기간 선택 단계는 기획 변경으로 빠져 있다 (RECORD_STEPS 참고).
  * 지도 위 풀스크린 오버레이. 지도 조작은 TravelMapGoogleImpl이 잠금/점선 처리한다.
  */
 export function TravelRecordFlow({
@@ -89,8 +97,11 @@ export function TravelRecordFlow({
     return { from, ...(to ? { to } : {}) }
   }, [collaborationTrip])
 
+  // 기간 선택 단계가 빠져 있으면 등록 시점(오늘)을 당일 여행으로 기록한다 —
+  // 서버 CreateTripInput은 startDate/endDate가 필수라 값이 반드시 있어야 한다.
+  // RECORD_STEPS에 "date"를 되돌리면 이 폴백은 자동으로 꺼진다.
   const [range, setRange] = React.useState<DateRange | undefined>(
-    () => fixedRange
+    () => fixedRange ?? (hasDateStep ? undefined : { from: new Date() })
   )
   const [keywordId, setKeywordId] = React.useState<TravelKeywordId | null>(
     () => collaborationTrip?.keyword ?? null
@@ -129,12 +140,14 @@ export function TravelRecordFlow({
     return index === -1 ? trips.length : trips.length - index
   }, [photos, region, collaborationTrip])
 
+  // 이동은 RECORD_STEPS 순서만 따른다 — 단계를 넣고 빼도 여기는 손댈 게 없다
+  const stepIndex = RECORD_STEPS.indexOf(step)
+
   const handleBack = () => {
-    if (isCollaboration && step === "photo") closeFlow()
-    else if (step === "date") closeFlow()
-    else if (step === "keyword") goStep("date")
-    else if (step === "photo") goStep("keyword")
-    else goStep("photo")
+    const previous = recordStepAt(stepIndex - 1)
+    // 팟원 합류는 사진부터 시작하므로 앞 단계로 돌아가지 않고 닫는다
+    if (!previous || (isCollaboration && step === "photo")) closeFlow()
+    else goStep(previous)
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,9 +183,8 @@ export function TravelRecordFlow({
   }
 
   const handleNext = () => {
-    if (step === "date") goStep("keyword")
-    else if (step === "keyword") goStep("photo")
-    else if (step === "photo") goStep("preview")
+    const next = recordStepAt(stepIndex + 1)
+    if (next) goStep(next)
   }
 
   // 최종 커밋 — 사진(여행) 등록 성공 시 지역 색상(키워드 기준) 반영 후 지도로 복귀
