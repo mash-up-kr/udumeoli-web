@@ -1,0 +1,1 @@
+import{j as o}from"./jsx-runtime-u17CrQMm.js";import{a as t}from"./utils-WKja2AN6.js";function s({className:e,...n}){return o.jsx("div",{"data-slot":"skeleton","aria-hidden":"true",className:t("pointer-events-none animate-pulse rounded-[8px] bg-bg-neutral-solid",e),...n})}s.__docgenInfo={description:"",methods:[],displayName:"Skeleton"};export{s as S};
