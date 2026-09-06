@@ -1,15 +1,14 @@
 import * as React from "react"
 import { useRouter } from "@tanstack/react-router"
 
-import {
-  TripAccordionCard,
-  TripAccordionCardSkeleton,
-} from "./TripAccordionCard"
-import type { MemberRecord } from "./TripAccordionCard"
-import type { Photo, Trip } from "@/entities/photo"
+import { RecordTile, RecordTileSkeleton } from "./RecordTile"
+import type { RecordMember } from "./RecordTile"
+import type { Photo } from "@/entities/photo"
 import type { PhotoViewerUploader } from "@/features/photo-gallery"
+import { cn } from "@/shared/lib/utils"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { ButtonIcon } from "@/shared/ui/button-icon"
+import { DEFAULT_PROFILE_SRC } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { RequireAuth } from "@/features/auth"
@@ -17,7 +16,6 @@ import { openPhotoViewer } from "@/features/photo-gallery"
 import { pickImageFile } from "@/features/photo-upload"
 import {
   findKeyword,
-  formatTripRange,
   groupTrips,
   uploadErrorMessage,
   useCreatePhoto,
@@ -30,64 +28,94 @@ import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
 
+/** 그리드 카드 1개 — 사진 1장(기록 O) 또는 멤버 placeholder(기록 X, photo null) */
+interface RecordCard {
+  key: string
+  member: RecordMember
+  photo: Photo | null
+}
+
 function TravelAlbumRegionContent({ region }: { region: string }) {
   const router = useRouter()
   const currentPotId = usePotStore((s) => s.currentPotId)
-  const potName = usePotStore(
-    (s) => s.pots.find((p) => p.id === s.currentPotId)?.name ?? ""
-  )
   const members = usePotStore(selectCurrentPotMembers)
   const createPhotoMutation = useCreatePhoto()
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
   const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
-  const trips = React.useMemo(() => groupTrips(regionPhotos), [regionPhotos])
   const deletePhotoMutation = useDeletePhoto()
   const updateCommentMutation = useUpdatePhotoComment()
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
-  // 업로드 진행 중인 방문 key — 해당 카드의 내 빈 타일이 스켈레톤으로 전환
-  const [uploadingTripKey, setUploadingTripKey] = React.useState<string | null>(
-    null
+  // 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환
+  const [uploading, setUploading] = React.useState(false)
+
+  // 멤버 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로 (정책 2·4, 마이페이지와 동일)
+  const orderedMembers = React.useMemo<Array<RecordMember>>(
+    () =>
+      [
+        ...members.filter((m) => m.id === myId),
+        ...members.filter((m) => m.id !== myId),
+      ].map((member) => {
+        const isMe = member.id === myId
+        return {
+          memberId: member.id,
+          // 내 행은 목 멤버 정보 대신 세션 닉네임·프로필 노출 (갤러리와 동일 규칙)
+          nickname: isMe
+            ? (currentUser?.nickname ?? member.nickname)
+            : member.nickname,
+          profileImageUrl: isMe
+            ? (currentUser?.profileImageUrl ?? member.profileImageUrl)
+            : member.profileImageUrl,
+          isMe,
+        }
+      }),
+    [members, myId, currentUser]
   )
 
-  // 멤버 행 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로
-  const orderedMembers = React.useMemo(
-    () => [
-      ...members.filter((m) => m.id === myId),
-      ...members.filter((m) => m.id !== myId),
-    ],
-    [members, myId]
+  // 기록 카드 — 멤버 순서대로 그 멤버의 사진(최신순) 1장당 카드 1개, 미기록이면 placeholder 1개 (정책 4)
+  const cards = React.useMemo(
+    () =>
+      orderedMembers.flatMap<RecordCard>((member) => {
+        const photos = regionPhotos
+          .filter((p) => p.uploaderId === member.memberId)
+          .sort((a, b) => (a.date < b.date ? 1 : -1))
+        if (photos.length === 0) {
+          return [{ key: member.memberId, member, photo: null }]
+        }
+        return photos.map((photo) => ({ key: photo.id, member, photo }))
+      }),
+    [orderedMembers, regionPhotos]
   )
+  const uploadedIds = new Set(regionPhotos.map((p) => p.uploaderId))
 
-  const toRecords = (trip: Trip): Array<MemberRecord> =>
-    orderedMembers.map((member) => {
-      const isMe = member.id === myId
-      return {
-        memberId: member.id,
-        // 내 행은 목 멤버 정보 대신 세션 닉네임·프로필 노출 (갤러리와 동일 규칙)
-        nickname: isMe
-          ? (currentUser?.nickname ?? member.nickname)
-          : member.nickname,
-        profileImageUrl: isMe
-          ? (currentUser?.profileImageUrl ?? member.profileImageUrl)
-          : member.profileImageUrl,
-        isMe,
-        // 같은 방문 기간에 여러 장이면 마지막 등록분 노출
-        photo:
-          trip.photos.filter((p) => p.uploaderId === member.id).at(-1) ?? null,
-      }
-    })
+  // 키워드 칩 — 지역 사진의 키워드를 종류별 집계, 많은 순 (정책 3). 사진 0장이면 칩 영역 미노출
+  const keywordCounts = new Map<string, number>()
+  for (const photo of regionPhotos) {
+    if (photo.keyword) {
+      keywordCounts.set(
+        photo.keyword,
+        (keywordCounts.get(photo.keyword) ?? 0) + 1
+      )
+    }
+  }
+  const keywords = [...keywordCounts.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .map(([id]) => findKeyword(id as NonNullable<Photo["keyword"]>))
+    .filter((keyword): keyword is NonNullable<typeof keyword> =>
+      Boolean(keyword)
+    )
 
-  // '기록하기' — 해당 방문 기간의 업로드 플로우(이미지 선택 → 등록) 진입
-  const recordTrip = (trip: Trip) => {
-    if (!myId || createPhotoMutation.isPending) return
+  // 내 사진 올리기 — 이 지역의 최신 방문에 합류하는 업로드(이미지 선택 → 등록), 지도 시트와 동일 (정책 4-1)
+  const recordTrip = () => {
+    const trip = groupTrips(regionPhotos).at(0)
+    if (!trip || !myId || createPhotoMutation.isPending) return
     pickImageFile(async (url, file) => {
       // 팟원이 먼저 기록한 방문에 합류하는 업로드 — 그 방문의 키워드를 따라간다
       const keyword = trip.photos.find((p) => p.keyword)?.keyword
       const tripId = trip.photos.find((p) => p.tripId)?.tripId
-      setUploadingTripKey(trip.tripId ?? trip.startDate)
+      setUploading(true)
       try {
         await createPhotoMutation.mutateAsync({
           potId: currentPotId,
@@ -101,33 +129,21 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         })
         showToast({ message: "업로드가 완료됐어요", icon: "check" })
       } catch (error) {
-        showToast({
-          message: uploadErrorMessage(error),
-          icon: "alert",
-        })
+        showToast({ message: uploadErrorMessage(error), icon: "alert" })
       } finally {
-        setUploadingTripKey(null)
+        setUploading(false)
       }
     })
   }
 
   // 사진 업로더 표시 정보 — 내 사진은 세션 닉네임·프로필, 멤버 탈퇴 등으로 못 찾으면 뱃지 숨김
   const uploaderOf = (photo: Photo): PhotoViewerUploader | undefined => {
-    const isMe = photo.uploaderId === myId
-    const member = members.find((m) => m.id === photo.uploaderId)
-    if (isMe) {
-      return {
-        nickname: currentUser?.nickname ?? member?.nickname ?? "",
-        profileImageUrl:
-          currentUser?.profileImageUrl ?? member?.profileImageUrl ?? null,
-        isMe: true,
-      }
-    }
+    const member = orderedMembers.find((m) => m.memberId === photo.uploaderId)
     if (!member) return undefined
     return {
       nickname: member.nickname,
       profileImageUrl: member.profileImageUrl,
-      isMe: false,
+      isMe: member.isMe,
     }
   }
 
@@ -162,6 +178,10 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     })
   }
 
+  // 1인팟은 1열 블록 카드, 2인 이상은 2열 그리드 (정책 4 · case 01/02)
+  const single = orderedMembers.length === 1
+  const tileClassName = single ? "aspect-[3/5]" : undefined
+
   return (
     <MobileLayout className="bg-bg-neutral-subtle pb-8">
       <div className="pt-[env(safe-area-inset-top)]">
@@ -177,35 +197,81 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
             {formatRegionName(region)}
           </h1>
         </header>
+        {/* 멤버 프로필 나열 + "n/N명 기록 완료" — n은 이 지역에 올린 멤버 수, N은 팟 전체 (정책 2).
+            올린 멤버는 실선, 안 올린 멤버는 점선 프로필 */}
+        <div className="flex items-center justify-center gap-1.5 pb-4">
+          <div className="flex -space-x-1">
+            {orderedMembers.map((member) => (
+              <img
+                key={member.memberId}
+                src={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
+                alt=""
+                className={cn(
+                  "size-6 rounded-full border bg-bg-neutral-weak object-cover",
+                  uploadedIds.has(member.memberId)
+                    ? "border-solid border-stroke-neutral-weak"
+                    : "border-dashed border-stroke-neutral-subtle"
+                )}
+              />
+            ))}
+          </div>
+          <p className="text-b7 text-fg-neutral-subtle">
+            <span className="text-h9 text-fg-neutral-bold">
+              {uploadedIds.size}
+            </span>
+            /{orderedMembers.length}명 기록 완료
+          </p>
+        </div>
       </div>
 
-      {/* 방문(여행) 리스트 — 최신순, 첫 카드만 펼침이 디폴트 */}
-      <main className="flex flex-col gap-3 px-4 pt-1">
+      {keywords.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+          {keywords.map((keyword) => (
+            <span
+              key={keyword.id}
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-b7"
+              // 키워드 대표색 10% 배경 + 대표색 글자 — 지도 시트 칩과 동일
+              style={{
+                backgroundColor: `${keyword.mapColor}1a`,
+                color: keyword.mapColor,
+              }}
+            >
+              <img
+                src={keyword.emojiSrc}
+                alt=""
+                className="size-5 object-contain"
+              />
+              {keyword.label} {keywordCounts.get(keyword.id)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <main
+        className={cn(
+          "grid gap-2.5 px-4",
+          single ? "grid-cols-1" : "grid-cols-2"
+        )}
+      >
         {/* 첫 로딩(캐시·세션 업로드도 없을 때)만 스켈레톤 — 데이터가 있으면 바로 카드 */}
-        {isPhotosPending && trips.length === 0 ? (
-          <TripAccordionCardSkeleton />
-        ) : null}
-        {trips.map((trip, i) => {
-          // 헤더 타이틀·스티커 — 여행 키워드 기반 (시안 #Keywords Header, "디저트!투어").
-          // 키워드 없는 레거시 여행은 팟 이름 + 기본 아이콘 폴백
-          const keyword = findKeyword(
-            trip.photos.find((p) => p.keyword)?.keyword
-          )
-          return (
-            <TripAccordionCard
-              // 서버 tripId가 있으면 그것이 방문 단위 — 같은 시작일의 별개 방문끼리 key 충돌 방지
-              key={`${currentPotId}-${trip.tripId ?? trip.startDate}`}
-              title={keyword ? `${keyword.label}!투어` : potName}
-              {...(keyword ? { stickerSrc: keyword.emojiSrc } : {})}
-              dateRange={formatTripRange(trip)}
-              records={toRecords(trip)}
-              defaultOpen={i === 0}
-              uploading={uploadingTripKey === (trip.tripId ?? trip.startDate)}
-              onRecord={() => recordTrip(trip)}
+        {isPhotosPending && regionPhotos.length === 0 ? (
+          <>
+            <RecordTileSkeleton className={tileClassName} />
+            {single ? null : <RecordTileSkeleton />}
+          </>
+        ) : (
+          cards.map((card) => (
+            <RecordTile
+              key={card.key}
+              member={card.member}
+              photo={card.photo}
+              uploading={uploading}
+              onRecord={recordTrip}
               onPhotoClick={viewPhoto}
+              className={tileClassName}
             />
-          )
-        })}
+          ))
+        )}
       </main>
     </MobileLayout>
   )
