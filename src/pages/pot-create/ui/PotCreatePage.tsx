@@ -10,6 +10,7 @@ import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
 import {
+  POT_CAPACITY,
   TicketCard,
   TicketPrintStage,
   useCreateParty,
@@ -158,7 +159,14 @@ export function PotCreatePage() {
         name={created.name}
         code={created.code}
         leaderName={currentUser?.nickname ?? "나"}
-        onClose={goToMap}
+        onClose={() => {
+          goToMap()
+          // 새 팟은 지도 안내 오버레이가 먼저 뜨는 첫 진입이라 기본 위치(하단 34) (Figma 3065-19291 #10)
+          showToast({
+            message: `${created.name}에 참여했어요 (1/${POT_CAPACITY})`,
+            icon: "check",
+          })
+        }}
       />
     )
   }

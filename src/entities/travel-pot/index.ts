@@ -5,6 +5,7 @@ export {
   usePotStore,
   usePotsHydrated,
   selectCurrentPotMembers,
+  POT_CAPACITY,
 } from "./model/pot.store"
 export type {
   MapCell,
