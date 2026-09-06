@@ -19,7 +19,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          "화면 하단에 잠깐 표시되는 알림 (Figma Toast v1.0.0). `showToast()` 명령형 호출, 기본 3초 후 자동 dismiss. 흰 pill · bg-neutral-weak · 라벨 fg-neutral-bold, 선택적 아이콘 — alert(빨간 !)/alert-neutral(검정 !)/check(파란 ✓).",
+          "화면 하단에 잠깐 표시되는 알림 (Figma Toast v1.0.0). `showToast()` 명령형 호출, 기본 3초 후 자동 dismiss. 흰 pill · bg-neutral-weak · 라벨 fg-neutral-bold, 선택적 아이콘 — alert(빨간 !)/alert-neutral(검정 !)/check(파란 ✓)/check-neutral(검정 ✓).",
       },
       story: { inline: false, height: "200px" },
     },
@@ -75,6 +75,22 @@ export const WithCheckIcon: Story = {
       }
     >
       완료 토스트
+    </Button>
+  ),
+}
+
+/** 종료 안내 체크 아이콘 (검정 ✓) — 계정 삭제 완료 등. */
+export const WithNeutralCheckIcon: Story = {
+  render: () => (
+    <Button
+      onClick={() =>
+        showToast({
+          message: "계정 삭제가 완료되었습니다. 감사합니다.",
+          icon: "check-neutral",
+        })
+      }
+    >
+      종료 안내 토스트
     </Button>
   ),
 }

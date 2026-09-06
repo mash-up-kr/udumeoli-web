@@ -246,7 +246,8 @@ function MyPageContent() {
             await router.navigate({ to: "/" })
             showToast({
               message: "계정 삭제가 완료되었습니다. 감사합니다.",
-              icon: "alert",
+              // 검정 ✓ — 에러가 아닌 종료 안내 (Figma 3065-20990)
+              icon: "check-neutral",
               className: SPLASH_TOAST_POSITION,
             })
           }}

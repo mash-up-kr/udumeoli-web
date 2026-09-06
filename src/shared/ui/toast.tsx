@@ -3,11 +3,11 @@ import { overlay } from "overlay-kit"
 
 import { cn } from "@/shared/lib/utils"
 
-export type ToastIcon = "alert" | "alert-neutral" | "check"
+export type ToastIcon = "alert" | "alert-neutral" | "check" | "check-neutral"
 
 export interface ToastOptions {
   message: string
-  /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료). 기본 없음. */
+  /** 좌측 아이콘 — alert(빨간 !, 에러) / alert-neutral(검정 !, 안내) / check(파란 ✓, 완료) / check-neutral(검정 ✓, 종료 안내). 기본 없음. */
   icon?: ToastIcon
   duration?: number
   /**
@@ -39,11 +39,11 @@ function AlertIcon({ className }: { className: string }) {
   )
 }
 
-/** icon-check-circle (24×24) — Figma 원본 path. 색은 fg-brand-solid. */
-function CheckIcon() {
+/** icon-check-circle (24×24) — Figma 원본 path. 색은 호출부에서 지정 (brand/neutral). */
+function CheckIcon({ className }: { className: string }) {
   return (
     <svg
-      className="size-6 shrink-0 text-fg-brand-solid"
+      className={cn("size-6 shrink-0", className)}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
@@ -97,7 +97,12 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
         {icon === "alert-neutral" ? (
           <AlertIcon className="text-fg-neutral-bold" />
         ) : null}
-        {icon === "check" ? <CheckIcon /> : null}
+        {icon === "check" ? (
+          <CheckIcon className="text-fg-brand-solid" />
+        ) : null}
+        {icon === "check-neutral" ? (
+          <CheckIcon className="text-fg-neutral-bold" />
+        ) : null}
         <span className="min-w-0 flex-1 truncate text-b5 text-fg-neutral-bold">
           {message}
         </span>
