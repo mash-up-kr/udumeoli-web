@@ -65,9 +65,11 @@ function RoleBadge({ leader }: { leader: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center rounded-full px-2 text-h9",
+        // 칩 텍스트 12/600/20 (Figma 3065-17307) — 타이포 스케일에 없는 조합이라 값 고정
+        "inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[12px] leading-5 font-semibold tracking-[-0.1px]",
+        // 팟장 칩 배경은 시안이 fg-neutral-solid(neutral-600)를 그대로 쓴다 — inverse(800)보다 한 톤 연함
         leader
-          ? "bg-bg-neutral-inverse text-fg-neutral-inverse"
+          ? "bg-fg-neutral-solid text-fg-neutral-inverse"
           : "bg-neutral-150 text-fg-neutral-solid"
       )}
     >
@@ -94,7 +96,7 @@ function MemberRow({
           alt={`${member.nickname} 프로필`}
         />
         <div className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 truncate text-b4 text-fg-neutral-bold">
+          <span className="min-w-0 truncate text-h7 text-fg-neutral-bold">
             {member.nickname}
             {isMe ? " (ME)" : ""}
           </span>
@@ -356,7 +358,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
           <div className="flex min-h-[70px] w-full items-start justify-between gap-3 rounded-2xl border border-bg-neutral-inverse bg-bg-neutral-subtle px-4 py-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-h9 text-fg-neutral-subtle">초대코드</span>
-              <span className="truncate text-h6-1 text-fg-neutral-bold">
+              {/* 시안(3065-17339)은 fg-neutral-bold(800)가 아닌 neutral-900 */}
+              <span className="truncate text-h6-1 text-neutral-900">
                 {pot.inviteCode}
               </span>
             </div>
