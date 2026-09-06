@@ -339,7 +339,8 @@ function PhotoViewerContent({
       showToast({ message: "삭제에 실패했어요", icon: "alert" })
       return
     }
-    showToast({ message: "삭제가 완료됐어요.", icon: "check" })
+    // 시안(3065-14819)은 완료 토스트인데도 빨간 ! — 삭제라는 파괴적 결과를 강조하는 의도
+    showToast({ message: "삭제가 완료됐어요.", icon: "alert" })
     // 마지막 1장 삭제 여부와 무관하게 이전 화면(지역 상세 리스트)으로 복귀
     close()
   }
