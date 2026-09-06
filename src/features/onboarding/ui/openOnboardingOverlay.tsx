@@ -183,14 +183,16 @@ function GalleryGraphic() {
 const STEP_GRAPHICS = [StickerGraphic, MapGraphic, GalleryGraphic]
 
 function OnboardingOverlay({
+  initialStep,
   onFinish,
   unmount,
 }: {
+  initialStep: Step
   /** 마지막 스텝 "다음" — 다음 화면 이동. 끝나면 오버레이가 페이드아웃 후 걷힌다 */
   onFinish: () => void | Promise<void>
   unmount: () => void
 }) {
-  const [step, setStep] = useState<Step>(1)
+  const [step, setStep] = useState<Step>(initialStep)
   const [closing, setClosing] = useState(false)
   const { title, subtitle } = STEP_CONTENT[step - 1]
   const Graphic = STEP_GRAPHICS[step - 1]
@@ -322,6 +324,8 @@ function OnboardingOverlay({
  *
  * `force: true`면 이미 본 유저에게도 다시 띄운다 — 팟 없는 신규 유저가
  * /pot-start에서 뒤로가기를 눌렀을 때(더 돌아갈 라우트가 없음) 재노출 용도.
+ * `initialStep`은 그 재노출 시 시작 스텝 — 직전에 본 게 마지막 스텝이므로 3부터 열어
+ * "뒤로가기"가 실제로 한 화면 전으로 돌아간 것처럼 보이게 한다. 기본 1.
  * `onComplete`는 마지막 스텝 "다음"으로 정상 종료됐을 때만 호출 — 가입 직후 흐름에서
  * 온보딩이 끝난 뒤에야 다음 화면으로 이동시켜, 지도의 "팟 없음" 가드가
  * 온보딩보다 먼저 끼어들어 팝업·온보딩이 스킵되는 경합을 막는다.
@@ -330,6 +334,7 @@ function OnboardingOverlay({
  */
 export function openOnboardingOverlay(options?: {
   force?: boolean
+  initialStep?: Step
   onComplete?: () => void | Promise<void>
 }): void {
   // 한 번이라도 노출되면 확인한 것으로 처리 — 재접속 시 다시 노출되지 않음
@@ -341,6 +346,7 @@ export function openOnboardingOverlay(options?: {
 
   overlay.open(({ unmount }) => (
     <OnboardingOverlay
+      initialStep={options?.initialStep ?? 1}
       onFinish={() => options?.onComplete?.()}
       unmount={unmount}
     />

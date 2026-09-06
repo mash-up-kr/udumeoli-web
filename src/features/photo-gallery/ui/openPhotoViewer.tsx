@@ -18,6 +18,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/shared/ui/dialog"
+import iconCloseSrc from "@/shared/assets/icon-close.svg"
 import iconCloseBoldSrc from "@/shared/assets/icon-close-bold.svg"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 
@@ -33,6 +34,8 @@ export interface PhotoViewerItem {
   imageUrl: string
   /** 사진 하단 말풍선에 노출되는 코멘트 */
   comment?: string
+  /** 말풍선 좌측 키워드(테마) 스티커 — 업로드 시 고른 키워드의 그래픽 (Figma 3176-63722) */
+  keywordIconSrc?: string
   /** 업로더 정보 — 없으면 닉네임 뱃지를 숨긴다 (단순 이미지 보기) */
   uploader?: PhotoViewerUploader
 }
@@ -73,14 +76,15 @@ function confirmDeletePhoto(): Promise<boolean> {
           onClick={() => close(false)}
           className="absolute top-4 right-4 flex size-7 items-center justify-center text-fg-neutral-bold"
         >
-          <XIcon className="size-5" />
+          {/* Figma icon-close 원본 에셋 (3065-14372) — lucide X보다 획이 짧고 둥글다 */}
+          <img src={iconCloseSrc} alt="" className="size-5" />
         </button>
         <div className="flex justify-center pt-3">
           <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
             <img src={iconAlertDangerSrc} alt="" className="size-9" />
           </span>
         </div>
-        <DialogHeader className="items-center gap-1 py-2 text-center">
+        <DialogHeader className="items-center gap-2.5 py-2 text-center">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             이미지를 삭제하시겠습니까?
           </DialogTitle>
@@ -196,10 +200,26 @@ function UploaderChip({ uploader }: { uploader: PhotoViewerUploader }) {
   )
 }
 
-/** 코멘트 말풍선 — 흰 pill + 위쪽 화살표 (Figma case 01 · 4번) */
-function CommentBubble({ comment }: { comment: string }) {
+/** 코멘트 말풍선 — 흰 pill + 위쪽 화살표, 좌측 키워드 스티커 20px (Figma 3176-63722 · case 01 · 4번) */
+function CommentBubble({
+  comment,
+  iconSrc,
+}: {
+  comment: string
+  iconSrc?: string
+}) {
   return (
-    <span className="relative flex h-8 items-center rounded-full bg-bg-neutral-weak px-3 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
+    <span
+      className={cn(
+        "relative flex h-8 items-center rounded-full bg-bg-neutral-weak drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]",
+        // 시안: 아이콘 x8 · 텍스트 x30(gap 2) · 우측 8. 스티커 없는 사진은 텍스트만 12 여백
+        iconSrc ? "gap-0.5 px-2" : "px-3"
+      )}
+    >
+      {/* object-cover: food.png만 4:3이라 정사각 슬롯에 맞춰 크롭 */}
+      {iconSrc ? (
+        <img src={iconSrc} alt="" className="size-5 shrink-0 object-cover" />
+      ) : null}
       <svg
         aria-hidden
         viewBox="80 12 18 12"
@@ -337,7 +357,8 @@ function PhotoViewerContent({
       showToast({ message: "삭제에 실패했어요", icon: "alert" })
       return
     }
-    showToast({ message: "삭제가 완료됐어요.", icon: "check" })
+    // 시안(3065-14819)은 완료 토스트인데도 빨간 ! — 삭제라는 파괴적 결과를 강조하는 의도
+    showToast({ message: "삭제가 완료됐어요.", icon: "alert" })
     // 마지막 1장 삭제 여부와 무관하게 이전 화면(지역 상세 리스트)으로 복귀
     close()
   }
@@ -435,7 +456,7 @@ function PhotoViewerContent({
             top: `min(${imageBox.bottom + 16}px, calc(100% - ${TOOLTIP_BOTTOM_FIXED + 32}px - env(safe-area-inset-bottom)))`,
           }}
         >
-          <CommentBubble comment={comment} />
+          <CommentBubble comment={comment} iconSrc={photo.keywordIconSrc} />
         </div>
       ) : null}
 

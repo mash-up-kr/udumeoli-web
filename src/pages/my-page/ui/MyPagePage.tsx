@@ -122,11 +122,12 @@ function DeleteConfirmContent({
 }) {
   return (
     <>
-      <div className="flex flex-col items-center gap-4 pt-4 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
+      {/* Figma 3065-13823 — 그래픽 슬롯(60, 아이콘 top 12) · gap 16 · 텍스트 컨테이너 py-8 gap-10 */}
+      <div className="flex flex-col items-center gap-4 text-center">
+        <span className="mt-3 flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
           <img src={iconAlertDangerSrc} alt="" className="size-9" />
         </span>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5 py-2">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             계정을 삭제하시겠습니까?
           </DialogTitle>
@@ -204,7 +205,8 @@ function MyPageContent() {
     await router.navigate({ to: "/" })
     showToast({
       message: "로그아웃이 완료됐어요.",
-      icon: "alert-neutral",
+      // 검정 ✓ — 완료 안내 (Figma 3065-20961)
+      icon: "check-neutral",
       className: SPLASH_TOAST_POSITION,
     })
   }
@@ -246,7 +248,8 @@ function MyPageContent() {
             await router.navigate({ to: "/" })
             showToast({
               message: "계정 삭제가 완료되었습니다. 감사합니다.",
-              icon: "alert",
+              // 검정 ✓ — 에러가 아닌 종료 안내 (Figma 3065-20990)
+              icon: "check-neutral",
               className: SPLASH_TOAST_POSITION,
             })
           }}

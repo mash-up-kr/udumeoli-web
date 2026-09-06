@@ -11,7 +11,9 @@ import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
+import { hasSeenMapTips } from "@/features/onboarding"
 import {
+  POT_CAPACITY,
   TicketCard,
   TicketPrintStage,
   fetchPartyPreview,
@@ -23,9 +25,6 @@ import { useSessionStore } from "@/entities/user"
 
 // [정책 1893-21176 #2] 영문+숫자 혼용 6자리 고정 입력
 const CODE_LENGTH = 6
-
-// 여행팟 최대 인원 — 6명 고정 (정책 1893-21176 #6·#7)
-const POT_CAPACITY = 6
 
 // [정책 1893-21176 #4·#5·#6] 에러 토스트 문구 — 3초 노출은 토스트 기본 duration
 const JOIN_ERROR_MESSAGES = {
@@ -45,8 +44,11 @@ const JOIN_CODE_MESSAGES: Record<string, string> = {
 // 코드 입력 화면 CTA(참여하기) 위 — CTA bottom 32(pb-8) + 높이 56 + 16
 const CODE_TOAST_POSITION = "bottom-[104px]"
 
-// 지도 진입 후 뜨는 토스트 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
+// 지도 진입 후 뜨는 토스트 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16).
+// 첫 진입(지도 안내 오버레이가 내비를 덮음)은 Case 1이라 기본 위치(하단 34) (Figma 3065-19291 #10)
 const MAP_TOAST_POSITION = "bottom-[126px]"
+const mapToastClassName = (potId: string) =>
+  hasSeenMapTips(potId) ? MAP_TOAST_POSITION : undefined
 
 interface JoinPreview {
   name: string
@@ -193,10 +195,11 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
 
   const showJoinedToast = (pot: TravelPot, memberCount: number) => {
     // [정책 #10] "OOO에 참여했어요 (n/6)" — 지도 진입 화면 위 3초 노출
+    const className = mapToastClassName(pot.id)
     showToast({
       message: `${pot.name}에 참여했어요 (${memberCount}/${POT_CAPACITY})`,
       icon: "check",
-      className: MAP_TOAST_POSITION,
+      ...(className ? { className } : {}),
     })
   }
 
@@ -219,10 +222,11 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     if (myPot) selectPot(myPot.id)
     goToMap()
     // 어느 팟인지는 지도 우상단 드롭다운이 보여준다 — 문구는 핵심만 짧게
+    const className = myPot ? mapToastClassName(myPot.id) : MAP_TOAST_POSITION
     showToast({
       message: "이미 참여중인 여행팟이에요",
       icon: "alert-neutral",
-      className: MAP_TOAST_POSITION,
+      ...(className ? { className } : {}),
     })
   }
 

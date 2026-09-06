@@ -32,7 +32,7 @@ interface PotState {
 // 팟 미선택/미존재 시에도 안정 참조를 반환하기 위한 상수 — 셀렉터가 매번
 // 새 배열을 만들면 useSyncExternalStore가 무한 리렌더에 빠진다
 const EMPTY_MEMBERS: Array<PotMember> = []
-const POT_CAPACITY = 6
+export const POT_CAPACITY = 6
 const AUTO_DEMO_POT_IDS = new Set([TRIP_100_POT.id, ALBUM_POT.id])
 
 function todayStamp(): string {

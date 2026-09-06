@@ -73,8 +73,9 @@ export function PotStartPage({ inviteCode }: { inviteCode?: string }) {
 
   // 이 화면은 항상 팟이 없는 신규 유저가 지도 진입 시 강제 리다이렉트된 것이라
   // "/"·"/map-google" 둘 다 다시 이리로 튕겨와 history.back()으로는 빠져나갈 곳이 없다.
-  // 대신 직전에 보고 온 첫 진입 온보딩을 다시 띄운다.
-  const goBack = () => openOnboardingOverlay({ force: true })
+  // 대신 직전에 보고 온 첫 진입 온보딩을 다시 띄운다 — 직전 화면이 마지막 스텝이었으니
+  // 1이 아니라 3부터 연다.
+  const goBack = () => openOnboardingOverlay({ force: true, initialStep: 3 })
 
   return (
     <MobileLayout className="flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">

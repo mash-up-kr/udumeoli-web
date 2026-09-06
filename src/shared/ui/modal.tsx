@@ -89,7 +89,8 @@ export function openConfirm({
         className="w-[343px] max-w-[calc(100%-2rem)] gap-2 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         {...(description ? {} : { "aria-describedby": undefined })}
       >
-        <DialogHeader className="items-center gap-1 py-3 text-center">
+        {/* 텍스트 컨테이너 py-8 · gap-10 (Figma 3065-13781) */}
+        <DialogHeader className="items-center gap-2.5 py-2 text-center">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             {title}
           </DialogTitle>

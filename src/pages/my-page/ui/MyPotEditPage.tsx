@@ -25,8 +25,6 @@ import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 
 const sectionTitleCls = "px-2 py-1 text-h8-1 text-neutral-500"
-// 최하단 CTA(팟 나가기, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-const POT_EDIT_TOAST_POSITION = "bottom-[104px]"
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
 
@@ -67,9 +65,11 @@ function RoleBadge({ leader }: { leader: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center rounded-full px-2 text-h9",
+        // 칩 텍스트 12/600/20 (Figma 3065-17307) — 타이포 스케일에 없는 조합이라 값 고정
+        "inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[12px] leading-5 font-semibold tracking-[-0.1px]",
+        // 팟장 칩 배경은 시안이 fg-neutral-solid(neutral-600)를 그대로 쓴다 — inverse(800)보다 한 톤 연함
         leader
-          ? "bg-bg-neutral-inverse text-fg-neutral-inverse"
+          ? "bg-fg-neutral-solid text-fg-neutral-inverse"
           : "bg-neutral-150 text-fg-neutral-solid"
       )}
     >
@@ -96,7 +96,7 @@ function MemberRow({
           alt={`${member.nickname} 프로필`}
         />
         <div className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 truncate text-b4 text-fg-neutral-bold">
+          <span className="min-w-0 truncate text-h7 text-fg-neutral-bold">
             {member.nickname}
             {isMe ? " (ME)" : ""}
           </span>
@@ -122,11 +122,12 @@ function ConfirmDangerContent({
 }) {
   return (
     <>
-      <div className="flex flex-col items-center gap-4 pt-4 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
+      {/* Figma 3065-17473·17539 — 그래픽 슬롯(60, 아이콘 top 12) · gap 16 · 텍스트 컨테이너 py-8 gap-10 */}
+      <div className="flex flex-col items-center gap-4 text-center">
+        <span className="mt-3 flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
           <img src={iconAlertDangerSrc} alt="" className="size-9" />
         </span>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5 py-2">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             {title}
           </DialogTitle>
@@ -200,7 +201,6 @@ function MyPotEditContent({ potId }: { potId: string }) {
       showToast({
         message: "이름 변경에 실패했어요",
         icon: "alert",
-        className: POT_EDIT_TOAST_POSITION,
       })
     }
   }
@@ -208,9 +208,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
   const handleCopyCode = async () => {
     await copyToClipboard(pot.inviteCode)
     showToast({
-      message: `[${pot.inviteCode}] 복사됨`,
+      message: "초대코드가 복사됐어요",
       icon: "check",
-      className: POT_EDIT_TOAST_POSITION,
     })
   }
 
@@ -220,7 +219,6 @@ function MyPotEditContent({ potId }: { potId: string }) {
     showToast({
       message: "초대 링크가 복사됐어요",
       icon: "check",
-      className: POT_EDIT_TOAST_POSITION,
     })
 
     if (typeof navigator.share !== "function") return
@@ -259,7 +257,6 @@ function MyPotEditContent({ potId }: { potId: string }) {
                     ? "팟원이 남아 있어 삭제할 수 없어요"
                     : "팟 삭제에 실패했어요",
                 icon: "alert",
-                className: POT_EDIT_TOAST_POSITION,
               })
               return
             }
@@ -295,7 +292,6 @@ function MyPotEditContent({ potId }: { potId: string }) {
                     ? "팟장은 팟을 나갈 수 없어요"
                     : "팟 나가기에 실패했어요",
                 icon: "alert",
-                className: POT_EDIT_TOAST_POSITION,
               })
               return
             }
@@ -362,7 +358,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
           <div className="flex min-h-[70px] w-full items-start justify-between gap-3 rounded-2xl border border-bg-neutral-inverse bg-bg-neutral-subtle px-4 py-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-h9 text-fg-neutral-subtle">초대코드</span>
-              <span className="truncate text-h6-1 text-fg-neutral-bold">
+              {/* 시안(3065-17339)은 fg-neutral-bold(800)가 아닌 neutral-900 */}
+              <span className="truncate text-h6-1 text-neutral-900">
                 {pot.inviteCode}
               </span>
             </div>
