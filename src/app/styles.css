@@ -8,6 +8,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 데스크탑 안내형 UI (시안 3099-62530)가 켜지는 구간.
+   폭만 보면 가로 모드·폴더블·태블릿처럼 480px를 넘는 실제 모바일까지 폰 프레임에
+   갇혀 위아래 여백이 생긴다. 안내 UI는 마우스로 접속한 사람에게 "모바일로 오세요"를
+   보여주는 화면이므로, 폭과 함께 포인터가 정밀한 기기인지도 조건에 넣는다. */
+@custom-variant frame (@media (min-width: 480px) and (hover: hover) and (pointer: fine));
+/* 좌측 안내 500 + 간격 300 + 폰 440 + 좌우 여백 200 */
+@custom-variant desktop (@media (min-width: 1440px) and (hover: hover) and (pointer: fine));
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Pretendard Variable', 'Inter Variable', sans-serif;
@@ -128,22 +136,17 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* 폰 프레임이 앱의 화면 기준이 되는 구간 (--breakpoint-frame: 480px와 같은 값).
-   480px 미만에서는 프레임이 display:contents라 박스가 없는데, 변수는 상속되므로
-   여기서 덮어쓰면 실제 휴대폰에서 화면이 32px씩 줄어든다. 그래서 미디어 쿼리로 가둔다. */
-@media (min-width: 480px) {
-    [data-app-frame] {
+/* 프레임이 꺼진 구간에서는 프레임이 display:contents라 박스가 없는데 변수는 상속된다.
+   조건 없이 덮어쓰면 실제 휴대폰 화면이 32px씩 줄어들므로 frame 변형 안에 가둔다.
+   조건을 다시 적지 않고 변형을 재사용해야 게이트가 한 곳에서만 정의된다. */
+[data-app-frame] {
+    @variant frame {
         --app-vw: min(440px, calc(100dvw - 32px));
         --app-vh: min(956px, calc(100dvh - 32px));
     }
 }
 
 @theme {
-    /* 데스크탑 안내형 UI (시안 3099-62530) */
-    /* 폰 프레임(440)이 여백과 함께 들어가는 최소 폭 — 실제 휴대폰(≤430)은 여기 안 걸린다 */
-    --breakpoint-frame: 480px;
-    /* 좌측 안내 500 + 간격 300 + 폰 440 + 좌우 여백 200 */
-    --breakpoint-desktop: 1440px;
     /* ===== Color Palette (Design System v1.0.0) ===== */
     --color-neutral-0: #ffffff;
     --color-neutral-50: #f7f8fa;

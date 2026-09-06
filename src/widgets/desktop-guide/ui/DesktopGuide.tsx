@@ -64,7 +64,8 @@ function DesktopAside() {
 /**
  * 데스크탑 안내형 UI (시안 3099-62530).
  *
- * 480px 미만(실제 휴대폰)에서는 `display: contents`라 레이아웃에 전혀 관여하지 않는다.
+ * 켜지는 조건은 `frame` 변형(styles.css) — 폭 480px 이상 + 마우스처럼 정밀한 포인터.
+ * 터치 기기는 폭과 무관하게 `display: contents`라 레이아웃에 전혀 관여하지 않는다.
  *
  * 프레임 높이는 시안(956px)이 아니라 `100dvh`다 — 앱이 `h-dvh`·`calc(100dvh-…)`를
  * 31군데에서 쓰는데 프레임이 뷰포트보다 낮으면 하단 내비 같은 게 프레임 밖으로 밀린다.
@@ -73,7 +74,7 @@ function DesktopAside() {
  */
 export function DesktopGuide({ children }: { children: ReactNode }) {
   // 바텀시트·모달(Radix Portal)이 프레임 밖으로 새지 않도록 컨테이너로 넘긴다.
-  // 480 미만에서는 프레임이 display:contents라 body에 붙는 것과 동작이 같다.
+  // 프레임이 꺼진 기기에서는 display:contents라 body에 붙는 것과 동작이 같다.
   const [frame, setFrame] = React.useState<HTMLDivElement | null>(null)
 
   return (
