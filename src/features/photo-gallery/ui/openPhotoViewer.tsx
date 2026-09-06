@@ -18,6 +18,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/shared/ui/dialog"
+import iconCloseSrc from "@/shared/assets/icon-close.svg"
 import iconCloseBoldSrc from "@/shared/assets/icon-close-bold.svg"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 
@@ -73,14 +74,15 @@ function confirmDeletePhoto(): Promise<boolean> {
           onClick={() => close(false)}
           className="absolute top-4 right-4 flex size-7 items-center justify-center text-fg-neutral-bold"
         >
-          <XIcon className="size-5" />
+          {/* Figma icon-close 원본 에셋 (3065-14372) — lucide X보다 획이 짧고 둥글다 */}
+          <img src={iconCloseSrc} alt="" className="size-5" />
         </button>
         <div className="flex justify-center pt-3">
           <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
             <img src={iconAlertDangerSrc} alt="" className="size-9" />
           </span>
         </div>
-        <DialogHeader className="items-center gap-1 py-2 text-center">
+        <DialogHeader className="items-center gap-2.5 py-2 text-center">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             이미지를 삭제하시겠습니까?
           </DialogTitle>
