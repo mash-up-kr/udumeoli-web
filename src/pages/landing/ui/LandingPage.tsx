@@ -24,11 +24,16 @@ export function LandingPage() {
   return (
     <RedirectIfAuthed>
       <AppSplash onMotionEnd={finishSplash}>
-        {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위. 스플래시 모션 종료 후 페이드인 */}
+        {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위. 스플래시 모션 종료 후 페이드인.
+            absolute가 아니라 fixed다 — 스플래시는 100dvh + overflow-hidden이라 스크롤로
+            만회할 수 없는데, 아이폰 사파리 "단일 탭"(검색창 위) 설정은 하단 툴바가 따로 떠서
+            버튼 아래 여유 34px을 넘겨 잘렸다. fixed는 사파리가 툴바 위로 올려준다.
+            하단 내비(TravelAlbumPage)가 이미 쓰는 방식이다.
+            mx-auto max-w-md는 MobileLayout과 같은 폭·정렬이라 위치는 그대로다. */}
         <div
           className={
             splashDone
-              ? "absolute inset-x-0 bottom-0 animate-in px-4 pb-[max(env(safe-area-inset-bottom),34px)] duration-300 fade-in-0"
+              ? "fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md animate-in px-4 pb-[max(env(safe-area-inset-bottom),34px)] duration-300 fade-in-0"
               : "hidden"
           }
         >
