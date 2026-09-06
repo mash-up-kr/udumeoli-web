@@ -120,11 +120,12 @@ function ConfirmDangerContent({
 }) {
   return (
     <>
-      <div className="flex flex-col items-center gap-4 pt-4 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
+      {/* Figma 3065-17473·17539 — 그래픽 슬롯(60, 아이콘 top 12) · gap 16 · 텍스트 컨테이너 py-8 gap-10 */}
+      <div className="flex flex-col items-center gap-4 text-center">
+        <span className="mt-3 flex size-12 items-center justify-center rounded-full bg-bg-neutral-subtle">
           <img src={iconAlertDangerSrc} alt="" className="size-9" />
         </span>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5 py-2">
           <DialogTitle className="text-h5-1 text-fg-neutral-bold">
             {title}
           </DialogTitle>
