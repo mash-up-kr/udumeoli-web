@@ -503,6 +503,16 @@ function getZoomStage(zoom: number): ZoomStage {
   return 0
 }
 
+// [+] 버튼이 아직 없는 지역을 누르면 넘어갈 다음 단계 줌 (QA: 핀치 줌만으로 3단계까지
+// 가는 게 불편) — 0·1은 시 경계(2), 2는 인기지역 [+](2.5), 2.5는 전 지역 [+](3)
+const NEXT_STAGE_ZOOM: Record<ZoomStage, number | null> = {
+  0: BOUNDARY_ZOOM,
+  1: BOUNDARY_ZOOM,
+  2: POPULAR_ENTER_ZOOM,
+  2.5: DETAIL_ENTER_ZOOM,
+  3: null,
+}
+
 // ease-out은 초반에 확 움직여 짧은 duration에선 튀는 느낌 — 완만하게 출발·도착
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2
@@ -778,8 +788,6 @@ function MapController({
           initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
           onFeatureClick: (name) => {
             if (decoratingRef.current) return
-            // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
-            if ((map.getZoom() ?? 0) < BOUNDARY_ZOOM) return
             onFeatureClickRef.current(name)
           },
         })
@@ -1520,7 +1528,8 @@ function TravelMapGoogleInner({
     (name: string, applyZoomGate: boolean) => {
       const latestTrip = latestTripsByRegionRef.current.get(name)
       // 폴리곤 클릭(applyZoomGate)은 [+] 마커가 보이는 지역에서만 동작 —
-      // 마커 노출 조건과 클릭 가능 조건을 한 함수로 일치시킨다
+      // 마커 노출 조건과 클릭 가능 조건을 한 함수로 일치시킨다.
+      // [+]가 아직 없으면 그 지역을 중심으로 다음 단계까지 줌인해 진입점을 앞당긴다
       if (
         applyZoomGate &&
         !canShowAvailableRegionMarker({
@@ -1529,6 +1538,13 @@ function TravelMapGoogleInner({
           region: name,
         })
       ) {
+        const nextZoom = NEXT_STAGE_ZOOM[zoomStageRef.current]
+        const centroid = centroidsRef.current.find((c) => c.name === name)
+        if (nextZoom === null || !centroid) return
+        runCameraMove(
+          { lat: centroid.lat, lng: centroid.lng, zoom: nextZoom },
+          600
+        )
         return
       }
       const action = resolveRegionAction({
@@ -1570,7 +1586,7 @@ function TravelMapGoogleInner({
 
       startDecorateRef.current(name)
     },
-    [partyMembers]
+    [partyMembers, runCameraMove]
   )
 
   const handleFeatureClick = React.useCallback(
