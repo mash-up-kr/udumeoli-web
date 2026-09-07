@@ -4,7 +4,9 @@ import { overlay } from "overlay-kit"
 import photoGyeongjuSrc from "../assets/map-tip-gyeongju.jpg"
 import photoBeachSrc from "../assets/map-tip-beach.jpg"
 import photoAlleySrc from "../assets/map-tip-alley.jpg"
+import type { ToastOptions } from "@/shared/ui/toast"
 import { cn } from "@/shared/lib/utils"
+import { showToast } from "@/shared/ui/toast"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
 
@@ -38,6 +40,19 @@ function preloadImage(src: string): Promise<void> {
 // 디코드가 이 시간 안에 안 끝나면(네트워크 정체 등) 사진 없이라도 본문을 띄운다 —
 // 배경만 덮인 채 닫을 수단이 없는 상태로 사용자를 막아두지 않기 위한 상한
 const PHOTOS_READY_TIMEOUT_MS = 1500
+
+// 안내 오버레이와 같은 프레임에 띄울 토스트 — 팟 참여/생성 직후 지도로 이동하면서
+// 바로 띄우면 오버레이(지도 마운트 후 effect)보다 토스트가 먼저 떠서 어색하다 (QA)
+let pendingToast: { potId: string; options: ToastOptions } | null = null
+
+/** 안내 오버레이가 뜰 팟이면 오버레이 등장에 맞춰, 이미 본 팟이면 즉시 토스트를 띄운다 */
+export function showToastWithMapTips(potId: string, options: ToastOptions) {
+  if (hasSeenMapTips(potId)) {
+    showToast(options)
+    return
+  }
+  pendingToast = { potId, options }
+}
 
 // STEP 1 → STEP 2 → 시작하기가 시간차를 두고 내려오는 공통 등장 모션 —
 // transform·opacity만 움직이고(GPU 합성) fill-mode-backwards로 delay 동안 숨긴다
@@ -73,12 +88,20 @@ function PhotoFrame({
 }
 
 function MapTipsOverlay({
+  potId,
   onStart,
   unmount,
 }: {
+  potId: string
   onStart?: () => void
   unmount: () => void
 }) {
+  // 배경이 그려진 직후 대기 중인 토스트를 띄운다 — 다른 팟의 토스트가 남아 있으면 버린다
+  useEffect(() => {
+    if (pendingToast?.potId === potId) showToast(pendingToast.options)
+    pendingToast = null
+  }, [potId])
+
   // 배경(블러)은 지도와 같은 프레임에 바로 덮고, 본문은 사진 3장 디코드가 끝난 뒤에
   // 마운트해 순차 등장을 시작한다 — 프레임(테두리)만 먼저 뜨는 것도, 지도가 잠깐
   // 맨살로 보였다가 블러가 덮이는 깜빡임도 없앤다
@@ -215,7 +238,7 @@ export function openMapTipsOverlay(options: {
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, potId]))
 
   overlay.open(({ unmount }) => (
-    <MapTipsOverlay onStart={onStart} unmount={unmount} />
+    <MapTipsOverlay potId={potId} onStart={onStart} unmount={unmount} />
   ))
   return true
 }

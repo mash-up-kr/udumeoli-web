@@ -9,6 +9,7 @@ import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
+import { showToastWithMapTips } from "@/features/onboarding"
 import {
   POT_CAPACITY,
   TicketCard,
@@ -120,6 +121,7 @@ export function PotCreatePage() {
   const currentUser = useSessionStore((s) => s.currentUser)
   const [name, setName] = React.useState("")
   const [created, setCreated] = React.useState<{
+    id: string
     name: string
     code: string
   } | null>(null)
@@ -147,7 +149,7 @@ export function PotCreatePage() {
           })
         : await createPartyMutation.mutateAsync(trimmedName)
 
-      setCreated({ name: pot.name, code: pot.inviteCode })
+      setCreated({ id: pot.id, name: pot.name, code: pot.inviteCode })
     } catch {
       showToast({ message: "여행팟 생성에 실패했어요", icon: "alert" })
     }
@@ -161,8 +163,9 @@ export function PotCreatePage() {
         leaderName={currentUser?.nickname ?? "나"}
         onClose={() => {
           goToMap()
-          // 새 팟은 지도 안내 오버레이가 먼저 뜨는 첫 진입이라 기본 위치(하단 34) (Figma 3065-19291 #10)
-          showToast({
+          // 새 팟은 지도 안내 오버레이가 먼저 뜨는 첫 진입이라 기본 위치(하단 34) (Figma 3065-19291 #10).
+          // 오버레이 등장에 맞춰 띄운다 — 먼저 뜨면 어색하다
+          showToastWithMapTips(created.id, {
             message: `${created.name}에 참여했어요 (1/${POT_CAPACITY})`,
             icon: "check",
           })

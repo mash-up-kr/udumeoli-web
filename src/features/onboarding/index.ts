@@ -6,4 +6,5 @@ export {
   openMapTipsOverlay,
   hasSeenMapTips,
   resetMapTipsSeen,
+  showToastWithMapTips,
 } from "./ui/openMapTipsOverlay"

@@ -11,7 +11,7 @@ import { DEFAULT_PROFILE_SRC, Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK, getGraphQLErrorCode } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
-import { hasSeenMapTips } from "@/features/onboarding"
+import { hasSeenMapTips, showToastWithMapTips } from "@/features/onboarding"
 import {
   POT_CAPACITY,
   TicketCard,
@@ -196,7 +196,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   const showJoinedToast = (pot: TravelPot, memberCount: number) => {
     // [정책 #10] "OOO에 참여했어요 (n/6)" — 지도 진입 화면 위 3초 노출
     const className = mapToastClassName(pot.id)
-    showToast({
+    showToastWithMapTips(pot.id, {
       message: `${pot.name}에 참여했어요 (${memberCount}/${POT_CAPACITY})`,
       icon: "check",
       ...(className ? { className } : {}),
@@ -222,12 +222,19 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
     if (myPot) selectPot(myPot.id)
     goToMap()
     // 어느 팟인지는 지도 우상단 드롭다운이 보여준다 — 문구는 핵심만 짧게
-    const className = myPot ? mapToastClassName(myPot.id) : MAP_TOAST_POSITION
-    showToast({
+    const options = {
       message: "이미 참여중인 여행팟이에요",
       icon: "alert-neutral",
-      ...(className ? { className } : {}),
-    })
+    } as const
+    if (myPot) {
+      const className = mapToastClassName(myPot.id)
+      showToastWithMapTips(myPot.id, {
+        ...options,
+        ...(className ? { className } : {}),
+      })
+    } else {
+      showToast({ ...options, className: MAP_TOAST_POSITION })
+    }
   }
 
   // [정책 #3] 참여하기 — 코드 유효성 검사 후 확인 스텝으로 전환.
