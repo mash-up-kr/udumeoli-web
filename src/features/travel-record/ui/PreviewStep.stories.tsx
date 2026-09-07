@@ -21,14 +21,13 @@ type Story = StoryObj<typeof PreviewStep>
 
 const firstKeyword = TRAVEL_KEYWORD_OPTIONS[0]
 
-/** 기간 여행 + 코멘트 있음 (시안 케이스) */
+/** 코멘트 있음 (시안 3065-15438) */
 export const Default: Story = {
   render: () => (
     <div className="relative h-dvh w-full max-w-md bg-gradient-to-br from-blue-200 to-green-100">
       <PreviewStep
         keyword={firstKeyword}
-        startDate="2026-08-01"
-        endDate="2026-08-02"
+        regionName="강릉"
         photoUrl="https://picsum.photos/seed/record-preview/600/800"
         comment="야르하게찍었쥬?ㅋㅋ"
         nickname="정민"
@@ -40,13 +39,13 @@ export const Default: Story = {
   ),
 }
 
-/** 당일 여행 + 코멘트 없음 — 말풍선이 빠져도 레이아웃이 유지되는지 확인 */
+/** 코멘트 없음 — 말풍선이 빠져도 레이아웃이 유지되는지 확인 */
 export const SingleDayNoComment: Story = {
   render: () => (
     <div className="relative h-dvh w-full max-w-md bg-gradient-to-br from-blue-200 to-green-100">
       <PreviewStep
         keyword={TRAVEL_KEYWORD_OPTIONS[4]}
-        startDate="2026-08-01"
+        regionName="양양"
         photoUrl="https://picsum.photos/seed/record-preview-2/600/800"
         comment=""
         nickname="아주긴닉네임입니다"

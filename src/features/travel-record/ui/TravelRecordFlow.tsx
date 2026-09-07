@@ -1,6 +1,5 @@
 import * as React from "react"
 
-import { visitLabel } from "../lib/format"
 import {
   RECORD_STEPS,
   recordStepAt,
@@ -20,10 +19,8 @@ import {
   MAX_PHOTO_UPLOAD_BYTES,
   MAX_PHOTO_UPLOAD_MB,
   findKeyword,
-  groupTrips,
   regionStrokeForFill,
   uploadErrorMessage,
-  useAllPhotos,
   useCreatePhoto,
 } from "@/entities/photo"
 import { formatRegionName, useRegionColorStore } from "@/entities/region"
@@ -34,10 +31,6 @@ import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { showToast } from "@/shared/ui/toast"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
-
-function toISODate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
 
 type TravelRecordFlowProps = {
   region: string
@@ -82,7 +75,6 @@ export function TravelRecordFlow({
   const currentUserId = currentUser?.id ?? null
   const setColor = useRegionColorStore((s) => s.setColor)
   const createPhotoMutation = useCreatePhoto()
-  const photos = useAllPhotos(currentPotId)
   const step = useRecordStore((s) => s.step)
   const goStep = useRecordStore((s) => s.setStep)
   const setPreview = useRecordStore((s) => s.setPreview)
@@ -127,18 +119,6 @@ export function TravelRecordFlow({
     closeStore()
     onClose?.()
   }, [closeStore, onClose])
-
-  // 이번 기록이 이 지역의 몇 번째 방문인지 (Figma #3·#5).
-  // 팟원이 만든 여행에 합류하는 경우엔 회차가 늘지 않는다 — 그 여행이 몇 번째였는지를
-  // 그대로 쓴다 (groupTrips는 최신순이라 뒤에서부터 세면 등록 순서가 된다)
-  const nth = React.useMemo(() => {
-    const trips = groupTrips(photos.filter((p) => p.region === region))
-    if (!collaborationTrip) return trips.length + 1
-    const index = trips.findIndex(
-      (trip) => trip.startDate === collaborationTrip.startDate
-    )
-    return index === -1 ? trips.length : trips.length - index
-  }, [photos, region, collaborationTrip])
 
   // 이동은 RECORD_STEPS 순서만 따른다 — 단계를 넣고 빼도 여기는 손댈 게 없다
   const stepIndex = RECORD_STEPS.indexOf(step)
@@ -189,20 +169,17 @@ export function TravelRecordFlow({
 
   // 최종 커밋 — 사진(여행) 등록 성공 시 지역 색상(키워드 기준) 반영 후 지도로 복귀
   const handleCommit = async () => {
-    if (!photoUrl || !photoFile || !currentUserId || !range?.from) return
+    // 키워드는 서버 필수 입력이다 — 키워드 단계를 통과해야 여기 도달한다
+    if (!photoUrl || !photoFile || !currentUserId || !keyword) return
     if (createPhotoMutation.isPending) return
-    const startDate = toISODate(range.from)
-    const endDate = range.to ? toISODate(range.to) : undefined
     try {
       await createPhotoMutation.mutateAsync({
         potId: currentPotId,
         region,
-        date: startDate,
-        ...(endDate && endDate !== startDate ? { endDate } : {}),
+        keyword: keyword.id,
         ...(collaborationTrip?.tripId
           ? { tripId: collaborationTrip.tripId }
           : {}),
-        ...(keyword ? { keyword: keyword.id } : {}),
         ...(comment.trim() ? { comment: comment.trim() } : {}),
         uploaderId: currentUserId,
         file: photoFile,
@@ -217,7 +194,7 @@ export function TravelRecordFlow({
       })
       return
     }
-    if (keyword) setColor(currentPotId, region, keyword.fill)
+    setColor(currentPotId, region, keyword.fill)
     closeFlow()
     onComplete?.()
     // 플로우가 걷히고 지도 위에 뜬다 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16)
@@ -235,14 +212,11 @@ export function TravelRecordFlow({
     (step === "keyword" && keywordId === null) ||
     (step === "photo" && photoUrl === null)
 
-  if (step === "preview" && photoUrl && range?.from) {
-    const startDate = toISODate(range.from)
-    const endDate = range.to ? toISODate(range.to) : undefined
+  if (step === "preview" && photoUrl) {
     return (
       <PreviewStep
         keyword={keyword ?? null}
-        startDate={startDate}
-        {...(endDate ? { endDate } : {})}
+        regionName={regionName}
         photoUrl={photoUrl}
         comment={comment}
         nickname={currentUser?.nickname ?? "나"}
@@ -271,10 +245,11 @@ export function TravelRecordFlow({
         </ButtonIcon>
       </div>
 
-      {/* 회차 칩 + 스텝 타이틀 */}
+      {/* 지역명 뱃지 + 스텝 타이틀 — 뱃지는 기본색이다 (시안 3065-16239 #2:
+          "그냥 지역명 노출, 키워드 색상 반영 없음"). 키워드 색은 확인 화면에서만 입는다 */}
       <div className="relative z-10 flex shrink-0 flex-col items-center gap-2 px-4">
         <span className="rounded-full bg-white/40 px-3 py-1 text-h9 text-fg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
-          {visitLabel(nth, regionName)}
+          {regionName}
         </span>
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
           {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
@@ -353,7 +328,7 @@ export function TravelRecordFlow({
 
       <div className="pointer-events-auto relative shrink-0 px-4 pt-6 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta disabled={nextDisabled} onClick={handleNext}>
-          확인
+          {step === "keyword" ? "다음" : "확인"}
         </ButtonCta>
       </div>
     </div>

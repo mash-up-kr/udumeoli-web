@@ -9,16 +9,12 @@ import { cn } from "@/shared/lib/utils"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { DEFAULT_PROFILE_SRC } from "@/shared/ui/profile"
-import { showToast } from "@/shared/ui/toast"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
 import { RequireAuth } from "@/features/auth"
 import { openPhotoViewer } from "@/features/photo-gallery"
-import { pickImageFile } from "@/features/photo-upload"
+import { useRecordStore } from "@/features/travel-record"
 import {
   findKeyword,
-  groupTrips,
-  uploadErrorMessage,
-  useCreatePhoto,
   useDeletePhoto,
   usePhotos,
   useRegionAlbumPhotos,
@@ -39,7 +35,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const router = useRouter()
   const currentPotId = usePotStore((s) => s.currentPotId)
   const members = usePotStore(selectCurrentPotMembers)
-  const createPhotoMutation = useCreatePhoto()
+  const startRecord = useRecordStore((state) => state.start)
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
@@ -49,7 +45,6 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
   // 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환
-  const [uploading, setUploading] = React.useState(false)
 
   // 멤버 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로 (정책 2·4, 마이페이지와 동일)
   const orderedMembers = React.useMemo<Array<RecordMember>>(
@@ -107,33 +102,14 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
       Boolean(keyword)
     )
 
-  // 내 사진 올리기 — 이 지역의 최신 방문에 합류하는 업로드(이미지 선택 → 등록), 지도 시트와 동일 (정책 4-1)
+  // 내 사진 올리기 — 이 지역의 기록 플로우로 진입한다 (정책 4-1).
+  // 파일 피커로 바로 올리지 않는 이유: 서버가 기록마다 키워드를 필수로 받는데
+  // 키워드는 올리는 사람이 직접 고르는 값이라 키워드 단계를 건너뛸 수 없다.
+  // 플로우는 지도 위 오버레이라 지도로 이동한 뒤 열린다.
   const recordTrip = () => {
-    const trip = groupTrips(regionPhotos).at(0)
-    if (!trip || !myId || createPhotoMutation.isPending) return
-    pickImageFile(async (url, file) => {
-      // 팟원이 먼저 기록한 방문에 합류하는 업로드 — 그 방문의 키워드를 따라간다
-      const keyword = trip.photos.find((p) => p.keyword)?.keyword
-      const tripId = trip.photos.find((p) => p.tripId)?.tripId
-      setUploading(true)
-      try {
-        await createPhotoMutation.mutateAsync({
-          potId: currentPotId,
-          region,
-          date: trip.startDate,
-          ...(tripId ? { tripId } : {}),
-          ...(keyword ? { keyword } : {}),
-          uploaderId: myId,
-          file,
-          previewUrl: url,
-        })
-        showToast({ message: "업로드가 완료됐어요", icon: "check" })
-      } catch (error) {
-        showToast({ message: uploadErrorMessage(error), icon: "alert" })
-      } finally {
-        setUploading(false)
-      }
-    })
+    if (!myId) return
+    startRecord(region)
+    void router.navigate({ to: "/map-google" })
   }
 
   // 사진 업로더 표시 정보 — 내 사진은 세션 닉네임·프로필, 멤버 탈퇴 등으로 못 찾으면 뱃지 숨김
@@ -265,7 +241,6 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
               key={card.key}
               member={card.member}
               photo={card.photo}
-              uploading={uploading}
               onRecord={recordTrip}
               onPhotoClick={viewPhoto}
               className={tileClassName}

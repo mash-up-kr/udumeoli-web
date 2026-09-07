@@ -34,6 +34,7 @@ const storybookConfig: StorybookConfig = {
     { directory: "../src/shared/ui", titlePrefix: "shared" },
     { directory: "../src/widgets" }, // Widgets/* (파일별 명시 title 필수)
     { directory: "../src/features" }, // Features/* (파일별 명시 title 필수)
+    { directory: "../src/pages" }, // Pages/* (파일별 명시 title 필수)
   ],
   addons: ["@storybook/addon-docs"],
   staticDirs: ["../public"],

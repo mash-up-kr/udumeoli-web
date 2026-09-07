@@ -25,14 +25,13 @@ const TRIP_FIELDS = /* GraphQL */ `
   fragment TripFields on Trip {
     id
     regionCode
-    keyword
-    startDate
-    endDate
+    createdAt
     records {
       member {
         id
       }
       recorded
+      keyword
       comment
       image {
         id
@@ -94,6 +93,8 @@ const DELETE_TRIP_RECORD_MUTATION = /* GraphQL */ `
 interface TripRecordDto {
   member: { id: string }
   recorded: boolean
+  /** 올린 사람이 고른 키워드 — 아직 안 올린 멤버(recorded=false)는 null */
+  keyword: TravelKeywordId | null
   comment: string | null
   image: { id: string; originalUrl: string; thumbnailUrl: string | null } | null
 }
@@ -101,9 +102,8 @@ interface TripRecordDto {
 interface TripDto {
   id: string
   regionCode: string
-  keyword: TravelKeywordId
-  startDate: string
-  endDate: string
+  /** 핀이 처음 찍힌 시각 (ISO 8601). 여행 기간이 없어져 목록 정렬 기준이 이 값이다 */
+  createdAt: string
   records: Array<TripRecordDto>
 }
 
@@ -126,6 +126,12 @@ interface CreateTripResponse {
 
 interface RecordTripResponse {
   recordTrip: TripDto
+}
+
+/** 오늘(로컬 캘린더) YYYY-MM-DD — 목 모드에서 서버 createdAt 자리를 메운다 */
+function todayISODate(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 function centerOf(region: string): { lat: number; lng: number } {
@@ -155,13 +161,14 @@ export function tripToPhotos(dto: TripDto, potId: string): Array<Photo> {
       lng: center.lng,
       // [정책] 썸네일 생성 전이면 null — 원본으로 대체 표시
       thumbnailUrl: record.image.thumbnailUrl ?? record.image.originalUrl,
-      date: dto.startDate,
+      // 여행 기간이 사라져 핀 등록일(createdAt)이 유일한 시간축이다 — 목록 정렬 기준
+      date: dto.createdAt.slice(0, 10),
       uploaderId: record.member.id,
       region,
       potId,
-      keyword: dto.keyword,
+      // 키워드는 이제 핀이 아니라 올린 사람마다 붙는다
+      ...(record.keyword ? { keyword: record.keyword } : {}),
       ...(record.comment ? { comment: record.comment } : {}),
-      ...(dto.endDate !== dto.startDate ? { endDate: dto.endDate } : {}),
     }))
 }
 
@@ -223,10 +230,8 @@ export function uploadErrorMessage(error: unknown): string {
 export interface CreatePhotoInput {
   potId: string
   region: string
-  date: string
-  /** 기간 여행 종료일 — 없으면 당일 여행 */
-  endDate?: string
-  keyword?: TravelKeywordId
+  /** 올리는 사람이 고른 키워드 — createTrip·recordTrip 모두 서버 필수 입력이다 */
+  keyword: TravelKeywordId
   comment?: string
   uploaderId: string
   /** 업로드할 원본 파일 */
@@ -249,28 +254,20 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     const photo: Photo = {
       id: `up-${input.region}-${Date.now()}`,
       region: input.region,
-      date: input.date,
+      // 서버 Trip.createdAt에 대응 — toISOString은 UTC라 하루 밀려 로컬 게터를 쓴다
+      date: todayISODate(),
       lat: center.lat,
       lng: center.lng,
       thumbnailUrl: input.previewUrl,
       uploaderId: input.uploaderId,
       potId: input.potId,
-      ...(input.endDate && input.endDate !== input.date
-        ? { endDate: input.endDate }
-        : {}),
-      ...(input.keyword ? { keyword: input.keyword } : {}),
+      keyword: input.keyword,
       ...(input.comment ? { comment: input.comment } : {}),
     }
     usePhotoUploadStore.getState().addPhoto(photo)
     return mockResponse(photo)
   }
 
-  if (!input.tripId && !input.keyword) {
-    // v2 CreateTripInput.keyword는 필수 — 키워드 없는 업로드(팟원 합류)는
-    // tripId 분기(recordTrip)로 처리하므로 여기 도달하면 호출부 버그다.
-    // 업로드 낭비를 막기 위해 presigned 발급 전에 걸러낸다.
-    throw new Error("새 여행 기록에는 키워드가 필요해요")
-  }
   if (!(input.region in REGION_CODE_BY_NAME)) {
     throw new Error(`알 수 없는 지역: ${input.region}`)
   }
@@ -308,7 +305,8 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
       {
         input: {
           tripId: input.tripId,
-          image: { imageId, takenAt: input.date },
+          keyword: input.keyword,
+          image: { imageId },
           ...(input.comment ? { comment: input.comment } : {}),
         },
       }
@@ -327,9 +325,7 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
         partyId: input.potId,
         regionCode,
         keyword: input.keyword,
-        startDate: input.date,
-        endDate: input.endDate ?? input.date,
-        image: { imageId, takenAt: input.date },
+        image: { imageId },
         ...(input.comment ? { comment: input.comment } : {}),
       },
     }

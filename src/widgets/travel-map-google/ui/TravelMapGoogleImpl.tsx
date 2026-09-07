@@ -55,12 +55,7 @@ import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { RegionFill } from "@/entities/region"
 import type { DecoratePreview } from "@/features/travel-record"
 import type { TravelKeyword } from "@/entities/photo"
-import {
-  findKeyword,
-  uploadErrorMessage,
-  useAllPhotos,
-  useCreatePhoto,
-} from "@/entities/photo"
+import { findKeyword, useAllPhotos } from "@/entities/photo"
 import {
   formatProvinceBadgeName,
   formatRegionName,
@@ -72,9 +67,7 @@ import {
   usePotStore,
 } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
-import { showToast } from "@/shared/ui/toast"
 import { hasSeenMapTips, openMapTipsOverlay } from "@/features/onboarding"
-import { pickImageFile } from "@/features/photo-upload"
 import { TravelRecordFlow, useRecordStore } from "@/features/travel-record"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import { computeCentroid, computeFeatureBBox } from "@/shared/lib/geo"
@@ -171,8 +164,6 @@ type ProvinceAggregate = {
   regions: Array<string>
   /** 도 안에서 다녀온 서로 다른 시·군·구 수 — 정책상 +N 배지 */
   regionCount: number
-  /** 도 안의 여행 횟수 — 최신 지도 핀 하단 뱃지의 +N */
-  visitCount: number
   lat: number
   lng: number
 }
@@ -1056,7 +1047,6 @@ function TravelMapGoogleInner({
     (s) => s.pots.find((pot) => pot.id === s.currentPotId)?.name ?? "우리 팟"
   )
   const photos = useAllPhotos(currentPotId)
-  const createPhotoMutation = useCreatePhoto()
   const mapOverviewQuery = usePartyMapOverview(currentPotId)
   const mapOverview = mapOverviewQuery.data
   const fills = useRegionColorStore(
@@ -1183,7 +1173,6 @@ function TravelMapGoogleInner({
             keyword,
             regions: members.map((member) => member.name),
             regionCount: cell.regionCount,
-            visitCount: cell.visitCount,
             lat:
               members.reduce((sum, member) => sum + member.lat, 0) /
               members.length,
@@ -1214,7 +1203,6 @@ function TravelMapGoogleInner({
         keyword,
         regions: members.map((c) => c.name),
         regionCount: new Set(trips.map((trip) => trip.region)).size,
-        visitCount: trips.length,
         // 도 대표 위치 — 소속 지역 centroid 평균 (별도 도 지오메트리 없이 근사)
         lat: members.reduce((sum, c) => sum + c.lat, 0) / members.length,
         lng: members.reduce((sum, c) => sum + c.lng, 0) / members.length,
@@ -1521,30 +1509,6 @@ function TravelMapGoogleInner({
     latestTripsByRegionRef.current = latestTripsByRegion
   }, [latestTripsByRegion])
 
-  const addPhotoToExistingTrip = React.useCallback(
-    (trip: CollaborationTrip) => {
-      if (!currentUserId || createPhotoMutation.isPending) return
-      pickImageFile(async (previewUrl, file) => {
-        try {
-          await createPhotoMutation.mutateAsync({
-            potId: currentPotId,
-            region: trip.region,
-            date: trip.startDate,
-            ...(trip.tripId ? { tripId: trip.tripId } : {}),
-            ...(trip.keyword ? { keyword: trip.keyword } : {}),
-            uploaderId: currentUserId,
-            file,
-            previewUrl,
-          })
-          showToast({ message: "업로드가 완료됐어요", icon: "check" })
-        } catch (error) {
-          showToast({ message: uploadErrorMessage(error), icon: "alert" })
-        }
-      })
-    },
-    [createPhotoMutation, currentPotId, currentUserId]
-  )
-
   const startDecorateRef = React.useRef(startDecorate)
   React.useEffect(() => {
     startDecorateRef.current = startDecorate
@@ -1583,7 +1547,10 @@ function TravelMapGoogleInner({
               photos={latestTrip?.photos ?? []}
               onClose={close}
               onAddPhoto={() => {
-                if (latestTrip) addPhotoToExistingTrip(latestTrip)
+                // 시안 3065-14482 #4-1 — 파일 피커가 아니라 기록 플로우로 진입한다.
+                // 서버가 기록마다 키워드를 필수로 받아 키워드 단계를 반드시 거쳐야 한다
+                close()
+                startDecorateRef.current(name)
               }}
             />
           ),
@@ -1603,7 +1570,7 @@ function TravelMapGoogleInner({
 
       startDecorateRef.current(name)
     },
-    [addPhotoToExistingTrip, partyMembers]
+    [partyMembers]
   )
 
   const handleFeatureClick = React.useCallback(
@@ -1653,10 +1620,11 @@ function TravelMapGoogleInner({
     }
 
     const regionCounts = new Map<string, number>()
+    // 서버가 visitCount를 없앴다 — 핀이 지역당 하나라 regionCount와 항상 같은 값이었다
     const visitCountsByRegion = new Map(
       mapOverview?.municipalities.map((cell) => [
         REGION_NAME_BY_CODE[cell.regionCode],
-        cell.visitCount,
+        cell.regionCount,
       ])
     )
     return trips.flatMap((trip) => {
