@@ -1,4 +1,3 @@
-import { formatRecordRange } from "../lib/format"
 import type { CSSProperties } from "react"
 
 import type { TravelKeyword } from "@/entities/photo"
@@ -115,8 +114,7 @@ function previewMotionStyle({
  */
 export function PreviewStep({
   keyword,
-  startDate,
-  endDate,
+  regionName,
   photoUrl,
   comment,
   nickname,
@@ -126,8 +124,8 @@ export function PreviewStep({
   onConfirm,
 }: {
   keyword: TravelKeyword | null
-  startDate: string
-  endDate?: string
+  /** 행정 접미사를 뗀 표시용 지역명 */
+  regionName: string
   photoUrl: string
   comment: string
   nickname: string
@@ -191,13 +189,13 @@ export function PreviewStep({
 
       {/* min-h-0 + flex-1 — 사진이 남는 높이에 맞춰 줄어들어 어떤 화면 높이에서도 스크롤이 없다 */}
       <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
-        {/* 날짜 칩 — 키워드 대표색(mapColor) 배경 (Figma Chip · H9).
+        {/* 지역명 뱃지 (키워드 색상 버전) — 시안 3241-73820 #9.
             stroke는 지역 폴리곤 외곽선 팔레트라 키워드 색과 다르다 (사진이 디저트 빨강으로 보이던 원인) */}
         <span
           className="rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"
           style={{ backgroundColor: keyword?.mapColor ?? "#232936" }}
         >
-          {formatRecordRange(startDate, endDate)}
+          {regionName}
         </span>
 
         <h2 className="mt-2 text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">

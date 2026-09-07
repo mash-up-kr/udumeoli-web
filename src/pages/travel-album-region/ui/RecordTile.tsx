@@ -66,7 +66,6 @@ export function RecordTileSkeleton({ className }: { className?: string }) {
 export function RecordTile({
   member,
   photo,
-  uploading = false,
   onRecord,
   onPhotoClick,
   className,
@@ -75,7 +74,6 @@ export function RecordTile({
   /** null이면 미기록 카드 */
   photo: Photo | null
   /** 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환 */
-  uploading?: boolean
   /** 내 미기록 타일의 '내 사진 올리기' 클릭 */
   onRecord: () => void
   onPhotoClick: (photo: Photo) => void
@@ -139,15 +137,13 @@ export function RecordTile({
         member.isMe
           ? "border-dashed border-stroke-neutral-subtle"
           : "border-solid border-stroke-neutral-weak",
-        // 내 사진 업로드 중 — 타일 전체가 pulse, CTA는 숨겨 중복 업로드 방지
-        member.isMe && uploading && "animate-pulse",
         className
       )}
     >
       <span className="absolute inset-x-[13px] top-[13px] flex">
         <MemberChip member={member} onImage={false} />
       </span>
-      {member.isMe && uploading ? null : member.isMe ? (
+      {member.isMe ? (
         <button
           type="button"
           onClick={onRecord}

@@ -5,20 +5,14 @@ import { gqlClient } from "@/shared/api/client"
 const PARTY_TRIP_STATS_QUERY = /* GraphQL */ `
   query PartyTripStats($partyId: ID!) {
     partyTripStats(partyId: $partyId) {
-      tripCount
       regionCount
-      firstTripDate
-      lastTripDate
     }
   }
 `
 
 interface PartyTripStatsResponse {
   partyTripStats: {
-    tripCount: number
     regionCount: number
-    firstTripDate: string | null
-    lastTripDate: string | null
   }
 }
 
@@ -30,8 +24,9 @@ export async function fetchRecapStats(partyId: string): Promise<RecapStats> {
     { partyId }
   )
 
+  // 핀은 지역마다 하나라 "N개의 핀"과 "다녀온 지역 수"가 같은 값이다 (서버 TripStats 주석)
   return {
     regionCount: partyTripStats.regionCount,
-    pinCount: partyTripStats.tripCount,
+    pinCount: partyTripStats.regionCount,
   }
 }

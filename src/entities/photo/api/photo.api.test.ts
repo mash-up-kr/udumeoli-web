@@ -34,17 +34,22 @@ describe("tripToPhotos", () => {
   const trip = {
     id: "trip-1",
     regionCode: "11",
-    keyword: "FOOD" as const,
-    startDate: "2026-07-01",
-    endDate: "2026-07-03",
+    createdAt: "2026-07-01T09:30:00Z",
     records: [
       {
         member: { id: "user-1" },
         recorded: true,
+        keyword: "FOOD" as const,
         comment: "맛집 투어",
         image: { id: "img-1", originalUrl: "o1", thumbnailUrl: null },
       },
-      { member: { id: "user-2" }, recorded: false, comment: null, image: null },
+      {
+        member: { id: "user-2" },
+        recorded: false,
+        keyword: null,
+        comment: null,
+        image: null,
+      },
     ],
   }
 
@@ -59,15 +64,18 @@ describe("tripToPhotos", () => {
       region: "서울특별시", // REGION_NAME_BY_CODE["11"]
       keyword: "FOOD",
       comment: "맛집 투어",
+      // 여행 기간이 없어져 핀 등록일(createdAt)의 날짜 부분이 시간축이다
       date: "2026-07-01",
-      endDate: "2026-07-03",
       thumbnailUrl: "o1", // 썸네일 null이면 원본 폴백
       potId: "pot-1",
     })
   })
 
-  it("당일 여행이면 endDate를 넣지 않는다", () => {
-    const oneDay = { ...trip, endDate: "2026-07-01" }
-    expect(tripToPhotos(oneDay, "pot-1")[0].endDate).toBeUndefined()
+  it("키워드는 핀이 아니라 올린 사람의 기록에서 가져온다", () => {
+    const other = {
+      ...trip,
+      records: [{ ...trip.records[0], keyword: "DESSERT" as const }],
+    }
+    expect(tripToPhotos(other, "pot-1")[0].keyword).toBe("DESSERT")
   })
 })

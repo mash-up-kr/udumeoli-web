@@ -146,15 +146,15 @@ export function GalleryPanel({
     const keyword = (
       byDate.get(date)?.find((p) => p.keyword) ?? photos.find((p) => p.keyword)
     )?.keyword
+    if (!keyword) return
     const joined = byDate.get(date)?.find((p) => p.tripId) ?? null
     setUploadingDate(date)
     try {
       await createPhotoMutation.mutateAsync({
         potId: currentPotId,
         region,
-        date,
+        keyword,
         ...(joined?.tripId ? { tripId: joined.tripId } : {}),
-        ...(keyword ? { keyword } : {}),
         uploaderId: currentUserId,
         file,
         previewUrl: url,

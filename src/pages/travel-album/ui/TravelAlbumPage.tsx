@@ -8,21 +8,24 @@ import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { RequireAuth } from "@/features/auth"
-import { groupTrips, useAllPhotos, usePhotos } from "@/entities/photo"
-import { usePotStore } from "@/entities/travel-pot"
+import { useAllPhotos, usePhotos } from "@/entities/photo"
+import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
 
 function TravelAlbumPageContent() {
   const router = useRouter()
   const currentPotId = usePotStore((s) => s.currentPotId)
+  // 자리 순서는 팟 가입 순 — 스토어가 그 순서로 내려준다
+  const members = usePotStore(selectCurrentPotMembers)
   // 앨범 목 시드는 fetchPhotos(목)에서 병합 — 지도와 동일한 목록을 본다
   const photos = useAllPhotos(currentPotId)
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
   const myId = useSessionStore((s) => s.currentUser?.id ?? null)
 
-  // 지역별 카드 데이터 — 방문 횟수(연속 일자 그룹 수)·이미지 스택·미기록 Alert
+  // 지역별 카드 데이터 — 멤버 자리(가입 순 고정)·미기록 Alert (시안 3065-14470).
+  // 자리는 팟 멤버 수만큼 항상 만들고, 안 올린 멤버 자리는 thumbnailUrl이 null이다.
   const regions = React.useMemo(() => {
     const byRegion = new Map<string, Array<Photo>>()
     for (const p of photos) {
@@ -30,20 +33,29 @@ function TravelAlbumPageContent() {
     }
     return [...byRegion.entries()]
       .map(([region, list]) => {
-        const trips = groupTrips(list)
+        const latestByMember = new Map<string, Photo>()
+        for (const photo of list) {
+          const previous = latestByMember.get(photo.uploaderId)
+          if (!previous || previous.date <= photo.date) {
+            latestByMember.set(photo.uploaderId, photo)
+          }
+        }
         return {
           region,
-          visitCount: trips.length,
-          // 최신 사진이 스택 맨 앞
-          stack: [...list].sort((a, b) => (a.date < b.date ? 1 : -1)),
-          showAlert:
-            myId !== null &&
-            trips.some((t) => !t.photos.some((p) => p.uploaderId === myId)),
-          latestDate: trips[0].endDate,
+          slots: members.map((member) => ({
+            memberId: member.id,
+            thumbnailUrl: latestByMember.get(member.id)?.thumbnailUrl ?? null,
+          })),
+          showAlert: myId !== null && !latestByMember.has(myId),
+          // 핀에 기간이 없어져 등록일이 유일한 시간축이다 — 최근 등록 지역이 위로
+          latestDate: list.reduce(
+            (latest, photo) => (photo.date > latest ? photo.date : latest),
+            ""
+          ),
         }
       })
       .sort((a, b) => (a.latestDate < b.latestDate ? 1 : -1))
-  }, [photos, myId])
+  }, [photos, members, myId])
 
   return (
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
@@ -61,8 +73,7 @@ function TravelAlbumPageContent() {
           <RegionAlbumCard
             key={r.region}
             name={formatRegionName(r.region)}
-            visitCount={r.visitCount}
-            photos={r.stack}
+            slots={r.slots}
             showAlert={r.showAlert}
             onClick={() =>
               router.navigate({

@@ -1,34 +1,33 @@
 import { cn } from "@/shared/lib/utils"
 import { Skeleton } from "@/shared/ui/skeleton"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
-
-/** 스택에 노출되는 최대 장수 — 넘치면 마지막 장에 +N 오버레이 (시안 1846-3645) */
-const MAX_STACK = 8
-
-type StackPhoto = { id: string; thumbnailUrl: string }
+import iconZzzSrc from "@/shared/assets/icon-zzz.svg"
 
 /**
- * 여행 앨범 메인의 지역 카드 (시안 1846-3645).
- * 지역명 + 방문 횟수 + 이미지 스택(최신 사진이 맨 앞) + 미기록 Alert(선택).
+ * 멤버 한 명의 자리. 팟 가입 순서로 고정되며, 안 올린 멤버도 빠지지 않는다.
+ * 자리 순서가 곧 "누구 자리인지"라 이름·아바타 뱃지는 붙이지 않는다 (시안 3065-14470 #5).
+ */
+export type MemberSlot = { memberId: string; thumbnailUrl: string | null }
+
+/**
+ * 여행 앨범 메인의 지역 카드 (시안 3065-14470).
+ * 지역명 + "n/N명" 카운터 + 멤버별 고정 자리 + 미기록 Alert(선택).
  */
 export function RegionAlbumCard({
   name,
-  visitCount,
-  photos,
+  slots,
   showAlert,
   onClick,
 }: {
   /** 표시용 지역명 (행정 접미사 제거된 상태) */
   name: string
-  visitCount: number
-  /** 최신 사진이 앞에 오도록 정렬된 목록 */
-  photos: Array<StackPhoto>
-  /** 내가 업로드하지 않은 과거 방문이 있으면 true */
+  /** 팟 가입 순서로 고정된 멤버 자리 — 길이가 곧 팟 전체 인원(N) */
+  slots: Array<MemberSlot>
+  /** 이 지역에 내 기록이 없으면 true */
   showAlert: boolean
   onClick: () => void
 }) {
-  const overflow = photos.length > MAX_STACK
-  const visible = overflow ? photos.slice(0, MAX_STACK) : photos
+  const recordedCount = slots.filter((slot) => slot.thumbnailUrl).length
 
   return (
     <button
@@ -38,31 +37,39 @@ export function RegionAlbumCard({
     >
       <span className="flex w-full items-center justify-between">
         <span className="text-h5 text-neutral-900">{name}</span>
-        <span className="text-h9 text-fg-neutral-subtle">{visitCount}회</span>
+        <span className="text-h9 text-fg-neutral-subtle">
+          {recordedCount}/{slots.length}명
+        </span>
       </span>
 
-      {/* 이미지 스택 — 최신 사진이 맨 앞(왼쪽), 뒷장이 위로 겹치며 마지막 +N 장은 온전히 노출 */}
+      {/* 멤버 자리 — 좌측부터 팟 가입 순으로 고정. 안 올린 멤버는 점선 + zzZ */}
       <span className="flex h-[76px] items-center">
-        {visible.map((photo, i) => (
+        {slots.map((slot, i) => (
           <span
-            key={photo.id}
+            key={slot.memberId}
             className={cn(
               // bg는 이미지 로드 전 흰 카드 위에서 빈 프레임으로 안 보이게 하는 placeholder
-              "relative block size-16 shrink-0 overflow-hidden rounded-[18px] border-[2.4px] border-neutral-0 bg-bg-neutral-solid shadow-[0px_0px_16px_0px_rgba(142,150,169,0.12)]",
+              "relative block size-16 shrink-0 overflow-hidden rounded-[18px] bg-bg-neutral-solid",
+              slot.thumbnailUrl
+                ? "border-[2.4px] border-neutral-0 shadow-[0px_0px_16px_0px_rgba(142,150,169,0.12)]"
+                : "border-[1.5px] border-dashed border-stroke-neutral-subtle",
               i > 0 && "-ml-[38px]",
               i % 2 === 0 ? "rotate-[5deg]" : "rotate-[-10deg]"
             )}
           >
-            <img
-              src={photo.thumbnailUrl}
-              alt=""
-              className="size-full object-cover"
-            />
-            {overflow && i === MAX_STACK - 1 ? (
-              <span className="absolute inset-0 flex items-center justify-center bg-neutral-900/60 font-eng text-e3 text-fg-neutral-inverse">
-                +{photos.length - (MAX_STACK - 1)}
-              </span>
-            ) : null}
+            {slot.thumbnailUrl ? (
+              <img
+                src={slot.thumbnailUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              <img
+                src={iconZzzSrc}
+                alt=""
+                className="absolute top-1/2 left-1/2 w-8 -translate-x-1/2 -translate-y-1/2"
+              />
+            )}
           </span>
         ))}
       </span>
@@ -70,7 +77,7 @@ export function RegionAlbumCard({
       {showAlert ? (
         <span className="flex items-center gap-1 text-b8 text-fg-danger-solid">
           <img src={iconAlertDangerSrc} alt="" className="size-4" />
-          아직 기록이 완료되지 않은 여행이 있어요.
+          아직 기록하지 않은 여행이 있어요
         </span>
       ) : null}
     </button>

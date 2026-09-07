@@ -130,8 +130,8 @@ export type MapCellKeyword =
 export interface MapCell {
   regionCode: string
   keyword: MapCellKeyword
+  /** "+N" 배지 — 이 칸에 찍힌 핀 수. 핀은 지역마다 하나라 곧 등록된 지역 수다 */
   regionCount: number
-  visitCount: number
   recordedMemberCount: number
 }
 
@@ -150,21 +150,18 @@ const PARTY_MAP_OVERVIEW_QUERY = /* GraphQL */ `
         regionCode
         keyword
         regionCount
-        visitCount
         recordedMemberCount
       }
       provinces {
         regionCode
         keyword
         regionCount
-        visitCount
         recordedMemberCount
       }
       municipalities {
         regionCode
         keyword
         regionCount
-        visitCount
         recordedMemberCount
       }
     }
