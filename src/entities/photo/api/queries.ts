@@ -3,12 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { applyPhotoEdits, usePhotoEditStore } from "../model/edit.store"
 import { usePhotoUploadStore } from "../model/upload.store"
-import {
-  createPhoto,
-  deletePhoto,
-  fetchPhotos,
-  updatePhotoComment,
-} from "./photo.api"
+import { createPhoto, deletePhoto, fetchPhotos } from "./photo.api"
 import type { Photo } from "../model/types"
 
 export const photoKeys = {
@@ -23,19 +18,18 @@ export function usePhotos(potId: string) {
   })
 }
 
-// 서버(목) 사진 + 세션 업로드 사진 병합 — 현재 팟 소속 사진만, 수정/삭제 반영
+// 서버(목) 사진 + 세션 업로드 사진 병합 — 현재 팟 소속 사진만, 삭제 반영
 export function useAllPhotos(potId: string) {
   const { data = [] } = usePhotos(potId)
   const uploaded = usePhotoUploadStore((s) => s.uploaded)
   const deletedIds = usePhotoEditStore((s) => s.deletedIds)
-  const comments = usePhotoEditStore((s) => s.comments)
   return React.useMemo(
     () =>
       applyPhotoEdits(
         [...data, ...uploaded].filter((p) => p.potId === potId),
-        { deletedIds, comments }
+        { deletedIds }
       ),
-    [data, uploaded, potId, deletedIds, comments]
+    [data, uploaded, potId, deletedIds]
   )
 }
 
@@ -62,16 +56,6 @@ export function useCreatePhoto() {
         queryKey: ["travel-pot", "map-overview", photo.potId],
       })
     },
-  })
-}
-
-/** 사진 코멘트 수정 — 성공 시 사진 목록 갱신. (수정 화면 연결 시 사용) */
-export function useUpdatePhotoComment() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ photo, comment }: { photo: Photo; comment: string }) =>
-      updatePhotoComment(photo, comment),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: photoKeys.all }),
   })
 }
 
