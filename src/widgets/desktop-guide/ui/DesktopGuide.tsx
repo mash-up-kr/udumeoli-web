@@ -9,15 +9,21 @@ import logoSrc from "@/shared/assets/logo-pinnned.svg"
 /** ponytail: QR은 티켓 공용 에셋 그대로 — 실제 접속 URL 확정되면 교체 */
 const CODE_CELLS = ["P", "i", "n", "n", "n", "e", "d"]
 
+/**
+ * 세로가 짧은 노트북(맥북 브라우저 뷰포트 ~800px)에서는 시안 높이(874px)를 고집하면
+ * 부모의 items-center 때문에 위아래로 균등하게 넘쳐 앱 아이콘 상단이 잘린다 (QA).
+ * 높이는 뷰포트를 따라가고, 아이콘·로고·문구 사이 간격만 시안값(54/40)에서
+ * 뷰포트 906px 아래로 갈수록 줄여 상단 블록과 티켓(438px)이 겹치지 않게 한다.
+ */
 function DesktopAside() {
   return (
     <aside
       aria-label="Pinnned 안내"
-      className="hidden h-[min(936px,calc(100dvh-32px))] min-h-[874px] w-[500px] shrink-0 flex-col justify-between desktop:flex"
+      className="hidden h-[min(936px,calc(100dvh-32px))] w-[500px] shrink-0 flex-col justify-between desktop:flex"
     >
-      <div className="flex flex-col gap-[54px]">
+      <div className="flex flex-col gap-[clamp(20px,calc((100dvh-760px)*0.37),54px)]">
         <img src={appIconSrc} alt="" className="size-[84px] rounded-[14px]" />
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-[clamp(16px,calc((100dvh-760px)*0.274),40px)]">
           {/* logo-pinnned.svg 원본은 120×28 — 시안 슬롯 360×84로 확대 */}
           <img src={logoSrc} alt="Pinnned" className="h-[84px] w-[360px]" />
           <p className="text-[28px] leading-[1.5] font-semibold tracking-[-0.56px] text-fg-neutral-solid">
