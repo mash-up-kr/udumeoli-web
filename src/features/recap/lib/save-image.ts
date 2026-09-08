@@ -7,9 +7,9 @@ import {
   RECAP_CARD_SIZE,
   estimateTextWidth,
 } from "./recap-layout"
-import { getRecapMapView } from "./recap-map-config"
+import { RECAP_STATIC_MAP_HEIGHT, getRecapMapView } from "./recap-map-config"
 import { RECAP_COUNTRY_LABEL } from "./recap-model"
-import type { RECAP_MAP_VIEW } from "./recap-map-config"
+import type { RECAP_MAP_VIEW, RecapMapView } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
 const EXPORT_SCALE = 4
@@ -124,6 +124,22 @@ function buildLocationIconMarkup(element: HTMLElement): string {
   return `<image href="${escapeXml(source)}" x="${RECAP_CARD_SIZE.width - RECAP_CARD_LAYOUT.locationIcon.right - RECAP_CARD_LAYOUT.locationIcon.width}" y="${RECAP_CARD_LAYOUT.locationIcon.top}" width="${RECAP_CARD_LAYOUT.locationIcon.width}" height="${RECAP_CARD_LAYOUT.locationIcon.height}" preserveAspectRatio="xMidYMid meet"/>`
 }
 
+/**
+ * 정적 지도를 카드에 까는 <image> — 뷰(view.height)보다 세로로 길게 받은 이미지를
+ * 중심 기준으로 위아래 똑같이 넘치게 배치해, 하단 Google 로고 띠가 카드 밖으로 나가게 한다.
+ * 중심·줌·가로 폭은 뷰와 같으므로 폴리곤 투영과 정합은 유지된다.
+ */
+export function staticMapImageMarkup(
+  view: RecapMapView,
+  imageHeight: number,
+  href: string
+): string {
+  const scale = RECAP_CARD_SIZE.width / view.width
+  const height = imageHeight * scale
+  const y = -((imageHeight - view.height) / 2) * scale
+  return `<image href="${href}" x="0" y="${y}" width="${RECAP_CARD_SIZE.width}" height="${height}" preserveAspectRatio="none"/>`
+}
+
 async function buildStaticMapMarkup(): Promise<string> {
   if (!GOOGLE_STATIC_MAPS_KEY) return ""
 
@@ -131,7 +147,7 @@ async function buildStaticMapMarkup(): Promise<string> {
     const params = new URLSearchParams({
       center: `${view.center.lat},${view.center.lng}`,
       zoom: String(view.zoom),
-      size: `${view.width}x${view.height}`,
+      size: `${view.width}x${RECAP_STATIC_MAP_HEIGHT}`,
       scale: "2",
       maptype: "roadmap",
       key: GOOGLE_STATIC_MAPS_KEY,
@@ -155,7 +171,7 @@ async function buildStaticMapMarkup(): Promise<string> {
   try {
     const mapView = getRecapMapView()
     const mainMap = await fetchMap(mapView)
-    return `<image href="${mainMap}" x="0" y="0" width="270" height="480" preserveAspectRatio="xMidYMid slice"/>`
+    return staticMapImageMarkup(mapView, RECAP_STATIC_MAP_HEIGHT, mainMap)
   } catch (error) {
     console.warn(
       "리캡 Static Maps를 불러오지 못해 SVG 지도로 저장합니다",
