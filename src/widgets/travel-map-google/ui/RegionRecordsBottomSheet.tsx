@@ -5,12 +5,12 @@ import type { PotMember } from "@/entities/travel-pot"
 import type { Photo } from "@/entities/photo"
 import type { PhotoViewerUploader } from "@/features/photo-gallery"
 import { openPhotoViewer } from "@/features/photo-gallery"
+import { useRecordStore } from "@/features/travel-record"
 import {
   findKeyword,
   groupTrips,
   useAllPhotos,
   useDeletePhoto,
-  useUpdatePhotoComment,
 } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -172,8 +172,8 @@ export function RegionRecordsBottomSheet({
   const currentUser = useSessionStore((s) => s.currentUser)
   const currentUserId = currentUser?.id
   const potId = usePotStore((s) => s.currentPotId)
-  const updateCommentMutation = useUpdatePhotoComment()
   const deletePhotoMutation = useDeletePhoto()
+  const startRecord = useRecordStore((state) => state.start)
   const livePhotos = useAllPhotos(potId).filter(
     (photo) => photo.region === region
   )
@@ -349,13 +349,12 @@ export function RegionRecordsBottomSheet({
         }
       }),
       initialId: photo.id,
-      onEditComment: async (target, comment) => {
-        const targetPhoto = regionPhotos.find((p) => p.id === target.id)
-        if (targetPhoto)
-          await updateCommentMutation.mutateAsync({
-            photo: targetPhoto,
-            comment,
-          })
+      // 시안 3065-14459 #2-1 — 수정하기는 이 지역의 기록 플로우로 이동한다.
+      // 서버가 내 기록을 통째로 교체하므로 플로우를 다시 밟는 것이 곧 수정이다.
+      // 지도 위라 이동 없이 시트만 닫고 제자리에서 연다
+      onEdit: () => {
+        onClose()
+        startRecord(region)
       },
       onDelete: async (target) => {
         const targetPhoto = regionPhotos.find((p) => p.id === target.id)

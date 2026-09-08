@@ -20,7 +20,6 @@ export {
   useAllPhotos,
   useRegionAlbumPhotos,
   useCreatePhoto,
-  useUpdatePhotoComment,
   useDeletePhoto,
   photoKeys,
 } from "./api/queries"
@@ -28,7 +27,6 @@ export { usePhotoUploadStore } from "./model/upload.store"
 export { REGION_CENTERS } from "./model/regions"
 export {
   fetchPhotos,
-  updatePhotoComment,
   deletePhoto,
   seedUtPhotos,
   resetUtPhotos,

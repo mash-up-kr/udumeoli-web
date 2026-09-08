@@ -18,7 +18,6 @@ import {
   useDeletePhoto,
   usePhotos,
   useRegionAlbumPhotos,
-  useUpdatePhotoComment,
 } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
@@ -41,7 +40,6 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
   const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
   const deletePhotoMutation = useDeletePhoto()
-  const updateCommentMutation = useUpdatePhotoComment()
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
   // 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환
@@ -139,13 +137,11 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         }
       }),
       initialId: photo.id,
-      onEditComment: async (target, comment) => {
-        const targetPhoto = regionPhotos.find((p) => p.id === target.id)
-        if (targetPhoto)
-          await updateCommentMutation.mutateAsync({
-            photo: targetPhoto,
-            comment,
-          })
+      // 시안 3065-14459 #2-1 — 수정하기는 이 지역의 기록 플로우로 이동한다.
+      // 서버가 내 기록을 통째로 교체하므로 플로우를 다시 밟는 것이 곧 수정이다
+      onEdit: () => {
+        startRecord(region)
+        void router.navigate({ to: "/map-google" })
       },
       onDelete: async (target) => {
         const targetPhoto = regionPhotos.find((p) => p.id === target.id)

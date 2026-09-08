@@ -338,27 +338,6 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
 }
 
 /**
- * 사진 코멘트 수정 — 실서버는 recordTrip upsert (RecordTripInput.image가 필수라
- * 보존해둔 기존 imageId를 재전송한다). 목 모드는 세션 로컬(edit.store) 유지.
- */
-export async function updatePhotoComment(
-  photo: Photo,
-  comment: string
-): Promise<void> {
-  if (USE_MOCK || !photo.tripId || !photo.imageId) {
-    usePhotoEditStore.getState().setComment(photo.id, comment)
-    return
-  }
-  await gqlClient.request<RecordTripResponse>(RECORD_TRIP_MUTATION, {
-    input: {
-      tripId: photo.tripId,
-      image: { imageId: photo.imageId },
-      comment,
-    },
-  })
-}
-
-/**
  * 내 기록 삭제 — 실서버는 deleteTripRecord (마지막 기록이면 여행 자체가 사라지고
  * null 응답). 목 모드는 edit.store에 기록해 출처와 무관하게 목록에서 제외한다.
  */
