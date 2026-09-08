@@ -14,6 +14,7 @@ import {
   AdvancedMarkerAnchorPoint,
   CollisionBehavior,
   Map as GoogleMap,
+  RenderingType,
   useMap,
 } from "@vis.gl/react-google-maps"
 import { ArrowRight, UserRound } from "lucide-react"
@@ -760,7 +761,7 @@ function MapController({
     if (!map) return
     mapRef.current = map
 
-    // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
+    // 소수점 줌 보장 — 래스터는 기본 꺼짐이라, 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
     // restriction(strictBounds): 뷰포트가 항상 세계지도(메르카토르 위도 한계 ±85) 안에
     // 갇히도록 — 지도 밖 회색 영역이 보이는 지점까지 줌아웃·팬이 되지 않게 네이티브로
     // 클램프한다 (수동 minZoom 계산은 리사이즈 타이밍에 따라 경계 밖이 새어 보였다)
@@ -1712,6 +1713,11 @@ function TravelMapGoogleInner({
     <div className="relative size-full">
       <GoogleMap
         mapId={GOOGLE_MAP_ID}
+        // 래스터 고정 — 벡터(WebGL)는 모바일 PWA(iOS·Android)에서 핀치 줌·백그라운드 복귀 중
+        // 컨텍스트를 잃으면 회색으로 굳고 Google이 복구하지 않는다(QA: 앱 재시작만 해결).
+        // Google도 모바일 웹 벡터를 실험적으로 분류하고 래스터를 권장한다. 클라우드
+        // 스타일·AdvancedMarker·Data 레이어는 래스터에서도 그대로 동작한다
+        renderingType={RenderingType.RASTER}
         defaultCenter={{
           lat: lastCameraSnapshot?.lat ?? KOREA_VIEW.lat,
           lng: lastCameraSnapshot?.lng ?? KOREA_VIEW.lng,
