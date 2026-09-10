@@ -94,6 +94,14 @@ const SEOUL_VIEW = { lat: 37.5665, lng: 126.978, zoom: 9.5 }
 // 한국이 너무 작아서, 본토가 화면을 채우는 줌으로 당겨 배경답게 보이게 한다
 const TIPS_BACKDROP_VIEW = { lat: 36.3, lng: 127.9, zoom: 7 }
 
+// 서비스 탐색 범위 — 동아시아·동남아시아 중심의 아시아권
+const ASIA_MAP_BOUNDS = {
+  north: 55,
+  south: 15,
+  west: 95,
+  east: 150,
+}
+
 // 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
 // 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
 type CameraSnapshot = {
@@ -776,13 +784,12 @@ function MapController({
     mapRef.current = map
 
     // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
-    // restriction(strictBounds): 뷰포트가 항상 세계지도(메르카토르 위도 한계 ±85) 안에
-    // 갇히도록 — 지도 밖 회색 영역이 보이는 지점까지 줌아웃·팬이 되지 않게 네이티브로
-    // 클램프한다 (수동 minZoom 계산은 리사이즈 타이밍에 따라 경계 밖이 새어 보였다)
+    // restriction(strictBounds): 서비스 탐색 범위 밖으로 줌아웃·팬이 되지 않게
+    // Google Maps가 네이티브로 클램프한다.
     map.setOptions({
       isFractionalZoomEnabled: true,
       restriction: {
-        latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
+        latLngBounds: ASIA_MAP_BOUNDS,
         strictBounds: true,
       },
     })
