@@ -39,14 +39,14 @@ async function exportRecapImage(
       message: "이미지가 저장되었어요.",
       icon: "check",
       // CTA(bottom 33 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-      className: "bottom-[105px]",
+      className: "bottom-[106px]",
     })
   } catch (error) {
     console.error("리캡 이미지 저장 실패", error)
     showToast({
       message: "이미지 저장을 실패했어요. 다시 시도해 주세요.",
       icon: "alert",
-      className: "bottom-[105px]",
+      className: "bottom-[106px]",
     })
   }
 }
@@ -165,7 +165,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
         <div className="absolute inset-x-0 bottom-0 h-[249px] bg-gradient-to-b from-transparent via-white/60 to-white opacity-90 backdrop-blur-[2px]" />
       </div>
 
-      <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),33px)]">
+      <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
         <div className="relative h-[164px] shrink-0 px-4">
           <ButtonIcon

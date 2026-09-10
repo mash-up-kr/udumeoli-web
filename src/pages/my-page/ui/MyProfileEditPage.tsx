@@ -73,8 +73,8 @@ function MyProfileEditContent() {
       showToast({
         message: "프로필 수정에 실패했어요. 다시 시도해 주세요.",
         icon: "alert",
-        // 저장 CTA(bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-        className: "bottom-[104px]",
+        // 저장 CTA(bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+        className: "bottom-[106px]",
       })
       return
     } finally {
@@ -162,7 +162,7 @@ function MyProfileEditContent() {
         />
       </main>
 
-      <div className="w-full px-4 pb-8">
+      <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta disabled={!canSave || saving} onClick={handleSave}>
           저장
         </ButtonCta>

@@ -308,7 +308,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <Header title={pot.name} onIconClick={goMyPage} />
 
-      <main className="flex flex-1 flex-col px-4 pt-2 pb-8">
+      <main className="flex flex-1 flex-col px-4 pt-2 pb-[max(env(safe-area-inset-bottom),34px)]">
         <section className="flex w-full flex-col gap-2">
           <label htmlFor="pot-name" className={sectionTitleCls}>
             팟 이름

@@ -41,8 +41,8 @@ const JOIN_CODE_MESSAGES: Record<string, string> = {
 }
 
 // 토스트 위치 규칙(2차 UT): 하단 고정 요소 상단에서 16px 위.
-// 코드 입력 화면 CTA(참여하기) 위 — CTA bottom 32(pb-8) + 높이 56 + 16
-const CODE_TOAST_POSITION = "bottom-[104px]"
+// 코드 입력 화면 CTA(참여하기) 위 — CTA bottom 34 + 높이 56 + 16
+const CODE_TOAST_POSITION = "bottom-[106px]"
 
 // 지도 진입 후 뜨는 토스트 — 하단 내비 위 16px (내비 bottom 33 + 바 높이 77 + 16).
 // 첫 진입(지도 안내 오버레이가 내비를 덮음)은 Case 1이라 기본 위치(하단 34) (Figma 3065-19291 #10)
@@ -131,7 +131,7 @@ function ConfirmStep({
           </ul>
         </TicketCard>
       </TicketPrintStage>
-      <div className="flex w-full gap-[10px] px-4 pb-8">
+      <div className="flex w-full gap-[10px] px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta
           variant="secondary"
           className="w-[116px] shrink-0"
@@ -357,7 +357,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
           className="mx-auto"
         />
       </main>
-      <div className="w-full px-4 pb-8">
+      <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* [정책 #3] 6자리 모두 입력 시 활성화, 에러 케이스 발견 시 비활성화 */}
         <ButtonCta
           disabled={code.length < CODE_LENGTH || codeError || previewLoading}

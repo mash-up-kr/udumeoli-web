@@ -282,8 +282,8 @@ export function SignupPage() {
         showToast({
           message: "회원가입에 실패했어요. 다시 시도해 주세요.",
           icon: "alert",
-          // 가입 CTA(bottom 32=pb-8 + 높이 56) 위 16px
-          className: "bottom-[104px]",
+          // 가입 CTA(bottom 34 + 높이 56) 위 16px
+          className: "bottom-[106px]",
         })
         return
       } finally {
@@ -387,7 +387,7 @@ export function SignupPage() {
         />
       </main>
 
-      <div className="px-4 pb-8">
+      <div className="px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta
           disabled={!nickname.trim() || nicknameTooLong}
           onClick={() => void handleSubmit()}

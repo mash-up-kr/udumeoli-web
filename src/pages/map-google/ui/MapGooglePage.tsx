@@ -160,8 +160,8 @@ function MapGooglePageContent() {
               />
             ) : null}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
-              {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움.
+            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),34px)] z-10">
+              {/* 하단 내비 — 시안(3241-70879) 기준 바닥에서 34px(홈 인디케이터 영역) 띄움.
                   줌 3단계에서도 유지한다 (2차 UT to-be: 하단 탭바는 전 단계 노출) */}
               <BottomNav
                 className="pointer-events-auto"

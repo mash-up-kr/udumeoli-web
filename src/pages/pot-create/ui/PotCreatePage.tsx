@@ -47,8 +47,8 @@ function CreatedStep({
     } catch {
       // clipboard 미지원 환경에서도 토스트는 노출
     }
-    // 최하단 CTA(홈으로, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-    showToast({ message: "초대코드를 복사했어요", className: "bottom-[104px]" })
+    // 최하단 CTA(홈으로, bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+    showToast({ message: "초대코드를 복사했어요", className: "bottom-[106px]" })
   }
 
   return (
@@ -93,7 +93,7 @@ function CreatedStep({
           </p>
         </TicketCard>
       </TicketPrintStage>
-      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
+      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
         <Tooltip direction="bottom">
           최대 6명까지 함께할 수 있어요. (1/6)
@@ -201,7 +201,7 @@ export function PotCreatePage() {
             onChange={(e) => setName(e.target.value)}
           />
         </main>
-        <div className="w-full px-4 pb-8">
+        <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
           <ButtonCta
             type="button"
             disabled={!name.trim() || isCreating}
