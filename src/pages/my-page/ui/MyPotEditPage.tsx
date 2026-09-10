@@ -355,7 +355,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
 
         <section className="mt-4 flex w-full flex-col gap-1">
           <p className={sectionTitleCls}>친구 초대</p>
-          <div className="flex min-h-[70px] w-full items-start justify-between gap-3 rounded-2xl border border-bg-neutral-inverse bg-bg-neutral-subtle px-4 py-3">
+          <div className="flex min-h-[70px] w-full items-start justify-between gap-3 rounded-[16px] border border-bg-neutral-inverse bg-bg-neutral-subtle px-4 py-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-h9 text-fg-neutral-subtle">초대코드</span>
               {/* 시안(3065-17339)은 fg-neutral-bold(800)가 아닌 neutral-900 */}
