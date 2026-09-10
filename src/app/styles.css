@@ -356,6 +356,19 @@
     --text-e4--letter-spacing: -0.1px;
 
     /* ===== Animation ===== */
+    /* 지도 로딩 핀 바운스 — 시안 3065-20993: 핀 심볼만 위아래로, 텍스트는 고정 */
+    --animate-pin-bounce: pin-bounce 0.8s ease-in-out infinite;
+
+    @keyframes pin-bounce {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
     /* 갤러리 사진 업로드 직후 슬롯 팝 — transform만 사용(GPU 가속) */
     --animate-photo-pop: photo-pop 0.45s ease-out both;
 
@@ -707,6 +720,11 @@
 
         .animate-record-preview-particle {
             display: none;
+        }
+
+        /* 무한 반복이라 duration을 줄이는 대신 아예 멈춘다 */
+        .animate-pin-bounce {
+            animation: none;
         }
     }
 
