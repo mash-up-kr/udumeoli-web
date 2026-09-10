@@ -58,8 +58,11 @@ export async function fetchMe(): Promise<User> {
 
 export interface UpdateProfileInput {
   nickname: string
-  /** 프리셋 아바타 번호(1부터). 미전달 시 서버가 기존 값 유지 — 커스텀 blob은 전송 불가. */
-  profileImage?: number
+  /**
+   * 프리셋 아바타 번호(1~4) 또는 업로드한 사진의 imageId. 미전달 시 서버가 기존 값 유지.
+   * 스키마상 ID 타입이라 업로드 imageId는 문자열로 온다.
+   */
+  profileImage?: number | string
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<User> {
@@ -68,7 +71,8 @@ export async function updateProfile(input: UpdateProfileInput): Promise<User> {
       ...MOCK_USER,
       nickname: input.nickname,
       ...(input.profileImage != null
-        ? { profileImageUrl: presetAvatarSrc(input.profileImage) }
+        ? // 목에서는 프리셋 번호만 의미가 있다 — 업로드 imageId면 NaN → null 폴백
+          { profileImageUrl: presetAvatarSrc(Number(input.profileImage)) }
         : {}),
     })
 

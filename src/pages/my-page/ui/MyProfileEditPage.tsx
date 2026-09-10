@@ -7,6 +7,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { PRESET_AVATARS, Profile } from "@/shared/ui/profile"
 import { TextField } from "@/shared/ui/text-field"
 import { showToast } from "@/shared/ui/toast"
+import { uploadImageFile } from "@/shared/api/image-upload"
 import { useSessionStore, useUpdateProfile } from "@/entities/user"
 import { RequireAuth } from "@/features/auth"
 
@@ -31,6 +32,9 @@ function MyProfileEditContent() {
     initialAvatar >= 0 ? initialAvatar : null
   )
   const [avatarTouched, setAvatarTouched] = React.useState(false)
+  // 미리보기용 blob URL과 별개로 원본 File을 들고 있어야 업로드할 수 있다
+  const [customFile, setCustomFile] = React.useState<File | null>(null)
+  const [saving, setSaving] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const nicknameTooLong = nickname.length > NICKNAME_MAX
@@ -47,13 +51,22 @@ function MyProfileEditContent() {
   const goMyPage = () => router.navigate({ to: "/my-page", replace: true })
 
   const handleSave = async () => {
-    if (updateProfileMutation.isPending) return
-    // 커스텀 이미지는 blob이라 서버 미전송(프리셋 선택 시에만 번호 전송)
+    if (saving) return
+    setSaving(true)
+    let saved
     try {
-      await updateProfileMutation.mutateAsync({
+      // 커스텀 이미지는 presigned URL로 먼저 올리고 그 imageId를 프로필로 넘긴다 —
+      // 서버 UpdateProfileInput.profileImage는 프리셋 코드(1~4)와 imageId를 함께 받는다.
+      // 회원가입도 같은 경로를 타되, 토큰이 없어 REST 발급을 쓴다
+      const profileImageValue = customFile
+        ? await uploadImageFile(customFile)
+        : avatarTouched && selectedAvatar != null
+          ? selectedAvatar + 1
+          : undefined
+      saved = await updateProfileMutation.mutateAsync({
         nickname: nickname.trim(),
-        ...(avatarTouched && selectedAvatar != null
-          ? { profileImage: selectedAvatar + 1 }
+        ...(profileImageValue != null
+          ? { profileImage: profileImageValue }
           : {}),
       })
     } catch {
@@ -64,8 +77,14 @@ function MyProfileEditContent() {
         className: "bottom-[104px]",
       })
       return
+    } finally {
+      setSaving(false)
     }
-    updateUser({ nickname: nickname.trim(), profileImageUrl: profileImage })
+    // 마이페이지는 me를 항상 다시 읽으므로 로컬 blob이 아니라 서버 응답을 반영한다
+    updateUser({
+      nickname: saved.nickname,
+      profileImageUrl: saved.profileImageUrl,
+    })
     await goMyPage()
     showToast({ message: "프로필 수정이 완료됐어요.", icon: "check" })
   }
@@ -92,6 +111,7 @@ function MyProfileEditContent() {
             const file = e.target.files?.[0]
             if (file) {
               setCustomImage(URL.createObjectURL(file))
+              setCustomFile(file)
               setSelectedAvatar(null)
             }
           }}
@@ -112,6 +132,7 @@ function MyProfileEditContent() {
               onClick={() => {
                 setSelectedAvatar(i)
                 setCustomImage(null)
+                setCustomFile(null)
                 setAvatarTouched(true)
               }}
             >
@@ -138,7 +159,7 @@ function MyProfileEditContent() {
       </main>
 
       <div className="w-full px-4 pb-8">
-        <ButtonCta disabled={!canSave} onClick={handleSave}>
+        <ButtonCta disabled={!canSave || saving} onClick={handleSave}>
           저장
         </ButtonCta>
       </div>
