@@ -1770,7 +1770,7 @@ function TravelMapGoogleInner({
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              bottomBadge={`전국+${countryRegionCount}`}
+              bottomBadge={`대한민국+${countryRegionCount}`}
             />
           </AdvancedMarker>
         ) : null}
