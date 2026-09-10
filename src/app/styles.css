@@ -677,8 +677,8 @@
     }
 
     .travel-record-keyword-badge {
-        gap: clamp(6px, 2.6vw, 10px);
-        padding: clamp(6px, 2.1vw, 8px) clamp(12px, 4.3vw, 16px);
+        gap: clamp(6px, 2.67vw, 10px);
+        padding: clamp(6px, 2.14vw, 8px) clamp(12px, 4.3vw, 16px);
     }
 
     .travel-record-keyword-emoji {
