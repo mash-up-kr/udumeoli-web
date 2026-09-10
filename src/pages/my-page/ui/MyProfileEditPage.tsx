@@ -80,10 +80,14 @@ function MyProfileEditContent() {
     } finally {
       setSaving(false)
     }
-    // 마이페이지는 me를 항상 다시 읽으므로 로컬 blob이 아니라 서버 응답을 반영한다
+    // 마이페이지는 me를 항상 다시 읽으므로 로컬 blob이 아니라 서버 응답을 반영한다.
+    // 단 updateProfile 응답에는 아직 profileImageUrl이 없다(서버가 me에서만 채운다) —
+    // null로 덮으면 저장 직후 아바타가 빈다. 값이 있을 때만 반영하고 나머지는 refetch에 맡긴다
     updateUser({
       nickname: saved.nickname,
-      profileImageUrl: saved.profileImageUrl,
+      ...(saved.profileImageUrl
+        ? { profileImageUrl: saved.profileImageUrl }
+        : {}),
     })
     await goMyPage()
     showToast({ message: "프로필 수정이 완료됐어요.", icon: "check" })
