@@ -87,11 +87,6 @@ export function PotSelector() {
                         />
                       ) : null}
                       <span className={labelCls}>{pot.name}</span>
-                      <img
-                        src={iconChevronRightSrc}
-                        alt=""
-                        className="size-5 shrink-0"
-                      />
                     </button>
                   ))}
                 </div>
