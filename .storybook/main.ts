@@ -32,6 +32,7 @@ const storybookConfig: StorybookConfig = {
   stories: [
     { directory: "../src/shared/config/theme" }, // Foundations/* (파일별 명시 title)
     { directory: "../src/shared/ui", titlePrefix: "shared" },
+    { directory: "../src/entities" }, // Entities/* (파일별 명시 title 필수)
     { directory: "../src/widgets" }, // Widgets/* (파일별 명시 title 필수)
     { directory: "../src/features" }, // Features/* (파일별 명시 title 필수)
     { directory: "../src/pages" }, // Pages/* (파일별 명시 title 필수)

@@ -17,21 +17,48 @@ import type { ReactNode } from "react"
 export function TicketPrintStage({ children }: { children: ReactNode }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)*0.75+25%)] flex justify-center">
-      <div className="relative">
+      <style>{`
+        @keyframes ticket-card-print-v2 {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(167px) rotate(-2.303deg); }
+          100% { transform: translateY(334px) rotate(-4deg); }
+        }
+        @keyframes ticket-slot-v2 {
+          0%, 81% { opacity: 1; }
+          86%, 100% { opacity: 0; }
+        }
+        .ticket-card-print-v2 {
+          animation: ticket-card-print-v2 2s cubic-bezier(0.37, 0, 0.24, 1) infinite;
+        }
+        .ticket-slot-v2 { animation: ticket-slot-v2 2s linear infinite; }
+        .ticket-print-stage [data-ticket-card] { rotate: 0deg; }
+        @media (prefers-reduced-motion: reduce) {
+          .ticket-card-print-v2 { animation: none; transform: translateY(334px) rotate(-4deg); }
+          .ticket-slot-v2 { animation: none; opacity: 1; }
+        }
+      `}</style>
+      <div className="ticket-print-stage relative h-[375px] w-full max-w-[375px] overflow-hidden">
         {/* 출력창 — 슬롯 라인(상단 edge) 위를 잘라 티켓이 프린터에서 인쇄되듯 내려온다.
             좌우/하단 패딩은 카드 그림자·기울기 몫 */}
-        <div className="overflow-hidden px-10 pb-14">
-          <div className="animate-ticket-print motion-reduce:animate-none">
-            {/* 기본 클래스가 최종 안착 상태(-3.71° + 14px) — 애니메이션이 실행 중에만 덮어쓴다 */}
-            <div className="translate-y-3.5 rotate-[-3.71deg] animate-ticket-settle motion-reduce:animate-none">
+        <div className="flex h-full justify-center overflow-hidden px-5">
+          <div className="shrink-0">
+            <div className="ticket-card-print-v2 relative top-[-302px] z-0">
               {children}
             </div>
           </div>
         </div>
-        {/* 프린터 슬롯 바 — 출력창 상단(잘리는 라인)에 걸쳐 있다가 인쇄가 끝나면 사라진다 */}
+        {/* 프린터 슬롯 — Figma 3065:38129의 상단 캡과 하단 라인 */}
         <div
           aria-hidden
-          className="absolute top-0 left-1/2 h-3.5 w-[351px] -translate-x-1/2 -translate-y-1/2 animate-ticket-slot rounded-full bg-neutral-800 opacity-0 motion-reduce:animate-none"
+          className="ticket-slot-v2 absolute top-0 left-1/2 z-10 h-2 w-[350px] -translate-x-1/2 bg-[#eff1f5]"
+        />
+        <div
+          aria-hidden
+          className="ticket-slot-v2 absolute top-2 left-1/2 z-10 h-2 w-[350px] -translate-x-1/2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)]"
+        />
+        <div
+          aria-hidden
+          className="ticket-slot-v2 absolute top-4 left-1/2 z-10 h-[3px] w-[350px] -translate-x-1/2 rounded-b-[3px] border-b-[3px] border-solid border-[rgba(183,183,183,0.5)]"
         />
       </div>
     </div>

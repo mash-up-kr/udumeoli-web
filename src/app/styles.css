@@ -499,7 +499,7 @@
     }
 
     /* 팟 참여 확인 티켓 — 프린터 출력 등장 (graphic_interaction GIF).
-       슬롯 라인 위를 overflow로 잘라 티켓이 아래로 인쇄되듯 내려오고,
+       프린터 슬롯 아래로 overflow로 잘라 티켓이 아래로 인쇄되듯 내려오고,
        다 나오면 슬롯이 사라지며 살짝 기울어(-3.71°) 안착한다.
        translate/rotate 프로퍼티만 애니메이션 — 래퍼의 기본 클래스(최종 상태)를
        실행 중에만 덮어써서 motion-reduce 시 최종 상태가 즉시 보인다 */
@@ -541,9 +541,10 @@
 
     @keyframes ticket-slot {
         0%,
-        80% {
+        81% {
             opacity: 1;
         }
+        86%,
         100% {
             opacity: 0;
         }
