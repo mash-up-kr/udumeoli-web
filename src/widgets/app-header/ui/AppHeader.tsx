@@ -20,13 +20,13 @@ function AppHeader({
     // 실제 인터랙티브 요소(팟 선택)에만 pointer-events를 준다
     <header
       className={cn(
-        "pointer-events-none flex w-full items-center justify-between bg-transparent px-4 py-3",
+        "pointer-events-none flex w-full items-center justify-between bg-transparent px-4",
         className
       )}
       {...props}
     >
-      {/* 로고 (시안 2473-16862, 112.6×25.2) */}
-      <div className="flex h-[60px] items-center">
+      {/* 로고 120×28 — 시안 3065-18801의 헤더 행은 58이고 로고가 그 안에 세로 중앙 */}
+      <div className="flex h-[58px] items-center">
         <img src={logoSrc} alt="Pinnned" className="h-7" />
       </div>
 
