@@ -42,7 +42,7 @@ export function TicketPrintStage({ children }: { children: ReactNode }) {
             좌우/하단 패딩은 카드 그림자·기울기 몫 */}
         <div className="flex h-full justify-center overflow-hidden px-5">
           <div className="shrink-0">
-            <div className="ticket-card-print-v2 relative top-[-302px] z-0">
+            <div className="ticket-card-print-v2 relative top-[-302px] z-10">
               {children}
             </div>
           </div>
@@ -50,15 +50,15 @@ export function TicketPrintStage({ children }: { children: ReactNode }) {
         {/* 프린터 슬롯 — Figma 3065:38129의 상단 캡과 하단 라인 */}
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-0 left-1/2 z-10 h-2 w-[350px] -translate-x-1/2 bg-[#eff1f5]"
+          className="ticket-slot-v2 absolute top-0 left-1/2 z-20 h-2 w-[350px] -translate-x-1/2 bg-[#eff1f5]"
         />
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-2 left-1/2 z-10 h-2 w-[350px] -translate-x-1/2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)]"
+          className="ticket-slot-v2 absolute top-2 left-1/2 z-20 h-2 w-[350px] -translate-x-1/2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)]"
         />
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-4 left-1/2 z-10 h-[3px] w-[350px] -translate-x-1/2 rounded-b-[3px] border-b-[3px] border-solid border-[rgba(183,183,183,0.5)]"
+          className="ticket-slot-v2 absolute top-4 left-1/2 z-20 h-[3px] w-[350px] -translate-x-1/2 rounded-b-[3px] border-b-[3px] border-solid border-[rgba(183,183,183,0.5)]"
         />
       </div>
     </div>
