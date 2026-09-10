@@ -21,7 +21,6 @@ import {
   uploadImage,
 } from "@/features/auth"
 import { openOnboardingOverlay } from "@/features/onboarding"
-import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
 
@@ -55,11 +54,11 @@ function PermissionContent({
         <br />
         접근 권한을 허용해 주세요.
       </DialogTitle>
-      <div className="flex h-[100px] items-center rounded-[12px] bg-bg-neutral-subtle p-5">
+      <div className="flex items-center rounded-[12px] bg-bg-neutral-subtle p-5">
         <div className="flex items-center gap-3">
           <img src={iconCameraSrc} alt="" className="size-9 shrink-0" />
           <div className="flex flex-col gap-1">
-            <span className="text-h6-1 text-fg-neutral-bold">앨범</span>
+            <span className="text-h6-1 text-fg-neutral-bold">갤러리</span>
             <span className="text-b8 text-fg-neutral-subtle">
               이미지 저장 및 업로드
             </span>
@@ -101,18 +100,15 @@ function PermissionRequiredContent({
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
       </button>
-      <div className="flex flex-col items-center gap-4 pt-4 text-center">
-        <img src={iconAlertDangerSrc} alt="" className="size-9" />
-        <div className="flex flex-col gap-2">
-          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
-            원활한 서비스 이용을 위해
-            <br />
-            갤러리 접근 권한을 허용해 주세요
-          </DialogTitle>
-          <p className="text-b6 text-fg-neutral-subtle">
-            갤러리 접근 권한 허용 시, 이미지 업로드가 가능합니다.
-          </p>
-        </div>
+      <div className="flex flex-col items-center gap-[10px] py-2 text-center">
+        <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+          원활한 서비스 이용을 위해
+          <br />
+          갤러리 접근 권한을 허용해 주세요
+        </DialogTitle>
+        <p className="text-b6 text-fg-neutral-subtle">
+          갤러리 접근 권한 허용 시, 이미지 업로드가 가능합니다.
+        </p>
       </div>
       <ButtonCta onClick={onConfirm}>확인</ButtonCta>
     </>
@@ -282,8 +278,8 @@ export function SignupPage() {
         showToast({
           message: "회원가입에 실패했어요. 다시 시도해 주세요.",
           icon: "alert",
-          // 가입 CTA(bottom 32=pb-8 + 높이 56) 위 16px
-          className: "bottom-[104px]",
+          // 가입 CTA(bottom 34 + 높이 56) 위 16px
+          className: "bottom-[106px]",
         })
         return
       } finally {
@@ -387,7 +383,7 @@ export function SignupPage() {
         />
       </main>
 
-      <div className="px-4 pb-8">
+      <div className="px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta
           disabled={!nickname.trim() || nicknameTooLong}
           onClick={() => void handleSubmit()}

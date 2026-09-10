@@ -95,6 +95,14 @@ const SEOUL_VIEW = { lat: 37.5665, lng: 126.978, zoom: 9.5 }
 // 한국이 너무 작아서, 본토가 화면을 채우는 줌으로 당겨 배경답게 보이게 한다
 const TIPS_BACKDROP_VIEW = { lat: 36.3, lng: 127.9, zoom: 7 }
 
+// 서비스 탐색 범위 — 동아시아·동남아시아 중심의 아시아권
+const ASIA_MAP_BOUNDS = {
+  north: 55,
+  south: 15,
+  west: 95,
+  east: 150,
+}
+
 // 팟 생성 등 다른 라우트로 이동했다가 돌아올 때 지도가 KOREA_VIEW로 리셋되지 않도록,
 // 모듈 스코프에 마지막 카메라 위치를 캐싱해 다음 마운트의 초기값으로 재사용한다.
 type CameraSnapshot = {
@@ -136,13 +144,18 @@ const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
 const DETAIL_STICKER_Z_INDEX = 30
 const DETAIL_ACTION_Z_INDEX = 40
 const DETAIL_TOOLTIP_Z_INDEX = 50
+// 핀 SVG의 꼭지는 콘텐츠 하단보다 약 2px 위에 있어 실제 꼭지를 좌표에 맞춘다.
+const PIN_TIP_ANCHOR: [string, string] = ["50%", "calc(100% - 2px)"]
 const CATEGORY_PIN_BADGE =
   "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h8-1 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const CATEGORY_PIN_COUNT_BADGE =
   "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
-  { x: -18, y: -12, rotate: -17 },
-  { x: 18, y: 12, rotate: 9 },
+  // 지역명은 centroid에 유지하고, 스티커는 주변으로 살짝 분리한다.
+  // 64px 스티커가 중심점까지 침범하지 않도록 한 단계 더 벌리되,
+  // 작은 지역에서 중심점과 너무 멀어지지 않도록 제한한다.
+  { x: -42, y: -28, rotate: -17 },
+  { x: 42, y: 28, rotate: 9 },
 ]
 // STICKER_OFFSETS(px)를 PARTY_ZOOM 화면 기준 위경도로 환산하는 계수.
 // CSS translate(px)는 줌아웃해도 화면상 크기가 고정이라 지역이 작아지면 스티커가
@@ -252,17 +265,19 @@ function CategoryMapPin({
   const badgeStyle = { backgroundColor: keyword.mapColor }
 
   return (
-    <div className="relative flex w-[46px] flex-col items-center gap-[6px]">
+    // 마커 좌표는 핀 꼭지에 맞춘다. 배지는 absolute로 분리해 배지 유무가
+    // 핀의 기준점 위치를 바꾸지 않도록 한다.
+    <div className="relative h-[51px] w-[46px]">
       {topBadge ? (
         <span
           aria-label={`여행 ${topBadge}회`}
-          className={CATEGORY_PIN_COUNT_BADGE}
+          className={cn(CATEGORY_PIN_COUNT_BADGE, "absolute")}
           style={badgeStyle}
         >
           {topBadge}
         </span>
       ) : null}
-      <span className="relative h-[46px] w-[46px]">
+      <span className="relative block h-[46px] w-[46px]">
         <img
           src={keyword.mapPinSrc}
           alt=""
@@ -275,7 +290,13 @@ function CategoryMapPin({
         />
       </span>
       {bottomBadge ? (
-        <span className={CATEGORY_PIN_BADGE} style={badgeStyle}>
+        <span
+          className={cn(
+            CATEGORY_PIN_BADGE,
+            "absolute top-[51px] left-1/2 -translate-x-1/2"
+          )}
+          style={badgeStyle}
+        >
           {bottomBadge}
         </span>
       ) : null}
@@ -395,7 +416,7 @@ const CollaborationProgressMarkers = React.memo(
                 {formatRegionName(name)}
               </span>
               {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
-              {trip.hasMine ? (
+              {trip.hasMine && !trip.isComplete ? (
                 <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
                   <UserRound className="size-3.5 text-fg-neutral-solid" />
                   <span className="text-fg-neutral-bold">
@@ -426,7 +447,7 @@ const ProvinceAggregateMarkers = React.memo(
           <AdvancedMarker
             key={`province-${agg.province}`}
             position={{ lat: agg.lat, lng: agg.lng }}
-            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            anchorPoint={PIN_TIP_ANCHOR}
           >
             <CategoryMapPin
               keyword={agg.keyword}
@@ -459,7 +480,9 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
         <AdvancedMarker
           key={`trip-${p.trip.key}`}
           position={{ lat: p.pinLat, lng: p.pinLng }}
-          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          anchorPoint={
+            stickerOnly ? AdvancedMarkerAnchorPoint.CENTER : PIN_TIP_ANCHOR
+          }
           collisionBehavior={DETAIL_MARKER_COLLISION}
           zIndex={DETAIL_STICKER_Z_INDEX}
           clickable
@@ -761,14 +784,13 @@ function MapController({
     if (!map) return
     mapRef.current = map
 
-    // 소수점 줌 보장 — 래스터는 기본 꺼짐이라, 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
-    // restriction(strictBounds): 뷰포트가 항상 세계지도(메르카토르 위도 한계 ±85) 안에
-    // 갇히도록 — 지도 밖 회색 영역이 보이는 지점까지 줌아웃·팬이 되지 않게 네이티브로
-    // 클램프한다 (수동 minZoom 계산은 리사이즈 타이밍에 따라 경계 밖이 새어 보였다)
+    // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
+    // restriction(strictBounds): 서비스 탐색 범위 밖으로 줌아웃·팬이 되지 않게
+    // Google Maps가 네이티브로 클램프한다.
     map.setOptions({
       isFractionalZoomEnabled: true,
       restriction: {
-        latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
+        latLngBounds: ASIA_MAP_BOUNDS,
         strictBounds: true,
       },
     })
@@ -1678,8 +1700,21 @@ function TravelMapGoogleInner({
   // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
-    (trip: CollaborationTrip) => handleRegionAction(trip.region, false),
-    [handleRegionAction]
+    (trip: CollaborationTrip) => {
+      if (zoomStageRef.current < 3) {
+        const centroid = centroidsRef.current.find(
+          (item) => item.name === trip.region
+        )
+        if (!centroid) return
+        runCameraMove(
+          { lat: centroid.lat, lng: centroid.lng, zoom: DETAIL_ENTER_ZOOM },
+          600
+        )
+        return
+      }
+      handleRegionAction(trip.region, false)
+    },
+    [handleRegionAction, runCameraMove]
   )
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
@@ -1702,7 +1737,7 @@ function TravelMapGoogleInner({
     return viewportCentroids
       .map((centroid) => {
         const trip = latestTripsByRegion.get(centroid.name)
-        return trip && !trip.isComplete ? { ...centroid, trip } : null
+        return trip ? { ...centroid, trip } : null
       })
       .filter((item): item is Centroid & { trip: CollaborationTrip } =>
         Boolean(item)
@@ -1768,12 +1803,12 @@ function TravelMapGoogleInner({
         {zoomStage === 0 && !decorating && countryKeyword ? (
           <AdvancedMarker
             position={KOREA_STICKER_ANCHOR}
-            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            anchorPoint={PIN_TIP_ANCHOR}
           >
             <CategoryMapPin
               keyword={countryKeyword}
               imageAlt={`대한민국 대표 키워드 ${countryKeyword.label}`}
-              bottomBadge={`전국+${countryRegionCount}`}
+              bottomBadge={`대한민국+${countryRegionCount}`}
             />
           </AdvancedMarker>
         ) : null}

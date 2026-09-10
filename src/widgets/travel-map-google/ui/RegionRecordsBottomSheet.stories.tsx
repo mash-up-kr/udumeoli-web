@@ -43,7 +43,14 @@ function makePhotos(count: number): Array<Photo> {
   }))
 }
 
-function Frame({ members: count }: { members: number }) {
+function Frame({
+  members: count,
+  skipMe = false,
+}: {
+  members: number
+  /** 내 사진만 빠진 상태 — "내 사진 올리기" 타일을 본다 */
+  skipMe?: boolean
+}) {
   useSessionStore.setState({
     currentUser: { id: "user-1", nickname: "정민", profileImageUrl: null },
     isAuthenticated: true,
@@ -69,7 +76,11 @@ function Frame({ members: count }: { members: number }) {
               <RegionRecordsBottomSheet
                 region="양양군"
                 members={members}
-                photos={makePhotos(count === 1 ? 1 : count - 1)}
+                photos={makePhotos(count === 1 ? 1 : count - 1).map((photo) =>
+                  skipMe
+                    ? { ...photo, uploaderId: `${photo.uploaderId}x` }
+                    : photo
+                )}
                 onClose={() => {}}
                 onAddPhoto={() => {}}
               />
@@ -85,3 +96,6 @@ export const One: Story = { render: () => <Frame members={1} /> }
 export const Two: Story = { render: () => <Frame members={2} /> }
 export const Four: Story = { render: () => <Frame members={4} /> }
 export const Six: Story = { render: () => <Frame members={6} /> }
+export const MeEmpty: Story = {
+  render: () => <Frame members={2} skipMe />,
+}

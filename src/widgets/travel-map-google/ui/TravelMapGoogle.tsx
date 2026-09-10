@@ -4,7 +4,7 @@ import type { TravelMapImplProps } from "./TravelMapGoogleImpl"
 import { loadKoreaGeoJson } from "@/shared/lib/loadKoreaGeoJson"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/button"
-import logoSrc from "@/shared/assets/logo-pinnned.svg"
+import pinHeartSrc from "@/shared/assets/icon-pin-heart.svg"
 
 // Google Maps JS API도 브라우저 전용 → 클라이언트에서만 동적 로드해 SSR 오류 회피.
 export function TravelMapGoogle({
@@ -60,16 +60,16 @@ export function TravelMapGoogle({
         />
       ) : null}
 
-      {/* 폴리곤이 그려지기 전까지 지도 위를 덮는다 — 회색 빈 지도가 보였다가 폴리곤이
-          튀어나오는 걸 막는다. 실패 시엔 재시도 버튼 (기존엔 콘솔 에러만 찍히고
-          영원히 빈 지도로 남았다).
-          Google 기본 타일과 폴리곤이 모두 준비되면 페이드아웃한다. */}
+      {/* 폴리곤이 그려지기 전까지 지도 위를 덮는다. 실패 시엔 재시도 버튼 (기존엔
+          콘솔 에러만 찍히고 영원히 빈 지도로 남았다).
+          Google 기본 타일과 폴리곤이 모두 준비되면 페이드아웃한다.
+          배경은 시안 3065-19357 Dim_white — 불투명하게 덮지 않고 뿌옇게 흐린다. */}
       <div
         aria-hidden={mapReady}
         aria-busy={!mapReady}
         className={cn(
           // z-10 — 지도 위는 덮되 헤더·하단 내비(z-10, DOM상 뒤)는 덮지 않는다
-          "absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-300",
+          "absolute inset-0 z-10 flex items-center justify-center bg-white/5 backdrop-blur-[20px] transition-opacity duration-300",
           mapReady && "pointer-events-none opacity-0"
         )}
       >
@@ -88,17 +88,23 @@ export function TravelMapGoogle({
             </Button>
           </div>
         ) : (
+          /* 시안 3065-19371 — 핀 심볼만 바운스하고 두 텍스트는 고정 */
           <div
             role="status"
             aria-label="지도를 불러오는 중"
-            className="flex flex-col items-center gap-3"
+            className="flex flex-col items-center gap-4 px-4 py-2"
           >
-            <img src={logoSrc} alt="Pinnned" className="h-6 animate-pulse" />
-            <span aria-hidden="true" className="flex items-center gap-1">
-              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle [animation-delay:-0.2s]" />
-              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle [animation-delay:-0.1s]" />
-              <i className="size-1.5 animate-bounce rounded-full bg-fg-neutral-subtle" />
-            </span>
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src={pinHeartSrc}
+                alt=""
+                className="h-[37.93px] w-8 animate-pin-bounce"
+              />
+              <p className="font-eng text-e1 text-fg-neutral-bold">Loading</p>
+            </div>
+            <p className="text-h4 text-fg-neutral-solid">
+              잠시만 기다려주세요...
+            </p>
           </div>
         )}
       </div>

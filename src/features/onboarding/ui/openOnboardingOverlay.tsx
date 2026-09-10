@@ -308,7 +308,7 @@ function OnboardingOverlay({
           ))}
         </div>
 
-        <div className="shrink-0 px-4 pt-10 pb-8">
+        <div className="shrink-0 px-4 pt-10 pb-[max(env(safe-area-inset-bottom),34px)]">
           {/* 마지막 스텝도 시안대로 "다음" (Figma 2632-37688) */}
           <ButtonCta onClick={goNext}>다음</ButtonCta>
         </div>

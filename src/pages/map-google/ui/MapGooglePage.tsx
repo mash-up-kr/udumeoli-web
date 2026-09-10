@@ -131,17 +131,17 @@ function MapGooglePageContent() {
                   {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —
                       빈 영역이 클릭을 먹으면 헤더 아래 사진 핀이 반응하지 못한다 */}
                   <AppHeader potSelector={<PotSelector />} />
-                  {/* RECAP 버튼 — 시안 2897-28068 팟 선택 아래 우측, 팟 선택 필 하단과 10px 간격.
-                      헤더(py-3=12px) 안에서 42px 필이 60px 로고 행에 센터 정렬돼 아래로 9px 여백이
-                      더 생기므로, 9+12-11 = 10px이 되도록 -11px로 당긴다 */}
-                  <div className="-mt-[11px] flex justify-end px-4">
+                  {/* RECAP 버튼 — 시안 3065-18801: 헤더 행(58) 바로 아래 44 행에 40px 배지가
+                      위아래 2px씩 놓인다. 팟 선택 필 하단(50)과 10px 간격이 여기서 나온다 */}
+                  <div className="flex justify-end px-4 py-0.5">
                     <RecapButton className="pointer-events-auto" />
                   </div>
                 </>
               ) : (
                 // 2.5단계 이상(상세)에서는 로고/팟 선택 대신 뒤로가기만 — 클릭 시 2단계로 줌아웃.
-                // h-[84px]: AppHeader(py-3 + 60px 로고 행)와 같은 높이라 전환 시 버튼 위치가 안 튄다
-                <div className="flex h-[84px] items-center px-4">
+                // h-[58px]: AppHeader 로고 행과 같은 높이라 전환 시 버튼 위치가 안 튄다.
+                // 시안 3241-70879도 이 행에서 42px 버튼이 세로 중앙(y=8)이다
+                <div className="flex h-[58px] items-center px-4">
                   <ButtonIcon
                     aria-label="지도 축소"
                     className="pointer-events-auto"
@@ -160,8 +160,8 @@ function MapGooglePageContent() {
               />
             ) : null}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
-              {/* 하단 내비 — 시안(1745-38063) 기준 바닥에서 33px(홈 인디케이터 영역) 띄움.
+            <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),34px)] z-10">
+              {/* 하단 내비 — 시안(3241-70879) 기준 바닥에서 34px(홈 인디케이터 영역) 띄움.
                   줌 3단계에서도 유지한다 (2차 UT to-be: 하단 탭바는 전 단계 노출) */}
               <BottomNav
                 className="pointer-events-auto"

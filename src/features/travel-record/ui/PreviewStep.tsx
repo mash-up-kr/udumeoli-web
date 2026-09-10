@@ -181,24 +181,25 @@ export function PreviewStep({
           ))
         : null}
 
-      <div className="relative z-20 flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
+      <div className="relative z-20 mt-[env(safe-area-inset-top)] flex h-[76px] shrink-0 items-center px-4">
         <ButtonIcon aria-label="뒤로 가기" onClick={onBack}>
           <img src={iconArrowLeftSrc} alt="" className="size-6" />
         </ButtonIcon>
-      </div>
 
-      {/* min-h-0 + flex-1 — 사진이 남는 높이에 맞춰 줄어들어 어떤 화면 높이에서도 스크롤이 없다 */}
-      <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center px-4 pt-[clamp(48px,9dvh,76px)]">
         {/* 지역명 뱃지 (키워드 색상 버전) — 시안 3241-73820 #9.
+            키워드·사진 스텝과 같이 뒤로가기와 한 헤더 행 안, 화면 중앙 · 위에서 36.
             stroke는 지역 폴리곤 외곽선 팔레트라 키워드 색과 다르다 (사진이 디저트 빨강으로 보이던 원인) */}
         <span
-          className="rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"
+          className="absolute top-9 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-h9 text-fg-neutral-inverse drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]"
           style={{ backgroundColor: keyword?.mapColor ?? "#232936" }}
         >
           {regionName}
         </span>
+      </div>
 
-        <h2 className="mt-2 text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+      {/* min-h-0 + flex-1 — 사진이 남는 높이에 맞춰 줄어들어 어떤 화면 높이에서도 스크롤이 없다 */}
+      <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center px-4">
+        <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
           {keyword ? (
             <>
               우리의 여행은
@@ -214,8 +215,11 @@ export function PreviewStep({
 
         {/* 정사각 대표 사진 — 흰 글로우, 닉네임 칩이 상단에 걸침.
             낮은 화면에선 CTA가 스크롤 없이 보이도록 폭을 줄인다 (record-preview-photo-frame).
-            칩·스티커가 사진을 따라가도록 래퍼 자체를 줄인다 */}
-        <div className="record-preview-photo-frame relative mt-8">
+            칩·스티커가 사진을 따라가도록 래퍼 자체를 줄인다.
+            mt-[63px] — 시안(3065-15508)의 위 202 / 가운데 427 / 아래 90 3단 구성을
+            그대로 재현하는 값이다. 낮은 화면에선 사진이 줄어 겹치지 않는다
+            (record-preview-photo-frame의 min-height:0) */}
+        <div className="record-preview-photo-frame relative mt-[63px]">
           <img
             src={photoUrl}
             alt=""
@@ -241,7 +245,7 @@ export function PreviewStep({
             </div>
           ) : null}
           {/* 닉네임 칩 — 그래픽 스케일 24px 텍스트 (타이포 토큰에 없는 아트워크 크기라 값 고정) */}
-          <span className="absolute -top-5 left-1/2 z-10 flex max-w-[70%] -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 py-2">
+          <span className="absolute -top-8 left-1/2 z-10 flex max-w-[70%] -translate-x-1/2 items-center gap-1 rounded-full bg-white px-4 py-2">
             <Profile
               size="sm"
               src={profileImageUrl ?? undefined}
@@ -256,7 +260,7 @@ export function PreviewStep({
 
         {/* 코멘트 말풍선 — 사진 아래 20px, 위쪽 화살표 (Figma Tooltip 흰 변형) */}
         {comment ? (
-          <span className="relative mt-5 flex h-8 max-w-full items-center rounded-full bg-bg-neutral-weak px-4 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
+          <span className="relative mt-5 flex h-8 max-w-full items-center gap-0.5 rounded-full bg-bg-neutral-weak px-2 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
             <svg
               aria-hidden
               viewBox="80 12 18 12"
@@ -267,6 +271,14 @@ export function PreviewStep({
                 className="fill-bg-neutral-weak"
               />
             </svg>
+            {/* 말풍선 앞 키워드 스티커 20 (시안 3241-73698) */}
+            {keyword ? (
+              <img
+                src={keyword.emojiSrc}
+                alt=""
+                className="size-5 shrink-0 object-contain"
+              />
+            ) : null}
             <span className="truncate text-b6 text-fg-neutral-bold">
               {comment}
             </span>

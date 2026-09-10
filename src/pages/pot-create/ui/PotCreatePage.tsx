@@ -32,29 +32,32 @@ function CreatedStep({
 }) {
   // 시스템 공유 시트(카톡 등) 노출, 미지원 브라우저는 클립보드 복사로 폴백
   const share = async () => {
-    const text = `${name} 여행팟 초대코드: ${code}`
+    const link = `${window.location.origin}/pot-start?inviteCode=${encodeURIComponent(code)}`
     // 데스크톱 등 Web Share API 미지원 환경 감지 (타입상으론 항상 존재)
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ text })
+        await navigator.share({ text: link })
       } catch {
         // 사용자가 공유 시트를 닫은 경우
       }
       return
     }
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(link)
     } catch {
       // clipboard 미지원 환경에서도 토스트는 노출
     }
-    // 최하단 CTA(홈으로, bottom 32=pb-8 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-    showToast({ message: "초대코드를 복사했어요", className: "bottom-[104px]" })
+    // 최하단 CTA(홈으로, bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
+    showToast({
+      message: "초대 링크가 복사됐어요",
+      className: "bottom-[106px]",
+    })
   }
 
   return (
     // 폼 → 완료 화면 교체가 한 프레임에 일어나 하단 CTA가 위로 '확' 튀어 보인다 — 화면째 페이드인
     <MobileLayout className="relative flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
+      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
         </ButtonIcon>
@@ -93,7 +96,7 @@ function CreatedStep({
           </p>
         </TicketCard>
       </TicketPrintStage>
-      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-8">
+      <div className="flex w-full flex-col items-center gap-[25px] px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* 최대 인원 안내 — 첫 생성 후 상시 노출, 자동 사라짐 없음 (Figma 1374-173 #7-2) */}
         <Tooltip direction="bottom">
           최대 6명까지 함께할 수 있어요. (1/6)
@@ -176,7 +179,7 @@ export function PotCreatePage() {
 
   return (
     <MobileLayout className="flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3">
+      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
         </ButtonIcon>
@@ -201,7 +204,7 @@ export function PotCreatePage() {
             onChange={(e) => setName(e.target.value)}
           />
         </main>
-        <div className="w-full px-4 pb-8">
+        <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
           <ButtonCta
             type="button"
             disabled={!name.trim() || isCreating}

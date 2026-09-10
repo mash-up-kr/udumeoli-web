@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils"
 import { showToast } from "@/shared/ui/toast"
 import iconAddSrc from "@/shared/assets/icon-add.svg"
 import iconCameraAddSrc from "@/shared/assets/icon-camera-add.svg"
+import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 // 팟별 노출 이력 — "팟과 함께 지도에 처음 진입할 때 1회"를 팟 단위로 저장해
 // 새 팟에 참여했을 때도 안내가 다시 뜬다. 구 계정 단위 키(photato-map-tips-seen)는
@@ -133,6 +134,18 @@ function MapTipsOverlay({
         <div className="absolute inset-0 bg-white/5 backdrop-blur-[20px]" />
         <div className="absolute inset-x-0 top-0 h-[163px] bg-gradient-to-b from-white/80 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-[220px] bg-gradient-to-t from-white/80 to-transparent" />
+      </div>
+
+      {/* 로고 — 시안 3065-19280은 딤 위에 로고가 그대로 보인다. 지도 헤더는 z-10이라
+          z-40 딤에 가려지므로 여기서 다시 그린다. 위치·크기는 AppHeader와 같게 둬
+          오버레이가 열리고 닫힐 때 로고가 튀지 않는다 */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md px-4 pt-[env(safe-area-inset-top)]"
+      >
+        <div className="flex h-[58px] items-center">
+          <img src={logoSrc} alt="" className="h-7" />
+        </div>
       </div>
 
       {/* 화면이 낮아도 겹치지 않도록 flex 중앙 정렬 + 넘치면 스크롤 */}

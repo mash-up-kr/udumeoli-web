@@ -85,8 +85,8 @@ function TravelAlbumPageContent() {
         ))}
       </main>
 
-      {/* 하단 내비 — 지도 화면과 동일하게 바닥에서 33px(홈 인디케이터 영역) 띄움 */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),33px)] z-10">
+      {/* 하단 내비 — 지도 화면과 동일하게 바닥에서 34px(홈 인디케이터 영역) 띄움 */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),34px)] z-10">
         <BottomNav
           className="pointer-events-auto"
           active="album"

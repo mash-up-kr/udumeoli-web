@@ -47,25 +47,27 @@ function MemberChip({
     : member.nickname
 
   return (
-    <span className="flex min-w-0 items-center gap-1">
+    <span className="flex min-w-0 items-center gap-1 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
       <img
         src={profileImageUrl ?? DEFAULT_PROFILE_SRC}
         alt=""
         className="size-4 shrink-0 rounded-full border border-stroke-neutral-weak object-cover"
       />
-      <span
-        className={cn(
-          "max-w-24 truncate text-h9",
-          onImage ? "text-fg-neutral-inverse" : "text-fg-neutral-bold"
-        )}
-      >
-        {nickname}
-      </span>
-      {isMe ? (
-        <span className="shrink-0 rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
-          ME!
+      <span className="flex min-w-0 items-center gap-0.5">
+        <span
+          className={cn(
+            "max-w-24 truncate text-h9",
+            onImage ? "text-fg-neutral-inverse" : "text-fg-neutral-bold"
+          )}
+        >
+          {nickname}
         </span>
-      ) : null}
+        {isMe ? (
+          <span className="shrink-0 rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
+            ME!
+          </span>
+        ) : null}
+      </span>
     </span>
   )
 }
@@ -92,24 +94,28 @@ function RecordTile({
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-[17px] border bg-bg-neutral-solid",
+          "relative overflow-hidden rounded-[16px] border border-dashed bg-bg-neutral-solid",
           TILE_ASPECT,
           className,
-          isMe
-            ? "border-dashed border-stroke-neutral-subtle"
-            : "border-solid border-stroke-neutral-weak"
+          isMe ? "border-stroke-neutral-subtle" : "border-stroke-neutral-weak"
         )}
       >
-        <div className="absolute inset-x-3.5 top-3.5">
+        <div className="absolute inset-x-[13px] top-[13px]">
           <MemberChip member={member} isMe={isMe} onImage={false} />
         </div>
         {isMe ? (
           <button
             type="button"
             onClick={onAddPhoto}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-h8 text-fg-neutral-bold"
+            className="absolute inset-0 text-h8-1 text-fg-neutral-bold outline-none focus:outline-none"
           >
-            <img src={iconAddSrc} alt="" className="size-9" />내 사진 올리기
+            {/* 타일 정중앙이 아니라 살짝 아래 — 시안 실측 top 69 / 높이 182 */}
+            <span className="absolute top-[37.9%] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+                <img src={iconAddSrc} alt="" className="size-5" />
+              </span>
+              내 사진 올리기
+            </span>
           </button>
         ) : (
           <img
@@ -129,7 +135,7 @@ function RecordTile({
       onClick={() => onOpenPhoto(photo)}
       aria-label={`${member.nickname}의 사진 크게 보기`}
       className={cn(
-        "relative block overflow-hidden rounded-[17px] border border-stroke-neutral-weak bg-bg-neutral-solid text-left",
+        "relative block overflow-hidden rounded-[16px] border border-stroke-neutral-weak bg-bg-neutral-solid text-left outline-none focus:outline-none",
         TILE_ASPECT,
         className
       )}
@@ -141,8 +147,8 @@ function RecordTile({
         draggable={false}
         className="absolute inset-0 size-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 to-transparent" />
-      <div className="absolute inset-x-3.5 top-3.5 flex flex-col gap-2">
+      <div className="absolute inset-x-0 top-0 h-[83.5%] bg-gradient-to-b from-neutral-900/50 to-transparent" />
+      <div className="absolute inset-x-[13px] top-[13px] flex flex-col gap-2">
         <MemberChip member={member} isMe={isMe} onImage />
         {photo.comment ? (
           <p className="line-clamp-2 text-b8 text-fg-neutral-inverse">
@@ -154,7 +160,7 @@ function RecordTile({
         <img
           src={keyword.emojiSrc}
           alt={keyword.label}
-          className="absolute top-3.5 right-3.5 size-7 object-contain"
+          className="absolute top-[11px] right-[13px] size-6 object-contain"
         />
       ) : null}
     </button>
@@ -393,34 +399,21 @@ export function RegionRecordsBottomSheet({
         event.stopPropagation()
       }}
       style={{ "--sheet-y": restY(expanded) } as CSSProperties}
-      className="pointer-events-auto flex h-[min(720px,calc(var(--app-vh)_-_32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[28px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
+      className="pointer-events-auto flex h-[min(720px,calc(var(--app-vh)_-_32px))] translate-y-[var(--sheet-y)] flex-col overflow-hidden rounded-t-[24px] bg-background transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
     >
-      <button
-        type="button"
-        data-sheet-handle
-        data-sheet-drag
-        className="flex h-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
-        aria-label="아래로 밀어 닫기"
-      >
-        <span className="h-1.5 w-9 rounded-full bg-neutral-200" />
-      </button>
       <div
         data-sheet-drag
-        className="flex shrink-0 touch-none items-start gap-4 px-4 pt-5 pb-4"
+        className="flex shrink-0 cursor-grab touch-none items-center justify-between px-4 pt-5 pb-3 active:cursor-grabbing"
       >
-        <div className="min-w-0">
-          <BottomSheetTitle className="text-left text-h5-1">
+        <div className="flex min-w-0 flex-col gap-[2.187px]">
+          <BottomSheetTitle className="text-left text-h3-1 text-black">
             {formatRegionName(region)}
           </BottomSheetTitle>
-          <div className="mt-1 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-0.5">
             {keywords.map((keyword) => (
               <span
                 key={keyword.id}
-                className="flex items-center gap-1 rounded-full px-2 py-1 text-b7"
-                style={{
-                  backgroundColor: `${keyword.mapColor}1a`,
-                  color: keyword.mapColor,
-                }}
+                className="flex items-center gap-1 rounded-full bg-[rgba(32,32,31,0.1)] px-2 py-1 text-h9 leading-4 text-[#20201f] shadow-[0px_0px_13.686px_0px_rgba(142,150,169,0.12)]"
               >
                 <img
                   src={keyword.emojiSrc}
@@ -445,7 +438,8 @@ export function RegionRecordsBottomSheet({
         <div
           ref={gridRef}
           className={cn(
-            "grid px-4 pb-4",
+            // 아래 여백 = 타일 밑 8px + 홈 인디케이터 34px (시안 3241:71983)
+            "grid px-4 pt-2 pb-[calc(max(env(safe-area-inset-bottom),34px)+8px)]",
             // 열 간격 12px — 시안 실측(타일 165.25, 두 번째 타일 x=177.25)
             members.length === 1 ? "grid-cols-1" : "grid-cols-2 gap-3"
           )}

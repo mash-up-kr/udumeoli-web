@@ -235,7 +235,7 @@ export function TravelRecordFlow({
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-transparent" />
 
-      <div className="relative z-10 flex h-[76px] shrink-0 items-center px-4 pt-[env(safe-area-inset-top)]">
+      <div className="relative z-10 mt-[env(safe-area-inset-top)] flex h-[76px] shrink-0 items-center px-4">
         <ButtonIcon
           aria-label="뒤로 가기"
           onClick={handleBack}
@@ -243,14 +243,17 @@ export function TravelRecordFlow({
         >
           <img src={iconArrowLeftSrc} alt="" className="size-6" />
         </ButtonIcon>
-      </div>
 
-      {/* 지역명 뱃지 + 스텝 타이틀 — 뱃지는 기본색이다 (시안 3065-16239 #2:
-          "그냥 지역명 노출, 키워드 색상 반영 없음"). 키워드 색은 확인 화면에서만 입는다 */}
-      <div className="relative z-10 flex shrink-0 flex-col items-center gap-2 px-4">
-        <span className="rounded-full bg-white/40 px-3 py-1 text-h9 text-fg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
+        {/* 지역명 뱃지 — 시안(3065-15411 · 3065-15815)은 뒤로가기와 같은 76 헤더 행 안,
+            화면 정중앙 · 위에서 36에 놓인다. 기본색이다 (시안 3065-16239 #2:
+            "그냥 지역명 노출, 키워드 색상 반영 없음"). 키워드 색은 확인 화면에서만 입는다 */}
+        <span className="absolute top-9 left-1/2 -translate-x-1/2 rounded-full bg-white/40 px-3 py-1 text-h9 text-fg-neutral-solid shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]">
           {regionName}
         </span>
+      </div>
+
+      {/* 스텝 타이틀 — 시안은 헤더 행 바로 아래에서 시작한다 */}
+      <div className="relative z-10 flex shrink-0 flex-col items-center gap-2 px-4">
         <h2 className="text-center text-h3 whitespace-pre-line text-fg-neutral-bold [text-shadow:0_0_32px_white]">
           {step === "date" ? "다녀온 기간을\n선택해 주세요" : null}
           {step === "keyword" ? "여행을 대표할\n키워드를 골라주세요" : null}

@@ -11,7 +11,7 @@ import {
   gqlClient,
   mockResponse,
 } from "@/shared/api/client"
-import { normalizeImageOrientation } from "@/shared/lib/exif-orientation"
+import { uploadImageFile } from "@/shared/api/image-upload"
 import {
   REGION_CODE_BY_NAME,
   REGION_NAME_BY_CODE,
@@ -47,19 +47,6 @@ const PARTY_TRIPS_QUERY = /* GraphQL */ `
   query PartyTrips($partyId: ID!) {
     partyTrips(partyId: $partyId) {
       ...TripFields
-    }
-  }
-`
-
-const CREATE_IMAGE_UPLOAD_URL_MUTATION = /* GraphQL */ `
-  mutation CreateImageUploadUrl($input: CreateImageUploadUrlInput!) {
-    createImageUploadUrl(input: $input) {
-      imageId
-      uploadUrl
-      encryptionHeaders {
-        key
-        value
-      }
     }
   }
 `
@@ -109,15 +96,6 @@ interface TripDto {
 
 interface PartyTripsResponse {
   partyTrips: Array<TripDto>
-}
-
-interface CreateImageUploadUrlResponse {
-  createImageUploadUrl: {
-    imageId: string
-    uploadUrl: string
-    // SSE-C 헤더 — PUT에 그대로 실어야 이미지별 DEK로 암호화 저장된다
-    encryptionHeaders: Array<{ key: string; value: string }>
-  }
 }
 
 interface CreateTripResponse {
@@ -272,32 +250,9 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     throw new Error(`알 수 없는 지역: ${input.region}`)
   }
   const regionCode = REGION_CODE_BY_NAME[input.region]
-  // EXIF 회전 태그만 믿는 세로 사진은 태그를 무시하는 소비처(서버 썸네일)에서
-  // 90도 돌아간다 — 업로드 전에 픽셀을 정방향으로 구워 넣는다
-  const file = await normalizeImageOrientation(input.file)
-  const contentType = file.type || "image/jpeg"
-
-  const target = await gqlClient.request<CreateImageUploadUrlResponse>(
-    CREATE_IMAGE_UPLOAD_URL_MUTATION,
-    { input: { contentType } }
-  )
-  const { imageId, uploadUrl, encryptionHeaders } = target.createImageUploadUrl
-
-  // presigned URL은 발급 시 서명된 헤더(content-type + SSE-C encryptionHeaders)를
-  // 그대로 요구한다 — 헤더를 빼면 서명 불일치로 업로드 자체가 거부된다.
-  // 단, 암호화 저장된 원본은 BE 복호화 서빙(Go 서버 서명 URL) 배포 전까지
+  // 암호화 저장된 원본은 BE 복호화 서빙(Go 서버 서명 URL) 배포 전까지
   // <img>가 못 읽어 앨범에서 깨진다 — 조회 경로는 BE 배포 대기 중
-  const uploaded = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-      ...Object.fromEntries(encryptionHeaders.map((h) => [h.key, h.value])),
-    },
-    body: file,
-  })
-  if (!uploaded.ok) {
-    throw new Error(`이미지 업로드 실패 (${uploaded.status})`)
-  }
+  const imageId = await uploadImageFile(input.file)
 
   if (input.tripId) {
     const data = await gqlClient.request<RecordTripResponse>(
