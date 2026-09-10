@@ -651,6 +651,9 @@
        375 기준 최대 343(=px-4 제외 풀폭), 그보다 좁은 기기는 max-width가 폭을 막는다 */
     .record-preview-photo-frame {
         height: 100%;
+        /* flex 아이템 기본 min-height:auto가 콘텐츠(정사각 사진) 아래로 못 줄게 막아
+           낮은 화면에서 코멘트가 CTA를 덮었다. 0으로 풀어야 실제로 shrink 한다 */
+        min-height: 0;
         max-height: 343px;
         aspect-ratio: 1;
         max-width: 100%;
