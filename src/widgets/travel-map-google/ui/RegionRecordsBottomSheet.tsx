@@ -107,7 +107,7 @@ function RecordTile({
           <button
             type="button"
             onClick={onAddPhoto}
-            className="absolute inset-0 text-h8-1 text-fg-neutral-bold"
+            className="absolute inset-0 text-h8-1 text-fg-neutral-bold outline-none focus:outline-none"
           >
             {/* 타일 정중앙이 아니라 살짝 아래 — 시안 실측 top 69 / 높이 182 */}
             <span className="absolute top-[37.9%] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
@@ -135,7 +135,7 @@ function RecordTile({
       onClick={() => onOpenPhoto(photo)}
       aria-label={`${member.nickname}의 사진 크게 보기`}
       className={cn(
-        "relative block overflow-hidden rounded-[16px] border border-stroke-neutral-weak bg-bg-neutral-solid text-left",
+        "relative block overflow-hidden rounded-[16px] border border-stroke-neutral-weak bg-bg-neutral-solid text-left outline-none focus:outline-none",
         TILE_ASPECT,
         className
       )}
@@ -403,21 +403,17 @@ export function RegionRecordsBottomSheet({
     >
       <div
         data-sheet-drag
-        className="flex shrink-0 cursor-grab touch-none items-start gap-4 px-4 pt-5 pb-3 active:cursor-grabbing"
+        className="flex shrink-0 cursor-grab touch-none items-center justify-between px-4 pt-5 pb-3 active:cursor-grabbing"
       >
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-[2.187px]">
           <BottomSheetTitle className="text-left text-h3-1 text-black">
             {formatRegionName(region)}
           </BottomSheetTitle>
-          <div className="mt-0.5 flex flex-wrap gap-0.5">
+          <div className="flex flex-wrap gap-0.5">
             {keywords.map((keyword) => (
               <span
                 key={keyword.id}
-                className="flex items-center gap-1 rounded-full px-2 py-1 text-h9 leading-4 shadow-[0px_0px_14px_0px_rgba(142,150,169,0.12)]"
-                style={{
-                  backgroundColor: `${keyword.mapColor}1a`,
-                  color: keyword.mapColor,
-                }}
+                className="flex items-center gap-1 rounded-full bg-[rgba(32,32,31,0.1)] px-2 py-1 text-h9 leading-4 text-[#20201f] shadow-[0px_0px_13.686px_0px_rgba(142,150,169,0.12)]"
               >
                 <img
                   src={keyword.emojiSrc}
