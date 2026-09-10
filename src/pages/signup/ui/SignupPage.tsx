@@ -55,11 +55,11 @@ function PermissionContent({
         <br />
         접근 권한을 허용해 주세요.
       </DialogTitle>
-      <div className="flex h-[100px] items-center rounded-[12px] bg-bg-neutral-subtle p-5">
+      <div className="flex items-center rounded-[12px] bg-bg-neutral-subtle p-5">
         <div className="flex items-center gap-3">
           <img src={iconCameraSrc} alt="" className="size-9 shrink-0" />
           <div className="flex flex-col gap-1">
-            <span className="text-h6-1 text-fg-neutral-bold">앨범</span>
+            <span className="text-h6-1 text-fg-neutral-bold">갤러리</span>
             <span className="text-b8 text-fg-neutral-subtle">
               이미지 저장 및 업로드
             </span>
