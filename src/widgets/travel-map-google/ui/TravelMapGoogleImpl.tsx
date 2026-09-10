@@ -135,6 +135,8 @@ const DETAIL_MARKER_COLLISION = CollisionBehavior.REQUIRED
 const DETAIL_STICKER_Z_INDEX = 30
 const DETAIL_ACTION_Z_INDEX = 40
 const DETAIL_TOOLTIP_Z_INDEX = 50
+// 핀 SVG의 꼭지는 콘텐츠 하단보다 약 2px 위에 있어 실제 꼭지를 좌표에 맞춘다.
+const PIN_TIP_ANCHOR: [string, string] = ["50%", "calc(100% - 2px)"]
 const CATEGORY_PIN_BADGE =
   "inline-flex h-[22px] w-max min-w-[22px] items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-h8-1 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const CATEGORY_PIN_COUNT_BADGE =
@@ -254,17 +256,19 @@ function CategoryMapPin({
   const badgeStyle = { backgroundColor: keyword.mapColor }
 
   return (
-    <div className="relative flex w-[46px] flex-col items-center gap-[6px]">
+    // 마커 좌표는 핀 꼭지에 맞춘다. 배지는 absolute로 분리해 배지 유무가
+    // 핀의 기준점 위치를 바꾸지 않도록 한다.
+    <div className="relative h-[51px] w-[46px]">
       {topBadge ? (
         <span
           aria-label={`여행 ${topBadge}회`}
-          className={CATEGORY_PIN_COUNT_BADGE}
+          className={cn(CATEGORY_PIN_COUNT_BADGE, "absolute")}
           style={badgeStyle}
         >
           {topBadge}
         </span>
       ) : null}
-      <span className="relative h-[46px] w-[46px]">
+      <span className="relative block h-[46px] w-[46px]">
         <img
           src={keyword.mapPinSrc}
           alt=""
@@ -277,7 +281,13 @@ function CategoryMapPin({
         />
       </span>
       {bottomBadge ? (
-        <span className={CATEGORY_PIN_BADGE} style={badgeStyle}>
+        <span
+          className={cn(
+            CATEGORY_PIN_BADGE,
+            "absolute top-[51px] left-1/2 -translate-x-1/2"
+          )}
+          style={badgeStyle}
+        >
           {bottomBadge}
         </span>
       ) : null}
@@ -428,7 +438,7 @@ const ProvinceAggregateMarkers = React.memo(
           <AdvancedMarker
             key={`province-${agg.province}`}
             position={{ lat: agg.lat, lng: agg.lng }}
-            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            anchorPoint={PIN_TIP_ANCHOR}
           >
             <CategoryMapPin
               keyword={agg.keyword}
@@ -461,7 +471,9 @@ const TripStickerMarkers = React.memo(function TripStickerMarkerLayer({
         <AdvancedMarker
           key={`trip-${p.trip.key}`}
           position={{ lat: p.pinLat, lng: p.pinLng }}
-          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          anchorPoint={
+            stickerOnly ? AdvancedMarkerAnchorPoint.CENTER : PIN_TIP_ANCHOR
+          }
           collisionBehavior={DETAIL_MARKER_COLLISION}
           zIndex={DETAIL_STICKER_Z_INDEX}
           clickable
@@ -1680,8 +1692,21 @@ function TravelMapGoogleInner({
   // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
-    (trip: CollaborationTrip) => handleRegionAction(trip.region, false),
-    [handleRegionAction]
+    (trip: CollaborationTrip) => {
+      if (zoomStageRef.current < 3) {
+        const centroid = centroidsRef.current.find(
+          (item) => item.name === trip.region
+        )
+        if (!centroid) return
+        runCameraMove(
+          { lat: centroid.lat, lng: centroid.lng, zoom: DETAIL_ENTER_ZOOM },
+          600
+        )
+        return
+      }
+      handleRegionAction(trip.region, false)
+    },
+    [handleRegionAction, runCameraMove]
   )
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
@@ -1765,7 +1790,7 @@ function TravelMapGoogleInner({
         {zoomStage === 0 && !decorating && countryKeyword ? (
           <AdvancedMarker
             position={KOREA_STICKER_ANCHOR}
-            anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+            anchorPoint={PIN_TIP_ANCHOR}
           >
             <CategoryMapPin
               keyword={countryKeyword}
