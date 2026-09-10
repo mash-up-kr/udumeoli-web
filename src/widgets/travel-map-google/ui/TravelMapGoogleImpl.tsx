@@ -140,8 +140,11 @@ const CATEGORY_PIN_BADGE =
 const CATEGORY_PIN_COUNT_BADGE =
   "absolute top-[-8px] -right-1 z-20 flex h-[22px] min-w-5 items-center justify-center rounded-full px-1.5 text-h9 text-fg-neutral-inverse shadow-[0_0_10px_rgba(142,150,169,0.12)]"
 const STICKER_OFFSETS = [
-  { x: -18, y: -12, rotate: -17 },
-  { x: 18, y: 12, rotate: 9 },
+  // 지역명은 centroid에 유지하고, 스티커는 주변으로 살짝 분리한다.
+  // 64px 스티커가 중심점까지 침범하지 않도록 한 단계 더 벌리되,
+  // 작은 지역에서 중심점과 너무 멀어지지 않도록 제한한다.
+  { x: -42, y: -28, rotate: -17 },
+  { x: 42, y: 28, rotate: 9 },
 ]
 // STICKER_OFFSETS(px)를 PARTY_ZOOM 화면 기준 위경도로 환산하는 계수.
 // CSS translate(px)는 줌아웃해도 화면상 크기가 고정이라 지역이 작아지면 스티커가
@@ -394,7 +397,7 @@ const CollaborationProgressMarkers = React.memo(
                 {formatRegionName(name)}
               </span>
               {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
-              {trip.hasMine ? (
+              {trip.hasMine && !trip.isComplete ? (
                 <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
                   <UserRound className="size-3.5 text-fg-neutral-solid" />
                   <span className="text-fg-neutral-bold">
@@ -1701,7 +1704,7 @@ function TravelMapGoogleInner({
     return viewportCentroids
       .map((centroid) => {
         const trip = latestTripsByRegion.get(centroid.name)
-        return trip && !trip.isComplete ? { ...centroid, trip } : null
+        return trip ? { ...centroid, trip } : null
       })
       .filter((item): item is Centroid & { trip: CollaborationTrip } =>
         Boolean(item)
