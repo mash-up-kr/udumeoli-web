@@ -604,7 +604,7 @@
         }
 
         .travel-record-photo-frame {
-            height: min(382px, calc(var(--app-vh) - 410px));
+            height: min(377px, calc(var(--app-vh) - 410px));
             width: auto;
             max-width: 100%;
         }
