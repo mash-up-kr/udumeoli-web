@@ -21,7 +21,6 @@ import {
   uploadImage,
 } from "@/features/auth"
 import { openOnboardingOverlay } from "@/features/onboarding"
-import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconCameraSrc from "@/shared/assets/icon-camera.svg"
 import iconCloseSrc from "@/shared/assets/icon-close.svg"
 
@@ -101,18 +100,15 @@ function PermissionRequiredContent({
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
       </button>
-      <div className="flex flex-col items-center gap-4 pt-4 text-center">
-        <img src={iconAlertDangerSrc} alt="" className="size-9" />
-        <div className="flex flex-col gap-2">
-          <DialogTitle className="text-h5-1 text-fg-neutral-bold">
-            원활한 서비스 이용을 위해
-            <br />
-            갤러리 접근 권한을 허용해 주세요
-          </DialogTitle>
-          <p className="text-b6 text-fg-neutral-subtle">
-            갤러리 접근 권한 허용 시, 이미지 업로드가 가능합니다.
-          </p>
-        </div>
+      <div className="flex flex-col items-center gap-[10px] py-2 text-center">
+        <DialogTitle className="text-h5-1 text-fg-neutral-bold">
+          원활한 서비스 이용을 위해
+          <br />
+          갤러리 접근 권한을 허용해 주세요
+        </DialogTitle>
+        <p className="text-b6 text-fg-neutral-subtle">
+          갤러리 접근 권한 허용 시, 이미지 업로드가 가능합니다.
+        </p>
       </div>
       <ButtonCta onClick={onConfirm}>확인</ButtonCta>
     </>
