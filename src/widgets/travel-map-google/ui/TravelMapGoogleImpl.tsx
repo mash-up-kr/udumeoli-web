@@ -14,6 +14,7 @@ import {
   AdvancedMarkerAnchorPoint,
   CollisionBehavior,
   Map as GoogleMap,
+  RenderingType,
   useMap,
 } from "@vis.gl/react-google-maps"
 import { ArrowRight, UserRound } from "lucide-react"
@@ -1747,6 +1748,11 @@ function TravelMapGoogleInner({
     <div className="relative size-full">
       <GoogleMap
         mapId={GOOGLE_MAP_ID}
+        // 래스터 고정 — 벡터(WebGL)는 모바일 PWA(iOS·Android)에서 핀치 줌·백그라운드 복귀 중
+        // 컨텍스트를 잃으면 회색으로 굳고 Google이 복구하지 않는다(QA: 앱 재시작만 해결).
+        // Google도 모바일 웹 벡터를 실험적으로 분류하고 래스터를 권장한다. 클라우드
+        // 스타일·AdvancedMarker·Data 레이어는 래스터에서도 그대로 동작한다
+        renderingType={RenderingType.RASTER}
         defaultCenter={{
           lat: lastCameraSnapshot?.lat ?? KOREA_VIEW.lat,
           lng: lastCameraSnapshot?.lng ?? KOREA_VIEW.lng,

@@ -3,6 +3,7 @@ import {
   APIProvider,
   AdvancedMarker,
   Map as GoogleMap,
+  RenderingType,
   useMap,
 } from "@vis.gl/react-google-maps"
 
@@ -166,6 +167,8 @@ function GoogleRecapMap({
     <APIProvider apiKey={GOOGLE_MAPS_KEY} libraries={["marker"]}>
       <GoogleMap
         mapId={GOOGLE_MAP_ID}
+        // 지도 페이지와 같은 이유로 래스터 — 벡터(WebGL)는 모바일에서 컨텍스트를 잃으면 회색으로 굳는다
+        renderingType={RenderingType.RASTER}
         defaultCenter={mapView.center}
         defaultZoom={mapView.zoom}
         gestureHandling="none"
