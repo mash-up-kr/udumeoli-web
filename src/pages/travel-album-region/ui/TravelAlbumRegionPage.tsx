@@ -150,58 +150,56 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     })
   }
 
-  // 1인팟은 1열 블록 카드, 2인 이상은 2열 그리드 (정책 4 · case 01/02)
+  // 1인팟은 1열 블록 카드, 2인 이상은 2열 그리드 (정책 4 · case 01/02).
+  // 종횡비는 둘 다 0.908 — 1인 시안 342.5×377.216, 2인 이상 165.25×182
   const single = orderedMembers.length === 1
-  const tileClassName = single ? "aspect-[3/5]" : undefined
 
   return (
-    <MobileLayout className="bg-bg-neutral-subtle pb-8">
+    <MobileLayout className="bg-bg-neutral-subtle pb-[max(env(safe-area-inset-bottom),34px)]">
       <div className="pt-[env(safe-area-inset-top)]">
-        <header className="relative flex h-[76px] items-center px-4">
+        <div className="relative flex flex-col items-center gap-1 pt-5 pb-4">
           <ButtonIcon
             aria-label="뒤로 가기"
             onClick={() => router.history.back()}
-            className="relative z-10"
+            className="absolute top-[17px] left-4 z-10"
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />
           </ButtonIcon>
-          <h1 className="pointer-events-none absolute inset-x-0 text-center text-h4 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
+          <h1 className="pointer-events-none text-h3 text-fg-neutral-bold [text-shadow:0_0_32px_white]">
             {formatRegionName(region)}
           </h1>
-        </header>
-        {/* 멤버 프로필 나열 + "n/N명 기록 완료" — n은 이 지역에 올린 멤버 수, N은 팟 전체 (정책 2).
-            올린 멤버는 실선, 안 올린 멤버는 점선 프로필 */}
-        <div className="flex items-center justify-center gap-1.5 pb-4">
-          <div className="flex -space-x-1">
-            {orderedMembers.map((member) => (
-              <img
-                key={member.memberId}
-                src={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
-                alt=""
-                className={cn(
-                  "size-6 rounded-full border bg-bg-neutral-weak object-cover",
-                  uploadedIds.has(member.memberId)
-                    ? "border-solid border-stroke-neutral-weak"
-                    : "border-dashed border-stroke-neutral-subtle"
-                )}
-              />
-            ))}
+          {/* 멤버 프로필 나열 + "n/N명 기록 완료" — n은 이 지역에 올린 멤버 수, N은 팟 전체 (정책 2).
+              올린 멤버는 실선, 안 올린 멤버는 점선 프로필 */}
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {orderedMembers.map((member) => (
+                <img
+                  key={member.memberId}
+                  src={member.profileImageUrl ?? DEFAULT_PROFILE_SRC}
+                  alt=""
+                  className={cn(
+                    "size-8 rounded-full border border-stroke-neutral-weak bg-bg-neutral-weak object-cover",
+                    uploadedIds.has(member.memberId)
+                      ? "border-solid"
+                      : "border-dashed"
+                  )}
+                />
+              ))}
+            </div>
+            <p className="text-h9 text-fg-neutral-subtle">
+              <span className="text-fg-neutral-bold">{uploadedIds.size}</span>/
+              {orderedMembers.length}명 기록 완료
+            </p>
           </div>
-          <p className="text-b7 text-fg-neutral-subtle">
-            <span className="text-h9 text-fg-neutral-bold">
-              {uploadedIds.size}
-            </span>
-            /{orderedMembers.length}명 기록 완료
-          </p>
         </div>
       </div>
 
       {keywords.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+        <div className="flex flex-wrap gap-0.5 px-4 pb-4">
           {keywords.map((keyword) => (
             <span
               key={keyword.id}
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-b7"
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-h9 leading-4 shadow-[0px_0px_14px_0px_rgba(142,150,169,0.12)]"
               // 키워드 대표색 10% 배경 + 대표색 글자 — 지도 시트 칩과 동일
               style={{
                 backgroundColor: `${keyword.mapColor}1a`,
@@ -221,14 +219,14 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
       <main
         className={cn(
-          "grid gap-2.5 px-4",
+          "grid gap-3 px-4",
           single ? "grid-cols-1" : "grid-cols-2"
         )}
       >
         {/* 첫 로딩(캐시·세션 업로드도 없을 때)만 스켈레톤 — 데이터가 있으면 바로 카드 */}
         {isPhotosPending && regionPhotos.length === 0 ? (
           <>
-            <RecordTileSkeleton className={tileClassName} />
+            <RecordTileSkeleton />
             {single ? null : <RecordTileSkeleton />}
           </>
         ) : (
@@ -239,7 +237,6 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
               photo={card.photo}
               onRecord={recordTrip}
               onPhotoClick={viewPhoto}
-              className={tileClassName}
             />
           ))
         )}

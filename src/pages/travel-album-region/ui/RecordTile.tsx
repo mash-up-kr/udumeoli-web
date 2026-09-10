@@ -26,36 +26,39 @@ function MemberChip({
   onImage: boolean
 }) {
   return (
-    <span className="flex items-center gap-1">
+    <span className="flex items-center gap-1 drop-shadow-[0px_0px_10px_rgba(142,150,169,0.12)]">
       <Profile
         size="xs"
         className="shrink-0"
         {...(member.profileImageUrl ? { src: member.profileImageUrl } : {})}
         alt=""
       />
-      {/* 닉네임(최대 6자 정책)이 길어도 프로필·ME! 뱃지를 밀어내지 않게 truncate */}
-      <span
-        className={cn(
-          "max-w-20 truncate text-h9",
-          onImage ? "text-fg-neutral-inverse" : "text-fg-neutral-bold"
-        )}
-      >
-        {member.nickname}
-      </span>
-      {member.isMe ? (
-        <span className="flex h-4 shrink-0 items-center justify-center rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
-          ME!
+      <span className="flex min-w-0 items-center gap-0.5">
+        {/* 닉네임(최대 6자 정책)이 길어도 프로필·ME! 뱃지를 밀어내지 않게 truncate */}
+        <span
+          className={cn(
+            "max-w-20 truncate text-h9",
+            onImage ? "text-fg-neutral-inverse" : "text-fg-neutral-bold"
+          )}
+        >
+          {member.nickname}
         </span>
-      ) : null}
+        {member.isMe ? (
+          <span className="flex h-4 shrink-0 items-center justify-center rounded-full bg-bg-brand-solid px-1 font-eng text-e4 text-fg-neutral-inverse">
+            ME!
+          </span>
+        ) : null}
+      </span>
     </span>
   )
 }
 
+/** 타일 골격 — 시안 실측 165.25×182 (0.908), 반경 16 */
+const TILE_SHAPE = "aspect-[0.908] rounded-[16px]"
+
 /** 기록 카드 스켈레톤 — 첫 사진 목록 로딩 동안의 타일 실루엣 */
 export function RecordTileSkeleton({ className }: { className?: string }) {
-  return (
-    <Skeleton className={cn("aspect-square w-full rounded-2xl", className)} />
-  )
+  return <Skeleton className={cn(TILE_SHAPE, "w-full", className)} />
 }
 
 /**
@@ -93,7 +96,8 @@ export function RecordTile({
         type="button"
         onClick={() => onPhotoClick(photo)}
         className={cn(
-          "relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-neutral-weak text-left",
+          TILE_SHAPE,
+          "relative w-full overflow-hidden border border-stroke-neutral-weak text-left",
           className
         )}
       >
@@ -109,8 +113,8 @@ export function RecordTile({
           className="absolute inset-0 size-full object-cover"
         />
         {/* 칩·코멘트 가독성용 상단 그라디언트 (시안: neutral-900 50% → 투명) */}
-        <span className="absolute inset-0 bg-gradient-to-b from-neutral-900/50 to-transparent" />
-        <span className="absolute inset-x-[13px] top-[13px] flex flex-col items-start gap-2 pr-9">
+        <span className="absolute inset-x-0 top-0 h-[83.5%] bg-gradient-to-b from-neutral-900/50 to-transparent" />
+        <span className="absolute inset-x-[13px] top-[13px] flex flex-col items-start gap-2">
           <MemberChip member={member} onImage />
           {photo.comment ? (
             <span className="line-clamp-2 w-full text-b8 text-fg-neutral-inverse">
@@ -122,7 +126,7 @@ export function RecordTile({
           <img
             src={keyword.emojiSrc}
             alt=""
-            className="absolute top-[13px] right-[13px] size-7 object-contain"
+            className="absolute top-[11px] right-[13px] size-6 object-contain"
           />
         ) : null}
       </button>
@@ -133,10 +137,11 @@ export function RecordTile({
   return (
     <div
       className={cn(
-        "relative aspect-square w-full rounded-2xl border bg-bg-neutral-solid",
+        TILE_SHAPE,
+        "relative w-full border border-dashed bg-bg-neutral-solid",
         member.isMe
-          ? "border-dashed border-stroke-neutral-subtle"
-          : "border-solid border-stroke-neutral-weak",
+          ? "border-stroke-neutral-subtle"
+          : "border-stroke-neutral-weak",
         className
       )}
     >
@@ -147,9 +152,15 @@ export function RecordTile({
         <button
           type="button"
           onClick={onRecord}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-h8 text-fg-neutral-bold"
+          className="absolute inset-0 text-h8-1 text-fg-neutral-bold"
         >
-          <img src={iconAddSrc} alt="" className="size-9" />내 사진 올리기
+          {/* 타일 정중앙이 아니라 살짝 아래 — 시안 실측 top 70 / 높이 182 */}
+          <span className="absolute top-[38.5%] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-full border-[2.5px] border-stroke-neutral-bold bg-white/70">
+              <img src={iconAddSrc} alt="" className="size-5" />
+            </span>
+            내 사진 올리기
+          </span>
         </button>
       ) : (
         <>
