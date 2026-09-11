@@ -22,6 +22,10 @@ export const travelPotKeys = {
     [...travelPotKeys.all, "map-overview", partyId] as const,
 }
 
+// 협업자가 사진을 추가한 뒤에도 지도 개요가 영구히 고정되지 않도록 한다.
+// 포커스 재검증과 뮤테이션 invalidate를 함께 사용하되, 짧은 탐색 중 요청 폭증은 막는다.
+export const PARTY_MAP_OVERVIEW_STALE_TIME = 30_000
+
 export function useMyParties(options: QueryOptions = {}) {
   return useQuery({
     queryKey: travelPotKeys.myParties(),
@@ -35,8 +39,8 @@ export function usePartyMapOverview(partyId: string) {
     queryKey: travelPotKeys.mapOverview(partyId),
     queryFn: () => fetchPartyMapOverview(partyId),
     enabled: Boolean(partyId) && !USE_MOCK,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    staleTime: PARTY_MAP_OVERVIEW_STALE_TIME,
+    refetchOnWindowFocus: true,
   })
 }
 
