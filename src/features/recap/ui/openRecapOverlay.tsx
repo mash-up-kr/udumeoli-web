@@ -169,7 +169,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
 
       <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
-        <div className="relative h-[218px] shrink-0 px-4">
+        <div className="relative h-[clamp(176px,25dvh,218px)] shrink-0 px-4">
           <ButtonIcon
             aria-label="뒤로가기"
             onClick={unmount}
@@ -208,7 +208,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(var(--app-vh)_-_285px)] w-[min(270px,calc(var(--app-vw)_-_32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
+            className="[container-type:inline-size] relative left-1/2 aspect-[270/480] w-[min(270px,calc(var(--app-vw)_-_32px),calc((var(--app-vh)_-_290px)_*_0.5625))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
           >
             <div
               aria-hidden
