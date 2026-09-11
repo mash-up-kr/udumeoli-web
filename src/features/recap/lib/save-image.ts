@@ -12,7 +12,7 @@ import { RECAP_COUNTRY_LABEL } from "./recap-model"
 import type { RECAP_MAP_VIEW, RecapMapView } from "./recap-map-config"
 import type { RecapCardModel } from "./recap-model"
 
-const EXPORT_SCALE = 4
+const EXPORT_SCALE = 6
 const LABEL_FONT =
   "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif"
 const GOOGLE_STATIC_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
@@ -249,7 +249,7 @@ export function buildRecapTextMarkup(model: RecapCardModel): string {
   const pins = escapeXml(String(model.pinCount))
 
   const headingMarkup =
-    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
+    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="white" stroke-width="0.45" paint-order="stroke fill">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
     `<text x="${padding}" y="${heading.countryBaseline}" font-family="${HEADING_FONT}" font-size="${heading.countryFontSize}" font-weight="400" fill="#141820">${escapeXml(RECAP_COUNTRY_LABEL)}</text>`
 
   // 팟 이름 라벨 위에 닉네임 줄들이 쌓인다 — 아래에서 위로 쌓아 하단 여백을 고정한다
@@ -307,7 +307,7 @@ async function buildExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="55%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -331,7 +331,7 @@ async function buildFallbackExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="45%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="55%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
 }
 
 interface CanvasText {
@@ -408,6 +408,8 @@ async function svgToBlob(svgMarkup: string): Promise<Blob> {
   const context = canvas.getContext("2d")
   if (!context) throw new Error("이미지 캔버스를 만들 수 없어요")
   context.scale(EXPORT_SCALE, EXPORT_SCALE)
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = "high"
   context.drawImage(image, 0, 0, 270, 480)
 
   await ensureLabelFont()
