@@ -1,7 +1,7 @@
 import type { ZoomStage } from "./zoomStage"
 import type { Photo, TravelKeywordId } from "@/entities/photo"
 import type { PotMember } from "@/entities/travel-pot"
-import { groupTrips } from "@/entities/photo"
+import { findKeyword, groupTrips } from "@/entities/photo"
 
 export type CollaborationTrip = {
   key: string
@@ -159,7 +159,8 @@ export function latestTripByRegion(
 }
 
 /**
- * 제일 많이 뽑힌 키워드 — 개수가 동일하면 가장 최근 여행의 키워드 (Figma 줌인 기준 1959-6730).
+ * 제일 많이 뽑힌 키워드 — 개수가 동일하면 가나다순으로 가장 앞선 키워드
+ * (Figma 줌인 기준 3065-17602).
  * trips는 buildCollaborationTrips가 보장하는 최신순(endDate desc) 정렬을 전제로 한다.
  */
 export function mostPickedKeyword(
@@ -173,11 +174,17 @@ export function mostPickedKeyword(
 
   let best: TravelKeywordId | undefined
   let bestCount = 0
-  // 최신순 순회 + 초과일 때만 교체 → 동수면 먼저 만난(더 최근) 키워드가 유지된다
+  // 동수면 키워드 라벨의 가나다순을 적용한다 — 여행 배열 순서에 결과가 좌우되지 않는다
   for (const trip of trips) {
     if (!trip.keyword) continue
     const count = counts.get(trip.keyword) ?? 0
-    if (count > bestCount) {
+    const isEarlierAlphabetically =
+      best !== undefined &&
+      (findKeyword(trip.keyword)?.label ?? "").localeCompare(
+        findKeyword(best)?.label ?? "",
+        "ko"
+      ) < 0
+    if (count > bestCount || (count === bestCount && isEarlierAlphabetically)) {
       best = trip.keyword
       bestCount = count
     }

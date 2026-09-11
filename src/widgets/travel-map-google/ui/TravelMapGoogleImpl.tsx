@@ -417,12 +417,12 @@ const CollaborationProgressMarkers = React.memo(
               <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
-              {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
+              {/* 등록한 인원 / 전체 팟원 수 — 완료 여부와 관계없이 진행 상황을 표시한다 */}
               {trip.hasMine && !trip.isComplete ? (
                 <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
                   <UserRound className="size-3.5 text-fg-neutral-solid" />
                   <span className="text-fg-neutral-bold">
-                    {trip.missingMemberIds.length}
+                    {trip.uploadedCount}
                   </span>
                   <span className="text-fg-neutral-solid">
                     /{trip.totalMembers}
@@ -1189,7 +1189,7 @@ function TravelMapGoogleInner({
   }, [fills, latestTripsByRegion, mapOverview])
 
   // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
-  // 동수면 최근 여행)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
+  // 동수면 가나다순 첫 키워드)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
   const provinceAggregates = React.useMemo<Array<ProvinceAggregate>>(() => {
     const regionsByProvince = new Map<string, Array<Centroid>>()
     const provinceOf = new Map<string, string>()
@@ -1568,6 +1568,8 @@ function TravelMapGoogleInner({
         !canShowAvailableRegionMarker({
           zoomStage: zoomStageRef.current,
           hasTrip: Boolean(latestTrip),
+          hasMine: latestTrip?.hasMine,
+          isComplete: latestTrip?.isComplete,
           region: name,
         })
       ) {
@@ -1640,6 +1642,8 @@ function TravelMapGoogleInner({
       return canShowAvailableRegionMarker({
         zoomStage,
         hasTrip: Boolean(latestTrip),
+        hasMine: latestTrip?.hasMine,
+        isComplete: latestTrip?.isComplete,
         region: name,
       })
     })
@@ -1660,6 +1664,12 @@ function TravelMapGoogleInner({
 
   const visiblePins = React.useMemo<Array<TripPinMarker>>(() => {
     const trips = visibleStickerTrips(collaborationTrips)
+    const tripsByRegion = new Map<string, Array<CollaborationTrip>>()
+    for (const trip of collaborationTrips) {
+      const regionTrips = tripsByRegion.get(trip.region) ?? []
+      regionTrips.push(trip)
+      tripsByRegion.set(trip.region, regionTrips)
+    }
     const visitCountsByTripKey = new Map<string, number>()
     const regionVisitCounts = new Map<string, number>()
     for (const trip of [...collaborationTrips].reverse()) {
@@ -1677,7 +1687,9 @@ function TravelMapGoogleInner({
       ])
     )
     return trips.flatMap((trip) => {
-      const keyword = findKeyword(trip.keyword)
+      const keyword = findKeyword(
+        mostPickedKeyword(tripsByRegion.get(trip.region) ?? [])
+      )
       if (!keyword) return []
       const representative = trip.representativePhoto
       const c = centroidMap.get(trip.region)
@@ -1707,7 +1719,7 @@ function TravelMapGoogleInner({
     })
   }, [collaborationTrips, centroidMap, mapOverview])
 
-  // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
+  // 스티커는 지역당 1개라 "과거 완료 여행" 스티커는 지도에 남지 않는다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
     (trip: CollaborationTrip) => {
@@ -1747,7 +1759,8 @@ function TravelMapGoogleInner({
     return viewportCentroids
       .map((centroid) => {
         const trip = latestTripsByRegion.get(centroid.name)
-        return trip ? { ...centroid, trip } : null
+        // 내 기록이 없는 진행 중 여행은 [+] 마커만 표시해 지역명이 겹치지 않게 한다.
+        return trip?.hasMine ? { ...centroid, trip } : null
       })
       .filter((item): item is Centroid & { trip: CollaborationTrip } =>
         Boolean(item)
