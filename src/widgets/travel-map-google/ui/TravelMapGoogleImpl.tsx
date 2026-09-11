@@ -529,6 +529,15 @@ function getZoomStage(zoom: number): ZoomStage {
   return 0
 }
 
+// [+] 버튼이 아직 없는 지역을 누르면 다음 단계 줌으로 이동한다.
+const NEXT_STAGE_ZOOM: Record<ZoomStage, number | null> = {
+  0: BOUNDARY_ZOOM,
+  1: BOUNDARY_ZOOM,
+  2: POPULAR_ENTER_ZOOM,
+  2.5: DETAIL_ENTER_ZOOM,
+  3: null,
+}
+
 // ease-out은 초반에 확 움직여 짧은 duration에선 튀는 느낌 — 완만하게 출발·도착
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2
@@ -804,8 +813,6 @@ function MapController({
           initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
           onFeatureClick: (name) => {
             if (decoratingRef.current) return
-            // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
-            if ((map.getZoom() ?? 0) < BOUNDARY_ZOOM) return
             onFeatureClickRef.current(name)
           },
         })
@@ -1544,8 +1551,7 @@ function TravelMapGoogleInner({
   const handleRegionAction = React.useCallback(
     (name: string, applyZoomGate: boolean) => {
       const latestTrip = latestTripsByRegionRef.current.get(name)
-      // 폴리곤 클릭(applyZoomGate)은 [+] 마커가 보이는 지역에서만 동작 —
-      // 마커 노출 조건과 클릭 가능 조건을 한 함수로 일치시킨다.
+      // [+]가 아직 없으면 해당 지역 중심으로 다음 단계까지 줌인한다.
       if (
         applyZoomGate &&
         !canShowAvailableRegionMarker({
@@ -1554,6 +1560,13 @@ function TravelMapGoogleInner({
           region: name,
         })
       ) {
+        const nextZoom = NEXT_STAGE_ZOOM[zoomStageRef.current]
+        const centroid = centroidsRef.current.find((c) => c.name === name)
+        if (nextZoom === null || !centroid) return
+        runCameraMove(
+          { lat: centroid.lat, lng: centroid.lng, zoom: nextZoom },
+          600
+        )
         return
       }
       const action = resolveRegionAction({
@@ -1686,8 +1699,21 @@ function TravelMapGoogleInner({
   // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
-    (trip: CollaborationTrip) => handleRegionAction(trip.region, false),
-    [handleRegionAction]
+    (trip: CollaborationTrip) => {
+      if (zoomStageRef.current < 3) {
+        const centroid = centroidsRef.current.find(
+          (item) => item.name === trip.region
+        )
+        if (!centroid) return
+        runCameraMove(
+          { lat: centroid.lat, lng: centroid.lng, zoom: DETAIL_ENTER_ZOOM },
+          600
+        )
+        return
+      }
+      handleRegionAction(trip.region, false)
+    },
+    [handleRegionAction, runCameraMove]
   )
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
