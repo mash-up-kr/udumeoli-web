@@ -91,9 +91,11 @@ export function DesktopGuide({ children }: { children: ReactNode }) {
         data-app-frame
         className="contents frame:relative frame:block frame:h-[var(--app-vh)] frame:w-[var(--app-vw)] frame:shrink-0 frame:[transform:translate(0)] frame:overflow-hidden frame:rounded-[56px] frame:border-[6px] frame:border-neutral-300 frame:bg-bg-neutral-weak"
       >
-        <PortalContainerProvider container={frame}>
-          {children}
-        </PortalContainerProvider>
+        <div className="min-h-[var(--app-vh)] bg-background">
+          <PortalContainerProvider container={frame}>
+            {children}
+          </PortalContainerProvider>
+        </div>
       </div>
     </div>
   )

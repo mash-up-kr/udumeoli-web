@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useRouter } from "@tanstack/react-router"
+import { useLocation, useRouter } from "@tanstack/react-router"
 
 import { RecordTile, RecordTileSkeleton } from "./RecordTile"
 import type { RecordMember } from "./RecordTile"
@@ -22,6 +22,7 @@ import {
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
+import { isTravelAlbumRegionEntry } from "@/shared/lib/travel-album-navigation"
 
 /** 그리드 카드 1개 — 사진 1장(기록 O) 또는 멤버 placeholder(기록 X, photo null) */
 interface RecordCard {
@@ -32,6 +33,7 @@ interface RecordCard {
 
 function TravelAlbumRegionContent({ region }: { region: string }) {
   const router = useRouter()
+  const locationState = useLocation({ select: (location) => location.state })
   const currentPotId = usePotStore((s) => s.currentPotId)
   const members = usePotStore(selectCurrentPotMembers)
   const startRecord = useRecordStore((state) => state.start)
@@ -153,6 +155,13 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   // 1인팟은 1열 블록 카드, 2인 이상은 2열 그리드 (정책 4 · case 01/02).
   // 종횡비는 둘 다 0.908 — 1인 시안 342.5×377.216, 2인 이상 165.25×182
   const single = orderedMembers.length === 1
+  const goBack = () => {
+    if (isTravelAlbumRegionEntry(locationState)) {
+      router.history.back()
+      return
+    }
+    void router.navigate({ to: "/travel-album", replace: true })
+  }
 
   return (
     <MobileLayout className="bg-bg-neutral-subtle pb-[max(env(safe-area-inset-bottom),34px)]">
@@ -160,7 +169,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         <div className="relative flex flex-col items-center gap-1 pt-5 pb-4">
           <ButtonIcon
             aria-label="뒤로 가기"
-            onClick={() => router.history.back()}
+            onClick={goBack}
             className="absolute top-[17px] left-4 z-10"
           >
             <img src={iconArrowLeftSrc} alt="" className="size-6" />

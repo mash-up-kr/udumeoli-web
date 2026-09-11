@@ -59,15 +59,94 @@ export function useCreatePhoto() {
   })
 }
 
-/** 사진 삭제 — 성공 시 사진 목록 갱신. */
+interface PendingPhotoDelete {
+  pending: number
+  succeeded: boolean
+  previousPhotos: Array<Photo> | undefined
+}
+
+const pendingPhotoDeletes = new Map<string, PendingPhotoDelete>()
+
+function photoDeleteKey(photo: Photo) {
+  return `${photo.potId}:${photo.id}`
+}
+
+/** 사진 삭제 — 요청 즉시 목록에서 숨기고, 실패하면 이전 상태로 복구한다. */
 export function useDeletePhoto() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (photo: Photo) => deletePhoto(photo),
+    onMutate: async (photo) => {
+      const queryKey = photoKeys.list(photo.potId)
+      const previousPhotos = queryClient.getQueryData<Array<Photo>>(queryKey)
+      const key = photoDeleteKey(photo)
+      const pendingDelete = pendingPhotoDeletes.get(key)
+      if (pendingDelete) {
+        pendingDelete.pending += 1
+      } else {
+        pendingPhotoDeletes.set(key, {
+          pending: 1,
+          succeeded: false,
+          previousPhotos,
+        })
+      }
+
+      usePhotoEditStore.getState().markDeleted(photo.id)
+      queryClient.setQueryData<Array<Photo> | undefined>(queryKey, (photos) =>
+        photos?.filter((item) => item.id !== photo.id)
+      )
+
+      // Optimistic state is applied before cancellation so the UI does not wait for an in-flight fetch.
+      try {
+        await queryClient.cancelQueries({ queryKey })
+      } catch {
+        // A cancellation failure must not prevent the delete request or its rollback context.
+      }
+
+      return { key }
+    },
+    onError: (_, photo, context) => {
+      if (!context?.key) return
+      const pendingDelete = pendingPhotoDeletes.get(context.key)
+      if (!pendingDelete) return
+
+      pendingDelete.pending -= 1
+      if (pendingDelete.pending > 0) return
+
+      if (!pendingDelete.succeeded) {
+        usePhotoEditStore.getState().restoreDeleted(photo.id)
+        const deletedPhoto = pendingDelete.previousPhotos?.find(
+          (item) => item.id === photo.id
+        )
+        if (deletedPhoto) {
+          queryClient.setQueryData<Array<Photo>>(
+            photoKeys.list(photo.potId),
+            (photos) => {
+              if (!photos || photos.some((item) => item.id === photo.id)) {
+                return photos
+              }
+              return [...photos, deletedPhoto]
+            }
+          )
+        }
+      }
+      pendingPhotoDeletes.delete(context.key)
+    },
     onSuccess: (_, photo) => {
-      queryClient.invalidateQueries({ queryKey: photoKeys.all })
+      const key = photoDeleteKey(photo)
+      const pendingDelete = pendingPhotoDeletes.get(key)
+      if (pendingDelete) {
+        pendingDelete.succeeded = true
+        pendingDelete.pending -= 1
+        if (pendingDelete.pending === 0) pendingPhotoDeletes.delete(key)
+      }
       queryClient.invalidateQueries({
         queryKey: ["travel-pot", "map-overview", photo.potId],
+      })
+    },
+    onSettled: (_, __, photo) => {
+      void queryClient.invalidateQueries({
+        queryKey: photoKeys.list(photo.potId),
       })
     },
   })

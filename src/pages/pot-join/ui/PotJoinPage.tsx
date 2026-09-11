@@ -76,7 +76,7 @@ function ConfirmStep({
 }) {
   return (
     // 시안 배경 #eff1f5 = neutral-100 (bg-neutral-solid) — 흰 티켓이 도드라지도록 입력 스텝보다 한 단계 진함
-    <MobileLayout className="relative flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-solid duration-300 fade-in-0">
+    <MobileLayout className="relative flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-solid">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
@@ -164,6 +164,10 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   const [previewLoading, setPreviewLoading] = React.useState(false)
   // 참여 확인 스텝 데이터 — 있으면 확인 화면, 없으면 코드 입력 화면
   const [preview, setPreview] = React.useState<JoinPreview | null>(null)
+  const previewSubmitPendingRef = React.useRef(false)
+  const confirmSubmitPendingRef = React.useRef(false)
+  const [previewSubmitPending, setPreviewSubmitPending] = React.useState(false)
+  const [confirmSubmitPending, setConfirmSubmitPending] = React.useState(false)
 
   // 초대링크로 보관된 코드 소비 — 여기(인증 통과 후)까지 왔으면 역할이 끝났으니
   // 지운다. search로 못 받은 경로(로그인 콜백 복귀 등)에선 프리필로도 쓴다.
@@ -240,6 +244,10 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   // [정책 #3] 참여하기 — 코드 유효성 검사 후 확인 스텝으로 전환.
   // fromLink: 초대링크 자동 진입 여부 — 이미 참여중 에러의 분기에만 쓴다
   const handleSubmit = async ({ fromLink = false } = {}) => {
+    if (previewSubmitPendingRef.current) return
+    previewSubmitPendingRef.current = true
+    setPreviewSubmitPending(true)
+
     if (USE_MOCK) {
       const result = previewJoin(code, currentUser?.id)
       if (result.status !== "ok") {
@@ -249,6 +257,8 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
           icon: "alert",
           className: CODE_TOAST_POSITION,
         })
+        previewSubmitPendingRef.current = false
+        setPreviewSubmitPending(false)
         return
       }
       setPreview({
@@ -271,6 +281,8 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
       }
       showJoinError(error)
     } finally {
+      previewSubmitPendingRef.current = false
+      setPreviewSubmitPending(false)
       setPreviewLoading(false)
     }
   }
@@ -287,17 +299,26 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   // [정책 #9] 맞아요 — 참여 확정 후 지도 이동 + 완료 토스트
   const handleConfirm = async () => {
     const current = preview
-    if (!current) return
+    if (!current || confirmSubmitPendingRef.current) return
+    confirmSubmitPendingRef.current = true
+    setConfirmSubmitPending(true)
 
     if (current.mockPot) {
-      confirmJoin(current.mockPot, {
+      const mockPot = current.mockPot
+      confirmJoin(mockPot, {
         id: currentUser?.id ?? "me",
         nickname: currentUser?.nickname ?? "나",
         profileImageUrl: currentUser?.profileImageUrl ?? null,
       })
       goToMap()
-      // 인원 수는 나를 포함한 값
-      showJoinedToast(current.mockPot, current.mockPot.members.length + 1)
+      // confirmJoin의 중복 방어·스토어 상태를 반영한 실제 인원 수
+      const joinedPot = usePotStore
+        .getState()
+        .pots.find((pot) => pot.id === mockPot.id)
+      showJoinedToast(
+        joinedPot ?? mockPot,
+        joinedPot?.members.length ?? mockPot.members.length
+      )
       return
     }
 
@@ -310,6 +331,8 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
       // 확정 중 정원 초과 등 — 코드 입력 스텝으로 복귀 후 에러 노출
       setPreview(null)
       showJoinError(error)
+      confirmSubmitPendingRef.current = false
+      setConfirmSubmitPending(false)
     }
   }
 
@@ -318,11 +341,17 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
       <ConfirmStep
         code={code}
         preview={preview}
-        joinPending={joinPartyMutation.isPending}
+        joinPending={joinPartyMutation.isPending || confirmSubmitPending}
         // X 닫기 — 코드 입력 화면 복귀, 입력값 유지 (다시 입력과 달리 초기화 없음)
-        onClose={() => setPreview(null)}
+        onClose={() => {
+          previewSubmitPendingRef.current = false
+          setPreviewSubmitPending(false)
+          setPreview(null)
+        }}
         // [정책 #8] 다시 입력 — 코드 입력 화면 복귀 + 입력값 초기화
         onRetry={() => {
+          previewSubmitPendingRef.current = false
+          setPreviewSubmitPending(false)
           setCode("")
           setCodeError(false)
           setPreview(null)
@@ -333,7 +362,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
   }
 
   return (
-    <MobileLayout className="flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
@@ -360,7 +389,12 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
       <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* [정책 #3] 6자리 모두 입력 시 활성화, 에러 케이스 발견 시 비활성화 */}
         <ButtonCta
-          disabled={code.length < CODE_LENGTH || codeError || previewLoading}
+          disabled={
+            code.length < CODE_LENGTH ||
+            codeError ||
+            previewLoading ||
+            previewSubmitPending
+          }
           onClick={() => void handleSubmit()}
         >
           참여하기

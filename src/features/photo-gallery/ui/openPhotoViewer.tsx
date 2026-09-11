@@ -189,6 +189,7 @@ function PhotoViewerContent({
   const [index, setIndex] = React.useState(initialIndex)
   const [uiHidden, setUiHidden] = React.useState(false)
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const [deletePending, setDeletePending] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
   const [retrySeq, setRetrySeq] = React.useState(0)
   // 렌더된 사진의 상/하단 y(px) — 뱃지·말풍선을 사진 가장자리에 붙이기 위한 측정값
@@ -201,6 +202,7 @@ function PhotoViewerContent({
   const imgRef = React.useRef<HTMLImageElement>(null)
   const dragRef = React.useRef<{ x: number; y: number } | null>(null)
   const swipedRef = React.useRef(false)
+  const deletePendingRef = React.useRef(false)
 
   const photo = photos[index]
   const isMine = photo.uploader?.isMe ?? false
@@ -271,19 +273,27 @@ function PhotoViewerContent({
   }
 
   const handleDelete = async () => {
+    if (deletePendingRef.current) return
+    deletePendingRef.current = true
+    setDeletePending(true)
     setMenuOpen(false)
     const confirmed = await confirmDeletePhoto()
-    if (!confirmed) return
+    if (!confirmed) {
+      deletePendingRef.current = false
+      setDeletePending(false)
+      return
+    }
     try {
-      await onDelete?.(photo)
+      const deletion = onDelete?.(photo)
+      // onDelete starts the optimistic update synchronously, so leave the viewer immediately.
+      close()
+      await deletion
     } catch {
       showToast({ message: "삭제에 실패했어요", icon: "alert" })
       return
     }
     // 시안(3065-14819)은 완료 토스트인데도 빨간 ! — 삭제라는 파괴적 결과를 강조하는 의도
     showToast({ message: "삭제가 완료됐어요.", icon: "alert" })
-    // 마지막 1장 삭제 여부와 무관하게 이전 화면(지역 상세 리스트)으로 복귀
-    close()
   }
 
   return (
@@ -436,6 +446,7 @@ function PhotoViewerContent({
               type="button"
               role="menuitem"
               onClick={handleDelete}
+              disabled={deletePending}
               className="flex h-[42px] items-center justify-between px-4 text-left text-[17px] tracking-[-0.43px] text-fg-danger-solid"
             >
               삭제하기

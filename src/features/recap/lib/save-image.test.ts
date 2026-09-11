@@ -20,6 +20,9 @@ describe("buildRecapTextMarkup", () => {
     })
 
     expect(markup).toContain(">8</tspan>")
+    expect(markup).toContain(
+      'fill="#6cbcf9" stroke="#141820" stroke-width="1.5"'
+    )
     expect(markup).toContain("in KOREA")
     expect(markup).not.toContain("DAYS")
     expect(markup).toContain("여행 &lt;팟&gt;")

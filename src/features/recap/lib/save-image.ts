@@ -249,7 +249,7 @@ export function buildRecapTextMarkup(model: RecapCardModel): string {
   const pins = escapeXml(String(model.pinCount))
 
   const headingMarkup =
-    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="white" stroke-width="0.45" paint-order="stroke fill">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
+    `<text x="${padding}" y="${heading.pinBaseline}" font-family="${HEADING_FONT}" font-size="${heading.pinFontSize}" font-weight="400"><tspan fill="#6cbcf9" stroke="#141820" stroke-width="1.5" paint-order="stroke fill">${pins}</tspan><tspan dx="2.5" fill="#141820">PINNNED</tspan></text>` +
     `<text x="${padding}" y="${heading.countryBaseline}" font-family="${HEADING_FONT}" font-size="${heading.countryFontSize}" font-weight="400" fill="#141820">${escapeXml(RECAP_COUNTRY_LABEL)}</text>`
 
   // 팟 이름 라벨 위에 닉네임 줄들이 쌓인다 — 아래에서 위로 쌓아 하단 여백을 고정한다

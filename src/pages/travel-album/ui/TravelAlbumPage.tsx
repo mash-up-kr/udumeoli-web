@@ -79,6 +79,10 @@ function TravelAlbumPageContent() {
               router.navigate({
                 to: "/travel-album/$region",
                 params: { region: r.region },
+                state: (previousState) => ({
+                  ...previousState,
+                  fromTravelAlbum: true,
+                }),
               })
             }
           />
