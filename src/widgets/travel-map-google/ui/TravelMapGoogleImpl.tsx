@@ -114,6 +114,8 @@ let lastCameraSnapshot: CameraSnapshot | null = null
 const ACCENT = "#6cbcf9" // brand blue (--color-blue-500)
 const DASH_DARK = "#232936"
 const BOUNDARY_ZOOM = 7.5
+// 국가 핀 단계는 유지하되 세계 단위까지 과도하게 축소되지 않도록 제한한다.
+const MIN_MAP_ZOOM = 4.5
 const PARTY_ZOOM = 9.5
 // 시 레벨에서 조금 더 줌인하면 + 버튼·단순 스티커 상세 단계로 전환한다.
 // maxZoom(9.5)까지 기다리면 등록 진입점이 너무 늦게 보인다.
@@ -527,16 +529,6 @@ function getZoomStage(zoom: number): ZoomStage {
   return 0
 }
 
-// [+] 버튼이 아직 없는 지역을 누르면 넘어갈 다음 단계 줌 (QA: 핀치 줌만으로 3단계까지
-// 가는 게 불편) — 0·1은 시 경계(2), 2는 인기지역 [+](2.5), 2.5는 전 지역 [+](3)
-const NEXT_STAGE_ZOOM: Record<ZoomStage, number | null> = {
-  0: BOUNDARY_ZOOM,
-  1: BOUNDARY_ZOOM,
-  2: POPULAR_ENTER_ZOOM,
-  2.5: DETAIL_ENTER_ZOOM,
-  3: null,
-}
-
 // ease-out은 초반에 확 움직여 짧은 duration에선 튀는 느낌 — 완만하게 출발·도착
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2
@@ -785,13 +777,14 @@ function MapController({
     mapRef.current = map
 
     // 벡터 지도 소수점 줌 보장 — 없으면 정수 스냅되어 PARTY_ZOOM(9.5) 경계가 동작하지 않음.
-    // restriction(strictBounds): 서비스 탐색 범위 밖으로 줌아웃·팬이 되지 않게
-    // Google Maps가 네이티브로 클램프한다.
+    // restriction: 서비스 탐색 범위 밖으로 크게 이탈하지 않게 제한한다.
+    // strictBounds는 제한 영역 밖이 보이지 않도록 줌아웃 하한까지 올릴 수 있어
+    // 대한민국 국가 단계(최대 줌아웃)를 건너뛸 수 있으므로 끈다.
     map.setOptions({
       isFractionalZoomEnabled: true,
       restriction: {
         latLngBounds: ASIA_MAP_BOUNDS,
-        strictBounds: true,
+        strictBounds: false,
       },
     })
 
@@ -811,6 +804,8 @@ function MapController({
           initialZoom: map.getZoom() ?? KOREA_VIEW.zoom,
           onFeatureClick: (name) => {
             if (decoratingRef.current) return
+            // 초기 줌(경계선·지역명 미노출)에서는 지역 클릭으로 이동/등록하지 않음
+            if ((map.getZoom() ?? 0) < BOUNDARY_ZOOM) return
             onFeatureClickRef.current(name)
           },
         })
@@ -1245,15 +1240,14 @@ function TravelMapGoogleInner({
   // 0단계(국가 뷰) 대표 핀 — 내가 기록한 여행 중 제일 많이 뽑힌 키워드 1개
   const countryKeyword = React.useMemo(
     () =>
-      mapOverview
-        ? findKeyword(mapOverview.country?.keyword)
-        : findKeyword(mostPickedKeyword(visualTrips)),
+      findKeyword(mapOverview?.country?.keyword) ??
+      findKeyword(mostPickedKeyword(visualTrips)),
     [mapOverview, visualTrips]
   )
 
-  const countryRegionCount = mapOverview
-    ? (mapOverview.country?.regionCount ?? 0)
-    : new Set(visualTrips.map((trip) => trip.region)).size
+  const countryRegionCount =
+    mapOverview?.country?.regionCount ??
+    new Set(visualTrips.map((trip) => trip.region)).size
 
   // 1단계 이하(국가·전국 뷰)에선 기록이 있는 도 전체를 대표 키워드 색으로 칠한다
   // (강릉 하나만 등록해도 강원도 전체 색칠 — Figma 줌인 기준 1단계)
@@ -1552,7 +1546,6 @@ function TravelMapGoogleInner({
       const latestTrip = latestTripsByRegionRef.current.get(name)
       // 폴리곤 클릭(applyZoomGate)은 [+] 마커가 보이는 지역에서만 동작 —
       // 마커 노출 조건과 클릭 가능 조건을 한 함수로 일치시킨다.
-      // [+]가 아직 없으면 그 지역을 중심으로 다음 단계까지 줌인해 진입점을 앞당긴다
       if (
         applyZoomGate &&
         !canShowAvailableRegionMarker({
@@ -1561,13 +1554,6 @@ function TravelMapGoogleInner({
           region: name,
         })
       ) {
-        const nextZoom = NEXT_STAGE_ZOOM[zoomStageRef.current]
-        const centroid = centroidsRef.current.find((c) => c.name === name)
-        if (nextZoom === null || !centroid) return
-        runCameraMove(
-          { lat: centroid.lat, lng: centroid.lng, zoom: nextZoom },
-          600
-        )
         return
       }
       const action = resolveRegionAction({
@@ -1700,21 +1686,8 @@ function TravelMapGoogleInner({
   // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
-    (trip: CollaborationTrip) => {
-      if (zoomStageRef.current < 3) {
-        const centroid = centroidsRef.current.find(
-          (item) => item.name === trip.region
-        )
-        if (!centroid) return
-        runCameraMove(
-          { lat: centroid.lat, lng: centroid.lng, zoom: DETAIL_ENTER_ZOOM },
-          600
-        )
-        return
-      }
-      handleRegionAction(trip.region, false)
-    },
-    [handleRegionAction, runCameraMove]
+    (trip: CollaborationTrip) => handleRegionAction(trip.region, false),
+    [handleRegionAction]
   )
 
   const visibleTripPins = React.useMemo<Array<TripPinMarker>>(() => {
@@ -1758,6 +1731,11 @@ function TravelMapGoogleInner({
           lng: lastCameraSnapshot?.lng ?? KOREA_VIEW.lng,
         }}
         defaultZoom={lastCameraSnapshot?.zoom ?? KOREA_VIEW.zoom}
+        // 국가 뷰(4.8)와 단계 경계(5) 사이를 유지하려면 지도 생성 시점부터
+        // 소수점 줌을 활성화해야 한다. 생성 후 setOptions만으로는 초기 줌이 이미
+        // 5로 보정되어 국가 단계가 건너뛰어질 수 있다.
+        isFractionalZoomEnabled
+        minZoom={MIN_MAP_ZOOM}
         maxZoom={PARTY_ZOOM}
         gestureHandling="greedy"
         disableDefaultUI
