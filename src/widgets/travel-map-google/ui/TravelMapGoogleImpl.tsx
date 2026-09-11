@@ -677,9 +677,15 @@ function syncViewportState(
 }
 
 export type TravelMapImplProps = {
+  /** 지역 레이어와 Google 기본 타일이 모두 준비된 상태 변경 */
+  onMapReady?: (ready: boolean) => void
   onRegionDetailChange?: (region: string | null) => void
   onAlbumAvailabilityChange?: (available: boolean) => void
   onZoomStageChange?: (stage: ZoomStage) => void
+  /** 첫 지도 안내의 시작하기 클릭 직후 호출 — 상세 줌 전환용 */
+  onMapTipsStart?: () => void
+  /** 재진입 줌인 가이드에서 하단 기록 진입 팁을 세션 동안 숨긴다 */
+  recordTipDismissedForSession?: boolean
   /** 값이 증가할 때마다 현재 중심을 유지한 채 3단계(상세) 줌으로 카메라 이동 — 줌인 가이드 클릭용 */
   zoomToDetailSignal?: number
   /** 값이 증가할 때마다 한국 전체 뷰(KOREA_VIEW)로 카메라 이동 — 하단 내비 지구본 클릭용 */
@@ -1068,9 +1074,11 @@ function TravelMapGoogleInner({
   onAlbumAvailabilityChange,
   onRegionDetailChange,
   onZoomStageChange,
+  onMapTipsStart,
   zoomToDetailSignal,
   recenterKoreaSignal,
   zoomOutToCitySignal,
+  recordTipDismissedForSession: recordTipDismissedByGuide,
   onTilesLoaded,
   onReady,
 }: TravelMapImplProps) {
@@ -1339,6 +1347,7 @@ function TravelMapGoogleInner({
   const showRecordTip =
     seenTips &&
     !recordTipDismissedForSession &&
+    !recordTipDismissedByGuide &&
     photos.length === 0 &&
     !decorating &&
     zoomStage <= 1
@@ -1461,7 +1470,9 @@ function TravelMapGoogleInner({
 
   // 줌인 가이드 클릭 — 현재 중심을 유지한 채 3단계(상세) 줌으로 이동
   React.useEffect(() => {
-    if (!zoomToDetailSignal) return
+    if (!zoomToDetailSignal || !mapReady) return
+    // A detail request supersedes any onboarding backdrop queued before readiness.
+    pendingTipsBackdropRef.current = false
     const map = mapRef.current
     if (!map) return
     const center = map.getCenter()
@@ -1470,7 +1481,7 @@ function TravelMapGoogleInner({
       { lat: center.lat(), lng: center.lng(), zoom: DETAIL_ENTER_ZOOM },
       600
     )
-  }, [runCameraMove, zoomToDetailSignal])
+  }, [mapReady, runCameraMove, zoomToDetailSignal])
 
   // 지구본 내비 클릭 — 지도를 다른 곳(외국 포함)으로 옮겨놨어도 한국 전체 뷰로 복귀
   React.useEffect(() => {
@@ -1496,7 +1507,7 @@ function TravelMapGoogleInner({
   // 지도 준비(mapReady)를 기다리지 않는다 — 로딩 화면이 먼저 보였다가 갑자기
   // 안내가 덮이면 어색해서, 진입 즉시 안내를 띄우고 지도는 블러 뒤에서 로드한다.
   const mapTipsOpenedPotRef = React.useRef<string | null>(null)
-  // 지도 준비 전에 시작하기를 누른 경우 — 준비되는 시점에 카메라 이동을 이어서 실행
+  // 지도 준비 전에 시작하기를 누른 경우 — 준비되는 시점에 서울 이동을 이어서 실행
   const pendingTipsCameraRef = React.useRef(false)
   // 팁이 떠 있는 동안 블러 뒤 지도를 확대 뷰로 — 지도가 늦게 준비되면 그때 당긴다
   const pendingTipsBackdropRef = React.useRef(false)
@@ -1512,18 +1523,18 @@ function TravelMapGoogleInner({
         setRecordTipDismissedForSession(true)
         if (mapReadyRef.current) runCameraMove(SEOUL_VIEW, 600)
         else pendingTipsCameraRef.current = true
+        onMapTipsStart?.()
       },
     })
     if (opened) {
       setSeenTips(true)
-      if (mapReadyRef.current) runCameraMove(TIPS_BACKDROP_VIEW, 400)
+      if (mapReady) runCameraMove(TIPS_BACKDROP_VIEW, 400)
       else pendingTipsBackdropRef.current = true
     }
-  }, [currentPotId, runCameraMove])
+  }, [currentPotId, mapReady, onMapTipsStart, runCameraMove])
 
   React.useEffect(() => {
     if (!mapReady) return
-    // 시작하기가 먼저 눌렸으면 서울 이동이 우선 — 배경 확대는 건너뛴다
     if (pendingTipsCameraRef.current) {
       pendingTipsCameraRef.current = false
       pendingTipsBackdropRef.current = false
