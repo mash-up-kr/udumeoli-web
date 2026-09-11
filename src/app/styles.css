@@ -498,10 +498,10 @@
         }
     }
 
-    /* 팟 참여 확인 티켓 — Figma 3065:38129의 2초 출력 루프. */
+    /* 팟 참여 확인 티켓 — Figma 3065:38129의 2초 출력 애니메이션. */
     --animate-ticket-card-print-v2: ticket-card-print-v2 2s
-        cubic-bezier(0.37, 0, 0.24, 1) infinite;
-    --animate-ticket-slot-v2: ticket-slot-v2 2s linear infinite;
+        cubic-bezier(0.37, 0, 0.24, 1) 1 forwards;
+    --animate-ticket-slot-v2: ticket-slot-v2 2s linear 1 forwards;
 
     @keyframes ticket-card-print-v2 {
         0% {
