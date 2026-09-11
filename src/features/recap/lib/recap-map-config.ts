@@ -14,7 +14,8 @@ export type RecapMapView = {
  * 정적 지도를 640 높이로 받아 위아래를 잘라내야 하단 Google 로고 띠가 카드 밖으로 나간다.
  */
 export const RECAP_MAP_VIEW: RecapMapView = {
-  center: { lat: 36.05, lng: 128.65 },
+  // 경도를 낮춰 본토가 화면 중앙보다 살짝 오른쪽에 오도록 한다.
+  center: { lat: 36.05, lng: 128.35 },
   zoom: 6,
   width: 300,
   height: 533.333,
