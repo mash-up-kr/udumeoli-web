@@ -12,6 +12,7 @@ const GOOGLE_TILE_TIMEOUT_MS = 10_000
 // Google Maps JS API도 브라우저 전용 → 클라이언트에서만 동적 로드해 SSR 오류 회피.
 export function TravelMapGoogle({
   className,
+  onMapReady,
   ...implProps
 }: TravelMapImplProps & { className?: string }) {
   const [Impl, setImpl] =
@@ -32,6 +33,10 @@ export function TravelMapGoogle({
     setTilesTimedOut(false)
   }, [])
   const mapReady = layerReady && tilesReady
+
+  React.useEffect(() => {
+    onMapReady?.(mapReady)
+  }, [mapReady, onMapReady])
   const loadingState = getMapLoadingState({
     implFailed,
     geoFailed,

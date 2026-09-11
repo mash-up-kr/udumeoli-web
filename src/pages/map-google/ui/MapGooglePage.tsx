@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft } from "lucide-react"
 
-import { hasSeenZoomGuide, markZoomGuideSeen } from "../lib/zoomGuide"
+import { shouldShowZoomGuide } from "../lib/zoomGuide"
 import { ZoomInGuide } from "./ZoomInGuide"
 
 import type { ZoomStage } from "@/widgets/travel-map-google"
@@ -18,7 +18,12 @@ import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import { RecapButton } from "@/features/recap"
 import { useRecordStore } from "@/features/travel-record"
-import { photoKeys, seedUtPhotos, useAllPhotos } from "@/entities/photo"
+import {
+  photoKeys,
+  seedUtPhotos,
+  useAllPhotos,
+  usePhotos,
+} from "@/entities/photo"
 import {
   TRIP_100_POT,
   useMyPots,
@@ -83,20 +88,30 @@ function MapGooglePageContent() {
   const showPersistentMapActions = showMapChrome && mapZoomStage < 2.5
 
   // 줌인 가이드(시안 2822-8047) — 사진 0장 && 줌 3단계 미만일 때만 노출,
-  // 한 번이라도 3단계까지 줌인하면 localStorage 플래그로 영구 종료
+  // 온보딩을 본 뒤 재접속한 무기록 유저에게 노출한다.
   const currentPotId = usePotStore((s) => s.currentPotId)
   const photoCount = useAllPhotos(currentPotId).length
-  const [zoomGuideSeen, setZoomGuideSeen] = React.useState(hasSeenZoomGuide)
+  const { isPending: isPhotosPending, isError: isPhotosError } =
+    usePhotos(currentPotId)
+  const [zoomGuideDismissedPotId, setZoomGuideDismissedPotId] = React.useState<
+    string | null
+  >(null)
+  const [mapReady, setMapReady] = React.useState(false)
   const [zoomToDetailSignal, setZoomToDetailSignal] = React.useState(0)
   const [recenterKoreaSignal, setRecenterKoreaSignal] = React.useState(0)
   const [zoomOutToCitySignal, setZoomOutToCitySignal] = React.useState(0)
-  React.useEffect(() => {
-    if (zoomGuideSeen || mapZoomStage < 3) return
-    markZoomGuideSeen()
-    setZoomGuideSeen(true)
-  }, [mapZoomStage, zoomGuideSeen])
-  const showZoomGuide =
-    showPersistentMapActions && !zoomGuideSeen && photoCount === 0
+  const showZoomGuide = shouldShowZoomGuide({
+    hasPersistentActions: showPersistentMapActions,
+    dismissed: zoomGuideDismissedPotId === currentPotId,
+    mapReady,
+    photosReady: !isPhotosPending && !isPhotosError,
+    photoCount,
+  })
+
+  const zoomToDetail = () => {
+    setZoomGuideDismissedPotId(currentPotId)
+    setZoomToDetailSignal((n) => n + 1)
+  }
 
   const openAlbum = () => router.navigate({ to: "/travel-album" })
 
@@ -112,6 +127,14 @@ function MapGooglePageContent() {
           onAlbumAvailabilityChange={setCanOpenAlbum}
           onRegionDetailChange={setDetailRegion}
           onZoomStageChange={setMapZoomStage}
+          onMapReady={setMapReady}
+          onMapTipsStart={() => {
+            // [DESIGN-IMPLEMENTER] 온보딩 시작 버튼은 위젯의 서울 중심 상세 줌과 함께 안내를 닫는다.
+            setZoomGuideDismissedPotId(currentPotId)
+          }}
+          recordTipDismissedForSession={
+            showZoomGuide || zoomGuideDismissedPotId === currentPotId
+          }
           zoomToDetailSignal={zoomToDetailSignal}
           recenterKoreaSignal={recenterKoreaSignal}
           zoomOutToCitySignal={zoomOutToCitySignal}
@@ -154,10 +177,15 @@ function MapGooglePageContent() {
             </div>
 
             {showZoomGuide ? (
-              <ZoomInGuide
-                className="z-10"
-                onClick={() => setZoomToDetailSignal((n) => n + 1)}
-              />
+              <>
+                <button
+                  type="button"
+                  aria-label="지도 상세 보기"
+                  onClick={zoomToDetail}
+                  className="absolute inset-0 z-0 bg-transparent p-0"
+                />
+                <ZoomInGuide className="z-10" onClick={zoomToDetail} />
+              </>
             ) : null}
 
             <div className="pointer-events-none absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),34px)] z-10">
