@@ -1568,6 +1568,8 @@ function TravelMapGoogleInner({
         !canShowAvailableRegionMarker({
           zoomStage: zoomStageRef.current,
           hasTrip: Boolean(latestTrip),
+          hasMine: latestTrip?.hasMine,
+          isComplete: latestTrip?.isComplete,
           region: name,
         })
       ) {
@@ -1640,6 +1642,8 @@ function TravelMapGoogleInner({
       return canShowAvailableRegionMarker({
         zoomStage,
         hasTrip: Boolean(latestTrip),
+        hasMine: latestTrip?.hasMine,
+        isComplete: latestTrip?.isComplete,
         region: name,
       })
     })
@@ -1755,7 +1759,8 @@ function TravelMapGoogleInner({
     return viewportCentroids
       .map((centroid) => {
         const trip = latestTripsByRegion.get(centroid.name)
-        return trip ? { ...centroid, trip } : null
+        // 내 기록이 없는 진행 중 여행은 [+] 마커만 표시해 지역명이 겹치지 않게 한다.
+        return trip?.hasMine ? { ...centroid, trip } : null
       })
       .filter((item): item is Centroid & { trip: CollaborationTrip } =>
         Boolean(item)
