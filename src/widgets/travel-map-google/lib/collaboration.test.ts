@@ -92,7 +92,7 @@ describe("buildCollaborationTrips", () => {
 })
 
 describe("visibleStickerTrips", () => {
-  it("한 지역의 대표 여행 하나만 이모지 대상으로 노출한다", () => {
+  it("최대 줌에서 지역별 대표 키워드 스티커를 하나만 노출할 수 있게 지역당 여행 하나를 고른다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("third", "강릉시", "2026-09-01", "user-1", {
@@ -109,9 +109,28 @@ describe("visibleStickerTrips", () => {
       currentUserId: "user-1",
     })
 
-    expect(visibleStickerTrips(trips).map((trip) => trip.key)).toEqual([
+    const visible = visibleStickerTrips(trips)
+    expect(visible.map((trip) => trip.key)).toEqual([
       "강릉시|2026-09-01|2026-09-01",
     ])
+    expect(new Set(visible.map((trip) => trip.region)).size).toBe(1)
+  })
+
+  it("여러 지역에 여행이 있어도 각 지역의 스티커는 하나씩만 노출한다", () => {
+    const trips = buildCollaborationTrips({
+      photos: [
+        photo("gangneung-new", "강릉시", "2026-09-01", "user-1"),
+        photo("gangneung-old", "강릉시", "2026-08-01", "user-1"),
+        photo("sokcho-new", "속초시", "2026-09-01", "user-1"),
+        photo("sokcho-old", "속초시", "2026-08-01", "user-1"),
+      ],
+      members,
+      currentUserId: "user-1",
+    })
+
+    const visible = visibleStickerTrips(trips)
+    expect(visible.map((trip) => trip.region)).toEqual(["강릉시", "속초시"])
+    expect(visible).toHaveLength(2)
   })
 
   it("회차는 지역 전체 여행 기준 — 팟원만 기록한 여행도 회차를 차지하고 노출된다", () => {
@@ -298,7 +317,7 @@ describe("mostPickedKeyword", () => {
     expect(mostPickedKeyword(trips)).toBe("DESSERT")
   })
 
-  it("개수가 동일하면 가장 최근 여행의 키워드를 고른다", () => {
+  it("개수가 동일하면 가나다순으로 가장 앞선 키워드를 고른다", () => {
     const trips = buildCollaborationTrips({
       photos: [
         photo("new", "동해시", "2026-08-01", "user-1", { keyword: "FOOD" }),
@@ -308,7 +327,7 @@ describe("mostPickedKeyword", () => {
       currentUserId: "user-1",
     })
 
-    expect(mostPickedKeyword(trips)).toBe("FOOD")
+    expect(mostPickedKeyword(trips)).toBe("DESSERT")
   })
 
   it("키워드가 없는 여행만 있으면 undefined를 반환한다", () => {

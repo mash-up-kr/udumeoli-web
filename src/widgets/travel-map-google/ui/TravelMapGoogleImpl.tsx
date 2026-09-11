@@ -1189,7 +1189,7 @@ function TravelMapGoogleInner({
   }, [fills, latestTripsByRegion, mapOverview])
 
   // 1단계(전국 뷰) 도 단위 집계 — 도 안에 기록이 하나라도 있으면 대표 키워드(최다 선택,
-  // 동수면 최근 여행)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
+  // 동수면 가나다순 첫 키워드)와 여행 횟수를 모아 도 전체 색칠 + 하단 뱃지에 쓴다
   const provinceAggregates = React.useMemo<Array<ProvinceAggregate>>(() => {
     const regionsByProvince = new Map<string, Array<Centroid>>()
     const provinceOf = new Map<string, string>()
@@ -1660,6 +1660,12 @@ function TravelMapGoogleInner({
 
   const visiblePins = React.useMemo<Array<TripPinMarker>>(() => {
     const trips = visibleStickerTrips(collaborationTrips)
+    const tripsByRegion = new Map<string, Array<CollaborationTrip>>()
+    for (const trip of collaborationTrips) {
+      const regionTrips = tripsByRegion.get(trip.region) ?? []
+      regionTrips.push(trip)
+      tripsByRegion.set(trip.region, regionTrips)
+    }
     const visitCountsByTripKey = new Map<string, number>()
     const regionVisitCounts = new Map<string, number>()
     for (const trip of [...collaborationTrips].reverse()) {
@@ -1677,7 +1683,9 @@ function TravelMapGoogleInner({
       ])
     )
     return trips.flatMap((trip) => {
-      const keyword = findKeyword(trip.keyword)
+      const keyword = findKeyword(
+        mostPickedKeyword(tripsByRegion.get(trip.region) ?? [])
+      )
       if (!keyword) return []
       const representative = trip.representativePhoto
       const c = centroidMap.get(trip.region)
@@ -1707,7 +1715,7 @@ function TravelMapGoogleInner({
     })
   }, [collaborationTrips, centroidMap, mapOverview])
 
-  // 스티커는 지역당 최대 2개라 "과거 완료 여행" 스티커가 남아 있다 — 그 스티커를 눌렀어도
+  // 스티커는 지역당 1개라 "과거 완료 여행" 스티커는 지도에 남지 않는다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
   const handleTripMarkerClick = React.useCallback(
     (trip: CollaborationTrip) => {
