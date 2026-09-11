@@ -417,12 +417,12 @@ const CollaborationProgressMarkers = React.memo(
               <span className="text-h8-1 text-fg-neutral-bold [text-shadow:0_0_8px_white]">
                 {formatRegionName(name)}
               </span>
-              {/* 아직 기록하지 않은 인원 수 — 완료 인원이 아니다 (Figma 1836-15937 #6) */}
+              {/* 등록한 인원 / 전체 팟원 수 — 완료 여부와 관계없이 진행 상황을 표시한다 */}
               {trip.hasMine && !trip.isComplete ? (
                 <span className="flex items-center gap-0.5 text-h9 [text-shadow:0_0_8px_white]">
                   <UserRound className="size-3.5 text-fg-neutral-solid" />
                   <span className="text-fg-neutral-bold">
-                    {trip.missingMemberIds.length}
+                    {trip.uploadedCount}
                   </span>
                   <span className="text-fg-neutral-solid">
                     /{trip.totalMembers}
