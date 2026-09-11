@@ -27,7 +27,7 @@ import photoMapSrc from "@/shared/assets/photo-map.jpg"
 const RECAP_LABEL_PILL =
   "truncate rounded-full px-[1.85cqw] py-[0.93cqw] text-[3.24cqw] leading-[4.63cqw] whitespace-nowrap text-white backdrop-blur-[4px]"
 const RECAP_NUMBER_OUTLINE =
-  "[-webkit-text-stroke:0.45px_white] [paint-order:stroke_fill]"
+  "[-webkit-text-stroke:1.5px_#141820] [paint-order:stroke_fill]"
 
 async function exportRecapImage(
   element: HTMLElement | null,

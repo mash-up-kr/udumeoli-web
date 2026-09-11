@@ -27,6 +27,7 @@ type Project = (point: Point) => Point
 const MAP_OCEAN_COLOR = "#79d5e6"
 const UNVISITED_REGION_COLOR = "#d8f3e3"
 const REGION_BORDER_COLOR = "#f8fffb"
+const KEYWORD_FILL_OPACITY = 0.3
 /**
  * 마커 치수 (시안 3196-5847, 432×768 기준을 카드 폭 270에 맞춰 0.625배).
  * 화면(AdvancedMarker)과 저장 SVG가 같은 값을 쓴다 — 미리보기 = 저장 이미지.
@@ -38,9 +39,29 @@ const MARKER_ANCHOR = {
   y: MARKER_PIN.y + MARKER_PIN.height,
 }
 const MARKER_STICKER = { x: 6.875, y: 2.5, width: 15, height: 15 }
-const MARKER_BADGE = { x: 18.75, y: -3.75, height: 12.5, fontSize: 7.5 }
+const MARKER_BADGE = {
+  x: 18.75,
+  y: -3.75,
+  height: 12.5,
+  fontSize: 7.5,
+  paddingX: 2.5,
+}
+/** 1~5개 시안의 도 단위 핀 (시안 3229-11008, 432px → 카드 270px 환산) */
+const PROVINCE_MARKER_BOX = { width: 35, height: 35 }
+const PROVINCE_MARKER_PIN = { x: 2.28, y: 0, width: 30.43, height: 35 }
+const PROVINCE_MARKER_STICKER = {
+  x: 5.33,
+  y: 3.04,
+  width: 24.35,
+  height: 24.35,
+}
 /** 도 라벨 (시안 3229-11008) — 핀 아래 중앙 알약 */
-const PROVINCE_LABEL = { gap: 3, height: 12.5, fontSize: 7.5, paddingX: 2.5 }
+const PROVINCE_LABEL = {
+  gap: 4.565,
+  height: 16.74,
+  fontSize: 11.11,
+  paddingX: 4.565,
+}
 
 /** 카드 폭 270 기준 값을 컨테이너 쿼리 단위로 — 카드가 줄어도 마커가 같이 줄어든다 */
 function cqw(value: number): string {
@@ -137,7 +158,7 @@ function GoogleRecapLayer({
       const isDokdo = id === DOKDO_FEATURE_ID
       return {
         fillColor: keyword?.mapColor ?? UNVISITED_REGION_COLOR,
-        fillOpacity: keyword ? 0.68 : isDokdo ? 0.85 : 0.08,
+        fillOpacity: keyword ? KEYWORD_FILL_OPACITY : isDokdo ? 0.85 : 0.08,
         strokeColor: REGION_BORDER_COLOR,
         strokeOpacity: keyword ? 0.32 : 0.08,
         strokeWeight: 1,
@@ -177,79 +198,84 @@ function GoogleRecapMap({
         style={{ width: "100%", height: "100%" }}
       >
         <GoogleRecapLayer geojson={geojson} fillKeywords={fillKeywords} />
-        {markers.map(({ key, keyword, count, label, geoPosition }) => (
-          <AdvancedMarker
-            key={`google-${key}`}
-            position={{ lat: geoPosition[1], lng: geoPosition[0] }}
-          >
-            {/* AdvancedMarker 기본 앵커는 컨텐츠 박스의 bottom-center다 — 라벨을
+        {markers.map(({ key, keyword, count, label, geoPosition }) => {
+          const markerBox = label ? PROVINCE_MARKER_BOX : MARKER_BOX
+          const markerPin = label ? PROVINCE_MARKER_PIN : MARKER_PIN
+          const markerSticker = label ? PROVINCE_MARKER_STICKER : MARKER_STICKER
+          return (
+            <AdvancedMarker
+              key={`google-${key}`}
+              position={{ lat: geoPosition[1], lng: geoPosition[0] }}
+            >
+              {/* AdvancedMarker 기본 앵커는 컨텐츠 박스의 bottom-center다 — 라벨을
                 흐름에 두면 박스가 커져 핀이 지역 중심 위로 떠버린다. 저장 SVG처럼
                 핀 끝이 중심에 오도록 라벨은 absolute로 박스 밖에 건다. */}
-            <div
-              className="relative"
-              style={{
-                width: cqw(MARKER_BOX.width),
-                height: cqw(MARKER_BOX.height),
-              }}
-            >
-              <img
-                src={keyword.mapPinSrc}
-                alt=""
-                className="absolute max-w-none object-contain"
+              <div
+                className="relative"
                 style={{
-                  left: cqw(MARKER_PIN.x),
-                  top: cqw(MARKER_PIN.y),
-                  width: cqw(MARKER_PIN.width),
-                  height: cqw(MARKER_PIN.height),
+                  width: cqw(markerBox.width),
+                  height: cqw(markerBox.height),
                 }}
-              />
-              <img
-                src={keyword.mapStickerSrc}
-                alt=""
-                className="absolute max-w-none object-contain"
-                style={{
-                  left: cqw(MARKER_STICKER.x),
-                  top: cqw(MARKER_STICKER.y),
-                  width: cqw(MARKER_STICKER.width),
-                  height: cqw(MARKER_STICKER.height),
-                }}
-              />
-              {label ? (
-                <span
-                  className="absolute left-1/2 -translate-x-1/2 rounded-full whitespace-nowrap text-white"
+              >
+                <img
+                  src={keyword.mapPinSrc}
+                  alt=""
+                  className="absolute max-w-none object-contain"
                   style={{
-                    backgroundColor: keyword.mapColor,
-                    top: cqw(MARKER_BOX.height + PROVINCE_LABEL.gap),
-                    height: cqw(PROVINCE_LABEL.height),
-                    lineHeight: cqw(PROVINCE_LABEL.height),
-                    paddingInline: cqw(PROVINCE_LABEL.paddingX),
-                    fontSize: cqw(PROVINCE_LABEL.fontSize),
+                    left: cqw(markerPin.x),
+                    top: cqw(markerPin.y),
+                    width: cqw(markerPin.width),
+                    height: cqw(markerPin.height),
                   }}
-                >
-                  {label}
-                </span>
-              ) : count > 1 ? (
-                <span
-                  className="absolute rounded-full text-center whitespace-nowrap text-white"
+                />
+                <img
+                  src={keyword.mapStickerSrc}
+                  alt=""
+                  className="absolute max-w-none object-contain"
                   style={{
-                    backgroundColor: keyword.mapColor,
-                    left: cqw(MARKER_BADGE.x),
-                    top: cqw(MARKER_BADGE.y),
-                    height: cqw(MARKER_BADGE.height),
-                    minWidth: cqw(MARKER_BADGE.height),
-                    lineHeight: cqw(MARKER_BADGE.height),
-                    paddingInline: cqw(PROVINCE_LABEL.paddingX),
-                    fontSize: cqw(MARKER_BADGE.fontSize),
-                    WebkitTextStroke: `0.35px ${REGION_BORDER_COLOR}`,
-                    paintOrder: "stroke fill",
+                    left: cqw(markerSticker.x),
+                    top: cqw(markerSticker.y),
+                    width: cqw(markerSticker.width),
+                    height: cqw(markerSticker.height),
                   }}
-                >
-                  {count}
-                </span>
-              ) : null}
-            </div>
-          </AdvancedMarker>
-        ))}
+                />
+                {label ? (
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 rounded-full whitespace-nowrap text-white"
+                    style={{
+                      backgroundColor: keyword.mapColor,
+                      top: cqw(markerBox.height + PROVINCE_LABEL.gap),
+                      height: cqw(PROVINCE_LABEL.height),
+                      lineHeight: cqw(PROVINCE_LABEL.height),
+                      paddingInline: cqw(PROVINCE_LABEL.paddingX),
+                      fontSize: cqw(PROVINCE_LABEL.fontSize),
+                      boxShadow: "0 0 7.6px rgba(142, 150, 169, 0.12)",
+                    }}
+                  >
+                    {label}
+                  </span>
+                ) : count > 1 ? (
+                  <span
+                    className="absolute rounded-full text-center whitespace-nowrap text-white"
+                    style={{
+                      backgroundColor: keyword.mapColor,
+                      left: cqw(MARKER_BADGE.x),
+                      top: cqw(MARKER_BADGE.y),
+                      height: cqw(MARKER_BADGE.height),
+                      minWidth: cqw(MARKER_BADGE.height),
+                      lineHeight: cqw(MARKER_BADGE.height),
+                      paddingInline: cqw(MARKER_BADGE.paddingX),
+                      fontSize: cqw(MARKER_BADGE.fontSize),
+                      boxShadow: "0 0 6.25px rgba(142, 150, 169, 0.12)",
+                    }}
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </div>
+            </AdvancedMarker>
+          )
+        })}
       </GoogleMap>
     </APIProvider>
   )
@@ -491,6 +517,23 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
           fill={MAP_OCEAN_COLOR}
           data-recap-ocean
         />
+        <defs>
+          <filter
+            id="recap-marker-shadow"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+          >
+            <feDropShadow
+              dx="0"
+              dy="0"
+              stdDeviation="3.125"
+              floodColor="#8e96a9"
+              floodOpacity="0.12"
+            />
+          </filter>
+        </defs>
         {projectedFeatures.map(({ feature, path }, index) => {
           const keyword = fillKeywords.get(String(feature.id))
           const isDokdo = String(feature.id) === DOKDO_FEATURE_ID
@@ -499,7 +542,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
               key={`${String(feature.id)}-${index}`}
               d={path}
               fill={keyword?.mapColor ?? UNVISITED_REGION_COLOR}
-              fillOpacity={keyword ? "0.82" : "0.94"}
+              fillOpacity={keyword ? KEYWORD_FILL_OPACITY : "0.94"}
               data-recap-unvisited={keyword || isDokdo ? undefined : "true"}
               stroke={REGION_BORDER_COLOR}
               strokeOpacity="0.12"
@@ -521,12 +564,20 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
           />
         ) : null}
         {markers.map(({ key, keyword, count, label, position }) => {
-          const markerX = position[0] - MARKER_ANCHOR.x
-          const markerY = position[1] - MARKER_ANCHOR.y
+          const markerPin = label ? PROVINCE_MARKER_PIN : MARKER_PIN
+          const markerSticker = label ? PROVINCE_MARKER_STICKER : MARKER_STICKER
+          const markerAnchor = label
+            ? {
+                x: PROVINCE_MARKER_BOX.width / 2,
+                y: PROVINCE_MARKER_BOX.height,
+              }
+            : MARKER_ANCHOR
+          const markerX = position[0] - markerAnchor.x
+          const markerY = position[1] - markerAnchor.y
           const badgeWidth = Math.max(
             MARKER_BADGE.height,
             estimateTextWidth(String(count), MARKER_BADGE.fontSize) +
-              PROVINCE_LABEL.paddingX * 2
+              MARKER_BADGE.paddingX * 2
           )
           const labelWidth = label
             ? estimateTextWidth(label, PROVINCE_LABEL.fontSize) +
@@ -536,18 +587,18 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
             <g key={key} transform={`translate(${markerX} ${markerY})`}>
               <image
                 href={keyword.mapPinSrc}
-                x={MARKER_PIN.x}
-                y={MARKER_PIN.y}
-                width={MARKER_PIN.width}
-                height={MARKER_PIN.height}
+                x={markerPin.x}
+                y={markerPin.y}
+                width={markerPin.width}
+                height={markerPin.height}
                 preserveAspectRatio="xMidYMid meet"
               />
               <image
                 href={keyword.mapStickerSrc}
-                x={MARKER_STICKER.x}
-                y={MARKER_STICKER.y}
-                width={MARKER_STICKER.width}
-                height={MARKER_STICKER.height}
+                x={markerSticker.x}
+                y={markerSticker.y}
+                width={markerSticker.width}
+                height={markerSticker.height}
                 preserveAspectRatio={
                   keyword.mapStickerFit === "food"
                     ? "xMidYMid meet"
@@ -556,13 +607,14 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
               />
               {label ? (
                 <g
-                  transform={`translate(${MARKER_ANCHOR.x - labelWidth / 2} ${MARKER_ANCHOR.y + PROVINCE_LABEL.gap})`}
+                  transform={`translate(${markerAnchor.x - labelWidth / 2} ${markerAnchor.y + PROVINCE_LABEL.gap})`}
                 >
                   <rect
                     width={labelWidth}
                     height={PROVINCE_LABEL.height}
                     rx={PROVINCE_LABEL.height / 2}
                     fill={keyword.mapColor}
+                    filter="url(#recap-marker-shadow)"
                   />
                   <text
                     x={labelWidth / 2}
@@ -585,15 +637,13 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                     height={MARKER_BADGE.height}
                     rx={MARKER_BADGE.height / 2}
                     fill={keyword.mapColor}
+                    filter="url(#recap-marker-shadow)"
                   />
                   <text
                     x={badgeWidth / 2}
                     y={MARKER_BADGE.height / 2 + MARKER_BADGE.fontSize * 0.36}
                     textAnchor="middle"
                     fill="white"
-                    stroke={REGION_BORDER_COLOR}
-                    strokeWidth="0.45"
-                    paintOrder="stroke fill"
                     fontSize={MARKER_BADGE.fontSize}
                     fontWeight="500"
                   >
