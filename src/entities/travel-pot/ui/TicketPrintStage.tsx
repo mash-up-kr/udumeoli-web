@@ -17,32 +17,12 @@ import type { ReactNode } from "react"
 export function TicketPrintStage({ children }: { children: ReactNode }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)*0.75+25%)] flex justify-center">
-      <style>{`
-        @keyframes ticket-card-print-v2 {
-          0% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(167px) rotate(-2.303deg); }
-          100% { transform: translateY(334px) rotate(-4deg); }
-        }
-        @keyframes ticket-slot-v2 {
-          0%, 81% { opacity: 1; }
-          86%, 100% { opacity: 0; }
-        }
-        .ticket-card-print-v2 {
-          animation: ticket-card-print-v2 2s cubic-bezier(0.37, 0, 0.24, 1) infinite;
-        }
-        .ticket-slot-v2 { animation: ticket-slot-v2 2s linear infinite; }
-        .ticket-print-stage [data-ticket-card] { rotate: 0deg; }
-        @media (prefers-reduced-motion: reduce) {
-          .ticket-card-print-v2 { animation: none; transform: translateY(334px) rotate(-4deg); }
-          .ticket-slot-v2 { animation: none; opacity: 1; }
-        }
-      `}</style>
       <div className="ticket-print-stage relative h-[375px] w-full max-w-[375px] overflow-hidden">
         {/* 출력창 — 슬롯 라인(상단 edge) 위를 잘라 티켓이 프린터에서 인쇄되듯 내려온다.
             좌우/하단 패딩은 카드 그림자·기울기 몫 */}
         <div className="flex h-full justify-center overflow-hidden px-5">
           <div className="shrink-0">
-            <div className="ticket-card-print-v2 relative top-[-302px] z-10">
+            <div className="relative top-[-302px] z-30 animate-ticket-card-print-v2 motion-reduce:[transform:translateY(334px)_rotate(-4deg)] motion-reduce:animate-none [&_[data-ticket-card]]:rotate-0">
               {children}
             </div>
           </div>
@@ -50,15 +30,20 @@ export function TicketPrintStage({ children }: { children: ReactNode }) {
         {/* 프린터 슬롯 — Figma 3065:38129의 상단 캡과 하단 라인 */}
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-0 left-1/2 z-20 h-2 w-[350px] -translate-x-1/2 bg-[#eff1f5]"
+          className="absolute top-0 left-1/2 z-40 h-2 w-[350px] -translate-x-1/2 animate-ticket-slot-v2 bg-[#eff1f5] motion-reduce:animate-none motion-reduce:opacity-100"
         />
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-2 left-1/2 z-20 h-2 w-[350px] -translate-x-1/2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)]"
+          className="absolute top-2 left-1/2 z-20 h-2 w-[350px] -translate-x-1/2 animate-ticket-slot-v2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)] motion-reduce:animate-none motion-reduce:opacity-100"
+        />
+        {/* 아래 슬롯 프레임의 위쪽 절반만 티켓 위에 다시 그려 깊이를 만든다. */}
+        <div
+          aria-hidden
+          className="absolute top-2 left-1/2 z-40 h-2 w-[350px] -translate-x-1/2 animate-ticket-slot-v2 rounded-t-[3px] border-x-[3px] border-t-[3px] border-solid border-[rgba(183,183,183,0.5)] [clip-path:inset(0_0_50%_0)] motion-reduce:animate-none motion-reduce:opacity-100"
         />
         <div
           aria-hidden
-          className="ticket-slot-v2 absolute top-4 left-1/2 z-20 h-[3px] w-[350px] -translate-x-1/2 rounded-b-[3px] border-b-[3px] border-solid border-[rgba(183,183,183,0.5)]"
+          className="absolute top-4 left-1/2 z-20 h-[3px] w-[350px] -translate-x-1/2 animate-ticket-slot-v2 rounded-b-[3px] border-b-[3px] border-solid border-[rgba(183,183,183,0.5)] motion-reduce:animate-none motion-reduce:opacity-100"
         />
       </div>
     </div>
