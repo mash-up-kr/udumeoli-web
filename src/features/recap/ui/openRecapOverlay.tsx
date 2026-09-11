@@ -26,6 +26,8 @@ import photoMapSrc from "@/shared/assets/photo-map.jpg"
 /** 카드 좌하단 라벨 (시안 3196-5847) — 카드 폭 270 기준 값을 cqw로 환산 */
 const RECAP_LABEL_PILL =
   "truncate rounded-full px-[1.85cqw] py-[0.93cqw] text-[3.24cqw] leading-[4.63cqw] whitespace-nowrap text-white backdrop-blur-[4px]"
+const RECAP_NUMBER_OUTLINE =
+  "[-webkit-text-stroke:0.45px_white] [paint-order:stroke_fill]"
 
 async function exportRecapImage(
   element: HTMLElement | null,
@@ -167,7 +169,7 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
 
       <div className="relative flex h-full flex-col pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),34px)]">
         {/* 상단 — 뒤로가기(좌) · 팟 이름 + 멤버 + 툴팁(중앙) */}
-        <div className="relative h-[164px] shrink-0 px-4">
+        <div className="relative h-[218px] shrink-0 px-4">
           <ButtonIcon
             aria-label="뒤로가기"
             onClick={unmount}
@@ -206,8 +208,12 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             aria-label="리캡 이미지 미리보기"
             data-recap-card
             ref={recapCardRef}
-            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(var(--app-vh)_-_285px)] w-[min(320px,calc(var(--app-vw)_-_32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
+            className="[container-type:inline-size] absolute top-0 left-1/2 aspect-[270/480] h-auto max-h-[calc(var(--app-vh)_-_285px)] w-[min(270px,calc(var(--app-vw)_-_32px))] -translate-x-1/2 overflow-hidden rounded-[32px] border-2 border-[#232936] bg-[#79d5e6] shadow-[0_6px_18px_rgba(35,41,54,0.14)]"
           >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-[34.6%] bg-gradient-to-b from-white/80 to-transparent"
+            />
             <div
               className="absolute z-10"
               style={{
@@ -217,7 +223,11 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
             >
               <div className="flex flex-col gap-[0.93cqw] font-eng font-normal tracking-normal text-[#141820]">
                 <div className="flex items-end gap-[0.93cqw] text-[10.19cqw] leading-[10.19cqw] whitespace-nowrap">
-                  <span className="text-fg-brand-solid">{pinCount}</span>
+                  <span
+                    className={cn("text-fg-brand-solid", RECAP_NUMBER_OUTLINE)}
+                  >
+                    {pinCount}
+                  </span>
                   <span>PINNNED</span>
                 </div>
                 <span className="text-[8.33cqw] leading-[8.33cqw] whitespace-nowrap">

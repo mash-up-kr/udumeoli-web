@@ -1,7 +1,9 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 
 import type { PotMember } from "@/entities/travel-pot"
+import { photoKeys, usePhotoUploadStore } from "@/entities/photo"
 import {
   useDeleteParty,
   useLeaveParty,
@@ -154,7 +156,9 @@ function ConfirmDangerContent({
 
 function MyPotEditContent({ potId }: { potId: string }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const user = useSessionStore((s) => s.currentUser)
+  const removePhotosByPot = usePhotoUploadStore((s) => s.removePhotosByPot)
   const potsHydrated = usePotsHydrated()
   const pot = usePotStore((s) => s.pots.find((p) => p.id === potId))
   const renamePartyMutation = useRenameParty()
@@ -260,6 +264,8 @@ function MyPotEditContent({ potId }: { potId: string }) {
               })
               return
             }
+            queryClient.removeQueries({ queryKey: photoKeys.list(pot.id) })
+            removePhotosByPot(pot.id)
             await goMyPage()
           }}
         />

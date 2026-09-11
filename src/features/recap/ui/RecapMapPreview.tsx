@@ -240,6 +240,8 @@ function GoogleRecapMap({
                     lineHeight: cqw(MARKER_BADGE.height),
                     paddingInline: cqw(PROVINCE_LABEL.paddingX),
                     fontSize: cqw(MARKER_BADGE.fontSize),
+                    WebkitTextStroke: `0.35px ${REGION_BORDER_COLOR}`,
+                    paintOrder: "stroke fill",
                   }}
                 >
                   {count}
@@ -589,6 +591,9 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
                     y={MARKER_BADGE.height / 2 + MARKER_BADGE.fontSize * 0.36}
                     textAnchor="middle"
                     fill="white"
+                    stroke={REGION_BORDER_COLOR}
+                    strokeWidth="0.45"
+                    paintOrder="stroke fill"
                     fontSize={MARKER_BADGE.fontSize}
                     fontWeight="500"
                   >

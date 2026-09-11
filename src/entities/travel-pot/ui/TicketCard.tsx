@@ -53,56 +53,59 @@ export function TicketCard({
   return (
     <div
       className={cn(
-        "relative h-[311px] w-[335px] shrink-0 rotate-[-3.71deg] overflow-hidden rounded-[28px] border border-stroke-neutral-weak bg-bg-neutral-weak shadow-[0px_14px_32px_-6px_rgba(26,31,41,0.12)]",
+        "relative h-[311px] w-[335px] shrink-0 rotate-[-3.71deg] overflow-hidden rounded-[28px] border border-stroke-neutral-weak bg-white shadow-[0px_14px_32px_-6px_rgba(26,31,41,0.12)]",
         className
       )}
+      data-ticket-card
     >
-      <div className="flex flex-col px-6 pt-[22px]">
-        <div className="flex items-center gap-2">
-          <span className="font-eng text-e4 tracking-[0.25px] text-neutral-900">
-            PINNNED
-          </span>
-          <span
-            aria-hidden="true"
-            className="size-[6px] shrink-0 rounded-full border-[1.2px] border-neutral-900"
-          />
-          <img
-            src={ticketRouteDashSrc}
-            alt=""
-            className="h-[1.2px] min-w-0 flex-1"
-          />
-          <img
-            src={ticketRouteArrowSrc}
-            alt=""
-            className="size-[14px] shrink-0 rotate-180"
-          />
-          <img
-            src={ticketRouteDashSrc}
-            alt=""
-            className="h-[1.2px] min-w-0 flex-1"
-          />
-          <span
-            aria-hidden="true"
-            className="size-[6px] shrink-0 rounded-full bg-neutral-900"
-          />
-          <span className="font-eng text-e4 tracking-[0.25px] text-neutral-900">
-            TICKET
-          </span>
-        </div>
-        <div className="mt-[14px] flex items-center gap-2">
-          {/* 심볼 — 브랜드 푸시핀 (Figma 2466-8693 원본 벡터), 시안 슬롯 24×28 유지 */}
-          <img
-            src={ticketPinSrc}
-            alt=""
-            className="h-[28px] w-[24px] shrink-0"
-          />
-          <p className="min-w-0 truncate text-[28px] leading-[44px] font-extrabold tracking-[-0.2px] text-neutral-900">
-            {name}
-          </p>
+      <div className="absolute top-[-1px] left-[-1px] flex w-[335px] flex-col items-center pb-3">
+        <div className="flex w-full flex-col gap-[14px] overflow-hidden px-6 pt-[22px] pb-4">
+          <div className="flex w-[287px] items-center gap-2">
+            <span className="font-eng text-e4 tracking-[0.25px] text-neutral-900">
+              PINNNED
+            </span>
+            <span
+              aria-hidden="true"
+              className="size-[6px] shrink-0 rounded-full border-[1.2px] border-neutral-900"
+            />
+            <img
+              src={ticketRouteDashSrc}
+              alt=""
+              className="h-[1.2px] min-w-0 flex-1"
+            />
+            <img
+              src={ticketRouteArrowSrc}
+              alt=""
+              className="size-[14px] shrink-0 rotate-180"
+            />
+            <img
+              src={ticketRouteDashSrc}
+              alt=""
+              className="h-[1.2px] min-w-0 flex-1"
+            />
+            <span
+              aria-hidden="true"
+              className="size-[6px] shrink-0 rounded-full bg-neutral-900"
+            />
+            <span className="font-eng text-e4 tracking-[0.25px] text-neutral-900">
+              TICKET
+            </span>
+          </div>
+          <div className="flex w-[287px] items-center gap-2 overflow-hidden">
+            {/* 심볼 — 브랜드 푸시핀 (Figma 2466-8693 원본 벡터), 시안 슬롯 24×28 유지 */}
+            <img
+              src={ticketPinSrc}
+              alt=""
+              className="h-[28px] w-[24px] shrink-0"
+            />
+            <p className="min-w-0 truncate text-[28px] leading-[44px] font-extrabold tracking-[-0.2px] text-neutral-900">
+              {name}
+            </p>
+          </div>
         </div>
         <div
           className={cn(
-            "mt-4 flex rounded-[12px] bg-blue-100 px-4 py-3",
+            "flex w-[287px] rounded-[12px] bg-[#d1eafd] px-4 py-3",
             fieldsFit === "content" && "justify-between gap-4"
           )}
         >
@@ -145,7 +148,7 @@ export function TicketCard({
       />
       <div className="absolute top-[206px] left-0 flex w-full items-center gap-[10px] px-6 pt-4 pb-6">
         <div className="flex w-[211px] flex-col gap-2">{children}</div>
-        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-bg-neutral-weak">
+        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white">
           <img
             src={ticketQrSrc}
             alt=""

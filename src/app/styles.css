@@ -498,52 +498,29 @@
         }
     }
 
-    /* 팟 참여 확인 티켓 — 프린터 출력 등장 (graphic_interaction GIF).
-       슬롯 라인 위를 overflow로 잘라 티켓이 아래로 인쇄되듯 내려오고,
-       다 나오면 슬롯이 사라지며 살짝 기울어(-3.71°) 안착한다.
-       translate/rotate 프로퍼티만 애니메이션 — 래퍼의 기본 클래스(최종 상태)를
-       실행 중에만 덮어써서 motion-reduce 시 최종 상태가 즉시 보인다 */
-    /* 안착(settle)은 인쇄가 끝나기 직전(1.55s)에 겹쳐 시작 — 멈췄다 꺾이는
-       끊김 없이 내려오던 관성 그대로 부드럽게 기울어진다 */
-    --animate-ticket-print: ticket-print 1.5s cubic-bezier(0.37, 0, 0.24, 1)
-        0.15s both;
-    --animate-ticket-settle: ticket-settle 0.8s cubic-bezier(0.3, 0, 0.2, 1)
-        1.55s both;
-    --animate-ticket-slot: ticket-slot 2s linear both;
+    /* 팟 참여 확인 티켓 — Figma 3065:38129의 2초 출력 루프. */
+    --animate-ticket-card-print-v2: ticket-card-print-v2 2s
+        cubic-bezier(0.37, 0, 0.24, 1) infinite;
+    --animate-ticket-slot-v2: ticket-slot-v2 2s linear infinite;
 
-    @keyframes ticket-print {
-        from {
-            translate: 0 calc(-100% - 60px);
+    @keyframes ticket-card-print-v2 {
+        0% {
+            transform: translateY(0) rotate(0deg);
         }
-        to {
-            translate: 0 0;
+        50% {
+            transform: translateY(167px) rotate(-2.303deg);
+        }
+        100% {
+            transform: translateY(334px) rotate(-4deg);
         }
     }
 
-    @keyframes ticket-settle {
-        from {
-            translate: 0 0;
-            rotate: 0deg;
-        }
-        55% {
-            translate: 0 16px;
-            rotate: -4.3deg;
-        }
-        80% {
-            translate: 0 13.5px;
-            rotate: -3.5deg;
-        }
-        to {
-            translate: 0 14px;
-            rotate: -3.71deg;
-        }
-    }
-
-    @keyframes ticket-slot {
+    @keyframes ticket-slot-v2 {
         0%,
-        80% {
+        81% {
             opacity: 1;
         }
+        86%,
         100% {
             opacity: 0;
         }

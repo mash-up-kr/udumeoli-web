@@ -22,7 +22,8 @@ export function isCanonicalRegionCode(name: string, code: unknown): boolean {
 // 3단계(상세 뷰) 진입 줌 — Impl의 DETAIL_ENTER_ZOOM과 동일 값.
 // 이 아래(0·1·2단계)는 색칠만 남기고 테두리를 그리지 않는다.
 const STROKE_MIN_ZOOM = 9
-const KEYWORD_FILL_OPACITY = 0.4
+// Figma 여행 지도 핀 디자인 규칙: 키워드 색상은 배경에 투명도 30%로 적용
+const KEYWORD_FILL_OPACITY = 0.3
 
 export type RegionVisualState = {
   hasColor: boolean
