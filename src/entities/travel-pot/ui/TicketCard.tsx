@@ -53,7 +53,7 @@ export function TicketCard({
   return (
     <div
       className={cn(
-        "relative h-[311px] w-[335px] shrink-0 rotate-[-3.71deg] overflow-hidden rounded-[28px] border border-[#e4e7ed] bg-white shadow-[0px_14px_32px_-6px_rgba(26,31,41,0.12)]",
+        "relative h-[311px] w-[335px] shrink-0 rotate-[-3.71deg] overflow-hidden rounded-[28px] border border-stroke-neutral-weak bg-white shadow-[0px_14px_32px_-6px_rgba(26,31,41,0.12)]",
         className
       )}
       data-ticket-card
@@ -148,7 +148,7 @@ export function TicketCard({
       />
       <div className="absolute top-[206px] left-0 flex w-full items-center gap-[10px] px-6 pt-4 pb-6">
         <div className="flex w-[211px] flex-col gap-2">{children}</div>
-        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-[#d5d9e2] bg-white">
+        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white">
           <img
             src={ticketQrSrc}
             alt=""
