@@ -56,7 +56,7 @@ function CreatedStep({
 
   return (
     // 폼 → 완료 화면 교체가 한 프레임에 일어나 하단 CTA가 위로 '확' 튀어 보인다 — 화면째 페이드인
-    <MobileLayout className="relative flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
+    <MobileLayout className="relative flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
@@ -128,6 +128,8 @@ export function PotCreatePage() {
     name: string
     code: string
   } | null>(null)
+  const createSubmitPendingRef = React.useRef(false)
+  const [createSubmitPending, setCreateSubmitPending] = React.useState(false)
 
   // 완료 화면의 닫기·홈으로는 진입 지점(팟 목록 드롭다운/여행팟 시작 온보딩)과 무관하게 항상 지도로 이동.
   // replace — 팟 생성 플로우(이름 입력~완료) 전체를 히스토리에서 걷어내 뒤로가기가
@@ -136,11 +138,13 @@ export function PotCreatePage() {
   // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용
   const goBack = () => router.history.back()
 
-  const isCreating = createPartyMutation.isPending
+  const isCreating = createPartyMutation.isPending || createSubmitPending
 
   const handleCreate = async () => {
     const trimmedName = name.trim()
-    if (!trimmedName || isCreating) return
+    if (!trimmedName || isCreating || createSubmitPendingRef.current) return
+    createSubmitPendingRef.current = true
+    setCreateSubmitPending(true)
 
     try {
       // 세션 유저를 생성자 멤버로 전달 — 새 팟에서도 내 슬롯이 인식되도록
@@ -155,6 +159,8 @@ export function PotCreatePage() {
       setCreated({ id: pot.id, name: pot.name, code: pot.inviteCode })
     } catch {
       showToast({ message: "여행팟 생성에 실패했어요", icon: "alert" })
+      createSubmitPendingRef.current = false
+      setCreateSubmitPending(false)
     }
   }
 
@@ -178,7 +184,7 @@ export function PotCreatePage() {
   }
 
   return (
-    <MobileLayout className="flex min-h-[var(--app-vh)] animate-in flex-col bg-bg-neutral-subtle duration-300 fade-in-0">
+    <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />

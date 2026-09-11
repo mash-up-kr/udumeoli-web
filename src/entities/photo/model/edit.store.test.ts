@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
-import { applyPhotoEdits } from "./edit.store"
+import { applyPhotoEdits, usePhotoEditStore } from "./edit.store"
 import type { Photo } from "./types"
 
 const base = (id: string, comment?: string): Photo => ({
@@ -28,5 +28,29 @@ describe("applyPhotoEdits", () => {
     const photos = [base("a")]
     const result = applyPhotoEdits(photos, { deletedIds: [] })
     expect(result).toEqual(photos)
+  })
+})
+
+describe("photo deletion state", () => {
+  afterEach(() => {
+    for (const id of usePhotoEditStore.getState().deletedIds) {
+      usePhotoEditStore.getState().restoreDeleted(id)
+    }
+  })
+
+  it("삭제를 중복 표시하지 않고 실패 시 복구할 수 있다", () => {
+    usePhotoEditStore.getState().markDeleted("a")
+    usePhotoEditStore.getState().markDeleted("a")
+    usePhotoEditStore.getState().markDeleted("b")
+    expect(usePhotoEditStore.getState().deletedIds).toEqual(["a", "b"])
+    expect(
+      applyPhotoEdits([base("a"), base("b")], usePhotoEditStore.getState())
+    ).toEqual([])
+
+    usePhotoEditStore.getState().restoreDeleted("a")
+    expect(usePhotoEditStore.getState().deletedIds).toEqual(["b"])
+    expect(
+      applyPhotoEdits([base("a"), base("b")], usePhotoEditStore.getState())
+    ).toEqual([base("a")])
   })
 })
