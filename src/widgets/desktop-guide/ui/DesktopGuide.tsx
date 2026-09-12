@@ -58,7 +58,7 @@ function DesktopAside() {
               </span>
             ))}
           </div>
-          <p className="text-b6 break-keep text-fg-neutral-solid">
+          <p className="text-b7 break-keep text-fg-neutral-solid">
             모바일로 QR코드 스캔하고 바로 이용하기
           </p>
         </TicketCard>
