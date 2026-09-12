@@ -55,7 +55,7 @@ import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 
 import type { RegionFill } from "@/entities/region"
 import type { DecoratePreview } from "@/features/travel-record"
-import type { TravelKeyword } from "@/entities/photo"
+import type { TravelKeyword, TravelKeywordId } from "@/entities/photo"
 import { findKeyword, useAllPhotos } from "@/entities/photo"
 import {
   formatProvinceBadgeName,
@@ -1305,6 +1305,14 @@ function TravelMapGoogleInner({
     () => new Map(centroids.map((c) => [c.name, c])),
     [centroids]
   )
+  const municipalityKeywordByRegion = React.useMemo(() => {
+    const keywords = new Map<string, TravelKeywordId>()
+    for (const cell of mapOverview?.municipalities ?? []) {
+      const region = REGION_NAME_BY_CODE[cell.regionCode]
+      if (region) keywords.set(region, cell.keyword)
+    }
+    return keywords
+  }, [mapOverview])
   const decoratingCentroid = decorating
     ? centroidMap.get(decorating)
     : undefined
@@ -1688,7 +1696,8 @@ function TravelMapGoogleInner({
     )
     return trips.flatMap((trip) => {
       const keyword = findKeyword(
-        mostPickedKeyword(tripsByRegion.get(trip.region) ?? [])
+        municipalityKeywordByRegion.get(trip.region) ??
+          mostPickedKeyword(tripsByRegion.get(trip.region) ?? [])
       )
       if (!keyword) return []
       const representative = trip.representativePhoto
@@ -1717,7 +1726,12 @@ function TravelMapGoogleInner({
         },
       ]
     })
-  }, [collaborationTrips, centroidMap, mapOverview])
+  }, [
+    collaborationTrips,
+    centroidMap,
+    mapOverview,
+    municipalityKeywordByRegion,
+  ])
 
   // 스티커는 지역당 1개라 "과거 완료 여행" 스티커는 지도에 남지 않는다 — 그 스티커를 눌렀어도
   // 판정은 지역의 최신 여행 기준. 명시적으로 누른 경로라 줌 게이트는 적용하지 않는다
