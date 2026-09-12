@@ -268,6 +268,7 @@ function MyPageContent() {
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <Header
         title="마이페이지"
+        className="sticky top-0 z-20 bg-bg-neutral-subtle/95 backdrop-blur"
         onIconClick={() =>
           router.navigate({ to: "/map-google", replace: true })
         }
