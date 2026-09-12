@@ -3,6 +3,7 @@ export type { TravelKeyword, TravelKeywordId } from "./model/keywords"
 export {
   TRAVEL_KEYWORDS,
   TRAVEL_KEYWORD_OPTIONS,
+  compareKeywordEntries,
   findKeyword,
   regionStrokeForFill,
 } from "./model/keywords"
