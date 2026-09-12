@@ -14,6 +14,7 @@ import { RequireAuth } from "@/features/auth"
 import { openPhotoViewer } from "@/features/photo-gallery"
 import { useRecordStore } from "@/features/travel-record"
 import {
+  compareKeywordEntries,
   findKeyword,
   useDeletePhoto,
   usePhotos,
@@ -86,7 +87,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const uploadedIds = new Set(regionPhotos.map((p) => p.uploaderId))
 
   // 키워드 칩 — 지역 사진의 키워드를 종류별 집계, 많은 순 (정책 3). 사진 0장이면 칩 영역 미노출
-  const keywordCounts = new Map<string, number>()
+  const keywordCounts = new Map<NonNullable<Photo["keyword"]>, number>()
   for (const photo of regionPhotos) {
     if (photo.keyword) {
       keywordCounts.set(
@@ -96,8 +97,8 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     }
   }
   const keywords = [...keywordCounts.entries()]
-    .sort(([, a], [, b]) => b - a)
-    .map(([id]) => findKeyword(id as NonNullable<Photo["keyword"]>))
+    .sort(compareKeywordEntries)
+    .map(([id]) => findKeyword(id))
     .filter((keyword): keyword is NonNullable<typeof keyword> =>
       Boolean(keyword)
     )

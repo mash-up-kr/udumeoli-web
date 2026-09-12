@@ -128,3 +128,17 @@ export function findKeyword(
 ): TravelKeyword | undefined {
   return id ? keywordById[id] : undefined
 }
+
+/** 키워드 집계 표시 순서 — 개수 내림차순, 동률이면 가나다순. */
+export function compareKeywordEntries(
+  left: [TravelKeywordId, number],
+  right: [TravelKeywordId, number]
+): number {
+  const countOrder = right[1] - left[1]
+  if (countOrder !== 0) return countOrder
+
+  return (findKeyword(left[0])?.label ?? "").localeCompare(
+    findKeyword(right[0])?.label ?? "",
+    "ko"
+  )
+}

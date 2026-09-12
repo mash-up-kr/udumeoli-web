@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { resolveSheetDrag } from "../lib/sheetDrag"
+import { getKeywordBadgeStyle } from "../lib/keywordBadge"
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react"
 import type { PotMember } from "@/entities/travel-pot"
 import type { Photo } from "@/entities/photo"
@@ -7,6 +8,7 @@ import type { PhotoViewerUploader } from "@/features/photo-gallery"
 import { openPhotoViewer } from "@/features/photo-gallery"
 import { useRecordStore } from "@/features/travel-record"
 import {
+  compareKeywordEntries,
   findKeyword,
   groupTrips,
   useAllPhotos,
@@ -369,7 +371,7 @@ export function RegionRecordsBottomSheet({
     })
   }
 
-  const keywordCounts = new Map<string, number>()
+  const keywordCounts = new Map<NonNullable<Photo["keyword"]>, number>()
   for (const photo of regionPhotos) {
     if (photo.keyword) {
       keywordCounts.set(
@@ -379,8 +381,8 @@ export function RegionRecordsBottomSheet({
     }
   }
   const keywords = [...keywordCounts.entries()]
-    .sort(([, a], [, b]) => b - a)
-    .map(([id]) => findKeyword(id as NonNullable<Photo["keyword"]>))
+    .sort(compareKeywordEntries)
+    .map(([id]) => findKeyword(id))
     .filter((keyword): keyword is NonNullable<typeof keyword> =>
       Boolean(keyword)
     )
@@ -413,7 +415,8 @@ export function RegionRecordsBottomSheet({
             {keywords.map((keyword) => (
               <span
                 key={keyword.id}
-                className="flex items-center gap-1 rounded-full bg-[rgba(32,32,31,0.1)] px-2 py-1 text-h9 leading-4 text-[#20201f] shadow-[0px_0px_13.686px_0px_rgba(142,150,169,0.12)]"
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-h9 leading-4 shadow-[0px_0px_13.686px_0px_rgba(142,150,169,0.12)]"
+                style={getKeywordBadgeStyle(keyword)}
               >
                 <img
                   src={keyword.emojiSrc}
