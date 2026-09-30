@@ -180,8 +180,15 @@ function RecapMapZoomFit({ mapView }: { mapView: typeof RECAP_MAP_VIEW }) {
 
   React.useEffect(() => {
     if (!map) return
-    const width = map.getDiv().offsetWidth
-    if (width > 0) map.setZoom(mapView.zoom + Math.log2(width / mapView.width))
+    // 폭이 아직 0이거나 이후에 바뀌어도(데스크탑 프레임 리사이즈) 다시 맞춘다
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width
+      if (width > 0) {
+        map.setZoom(mapView.zoom + Math.log2(width / mapView.width))
+      }
+    })
+    observer.observe(map.getDiv())
+    return () => observer.disconnect()
   }, [map, mapView])
 
   return null
