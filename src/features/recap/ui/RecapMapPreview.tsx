@@ -154,11 +154,9 @@ function GoogleRecapLayer({
     data.setStyle((feature) => {
       const id = String(feature.getId() ?? "")
       const keyword = fillKeywords.get(id)
-      // 독도는 우리가 그려 넣은 최소 크기 섬이라 미기록 투명도(0.08)면 보이지 않는다
-      const isDokdo = id === DOKDO_FEATURE_ID
       return {
         fillColor: keyword?.mapColor ?? UNVISITED_REGION_COLOR,
-        fillOpacity: keyword ? KEYWORD_FILL_OPACITY : isDokdo ? 0.85 : 0.08,
+        fillOpacity: keyword ? KEYWORD_FILL_OPACITY : 0.08,
         strokeColor: REGION_BORDER_COLOR,
         strokeOpacity: keyword ? 0.32 : 0.08,
         strokeWeight: 1,
@@ -169,6 +167,22 @@ function GoogleRecapLayer({
 
     return () => data.setMap(null)
   }, [fillKeywords, geojson, map])
+
+  return null
+}
+
+/**
+ * 카드 폭이 뷰 폭(view.width)과 다르면 같은 범위가 담기도록 줌을 보정한다 —
+ * 미리보기 = 저장 이미지. 저장은 줌 고정 + 이미지 확대로 같은 범위를 만든다.
+ */
+function RecapMapZoomFit({ mapView }: { mapView: typeof RECAP_MAP_VIEW }) {
+  const map = useMap()
+
+  React.useEffect(() => {
+    if (!map) return
+    const width = map.getDiv().offsetWidth
+    if (width > 0) map.setZoom(mapView.zoom + Math.log2(width / mapView.width))
+  }, [map, mapView])
 
   return null
 }
@@ -192,11 +206,14 @@ function GoogleRecapMap({
         renderingType={RenderingType.RASTER}
         defaultCenter={mapView.center}
         defaultZoom={mapView.zoom}
+        // 래스터는 기본이 정수 줌 — 카드 폭에 맞춘 소수 줌(RecapMapZoomFit)을 허용한다
+        isFractionalZoomEnabled
         gestureHandling="none"
         disableDefaultUI
         clickableIcons={false}
         style={{ width: "100%", height: "100%" }}
       >
+        <RecapMapZoomFit mapView={mapView} />
         <GoogleRecapLayer geojson={geojson} fillKeywords={fillKeywords} />
         {markers.map(({ key, keyword, count, label, geoPosition }) => {
           const markerBox = label ? PROVINCE_MARKER_BOX : MARKER_BOX
@@ -281,42 +298,6 @@ function GoogleRecapMap({
   )
 }
 
-/**
- * 독도 — 실제 폭이 200m라 이 줌(카드 1유닛 ≈ 2.6km)에서는 지도 타일에도, 우리
- * geojson에도 남지 않는다(loadKoreaGeoJson이 서브픽셀 섬을 버린다). 영토가 빠져
- * 보이지 않도록 카드에서만 보이는 최소 크기 원으로 직접 그린다.
- *
- * 색칠·마커·집계에는 참여시키지 않는다 — province를 비워 도 단위 중심 계산이
- * 동쪽으로 끌려가지 않게 하고, 이름도 실제 지역명과 겹치지 않게 둔다.
- */
-const DOKDO_FEATURE_ID = "dokdo"
-const DOKDO = { lat: 37.2429, lng: 131.8664, radiusDeg: 0.028 }
-
-function withDokdo(
-  collection: GeoJSON.FeatureCollection
-): GeoJSON.FeatureCollection {
-  const ring: Array<GeoJSON.Position> = []
-  for (let i = 0; i <= 16; i += 1) {
-    const angle = (i / 16) * 2 * Math.PI
-    ring.push([
-      DOKDO.lng + Math.cos(angle) * DOKDO.radiusDeg,
-      DOKDO.lat + (Math.sin(angle) * DOKDO.radiusDeg) / 1.25,
-    ])
-  }
-  return {
-    ...collection,
-    features: [
-      ...collection.features,
-      {
-        type: "Feature",
-        id: DOKDO_FEATURE_ID,
-        properties: { name: "독도" },
-        geometry: { type: "Polygon", coordinates: [ring] },
-      },
-    ],
-  }
-}
-
 export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
   photos,
   className,
@@ -342,7 +323,7 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
     void loadKoreaGeoJson()
       .then((geo) => {
         if (active) {
-          setGeojson(withDokdo(geo.municipalities))
+          setGeojson(geo.municipalities)
           setNation(geo.nation)
           onReady?.()
         }
@@ -536,14 +517,13 @@ export const RecapMapPreview = React.memo(function RecapMapPreviewInner({
         </defs>
         {projectedFeatures.map(({ feature, path }, index) => {
           const keyword = fillKeywords.get(String(feature.id))
-          const isDokdo = String(feature.id) === DOKDO_FEATURE_ID
           return (
             <path
               key={`${String(feature.id)}-${index}`}
               d={path}
               fill={keyword?.mapColor ?? UNVISITED_REGION_COLOR}
               fillOpacity={keyword ? KEYWORD_FILL_OPACITY : "0.94"}
-              data-recap-unvisited={keyword || isDokdo ? undefined : "true"}
+              data-recap-unvisited={keyword ? undefined : "true"}
               stroke={REGION_BORDER_COLOR}
               strokeOpacity="0.12"
               strokeWidth="0.35"
