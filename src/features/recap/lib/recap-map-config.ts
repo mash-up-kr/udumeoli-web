@@ -16,10 +16,10 @@ export type RecapMapView = {
  */
 export const RECAP_MAP_VIEW: RecapMapView = {
   // 본토 좌우 여백이 비슷하고, 위로는 제목 아래 고성·아래로는 제주까지 들어오는 중심.
-  center: { lat: 36.55, lng: 127.65 },
+  center: { lat: 36.43, lng: 127.7 },
   zoom: 6,
-  width: 230,
-  height: 408.889,
+  width: 220,
+  height: 391.111,
 } as const
 
 /** Static Maps 최대 세로 크기 — 뷰보다 크게 받아 로고 띠(하단 약 20px)를 잘라낸다 */
