@@ -136,8 +136,16 @@ export function PotCreatePage() {
   // replace — 팟 생성 플로우(이름 입력~완료) 전체를 히스토리에서 걷어내 뒤로가기가
   // 이 화면들로 되돌아가지 않고 바로 이전 맥락(로그인 유저와 동일)으로 향하게 한다
   const goToMap = () => router.navigate({ to: "/map-google", replace: true })
-  // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용
-  const goBack = () => router.history.back()
+  // 이름 입력 화면의 뒤로가기는 실제 진입 지점(지도 드롭다운/여행팟 시작 온보딩)으로 돌아가야 하므로 history back 사용.
+  // 가입 직후엔 카카오 로그인(외부 이동) 이후 전부 replace로 넘어와 되돌아갈 히스토리가 없어
+  // back()이 무동작 — 팟 시작 화면으로 보낸다 (팟이 있으면 거기서 지도로 넘겨준다)
+  const goBack = () => {
+    if (router.history.canGoBack()) {
+      router.history.back()
+    } else {
+      router.navigate({ to: "/pot-start", replace: true })
+    }
+  }
 
   const isCreating = createPartyMutation.isPending || createSubmitPending
 
