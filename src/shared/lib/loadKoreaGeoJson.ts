@@ -32,6 +32,10 @@ export type KoreaGeo = {
 // 결과는 순수 함수라 한 번만 만들면 된다 — 지도↔앨범 왕복이나 StrictMode 이중 마운트마다
 // 다시 받고 다시 병합하지 않도록 promise를 모듈 스코프에 잡아둔다.
 // 실패한 promise는 남기지 않아 다음 호출이 재시도할 수 있다.
+// 지도에서 제외하는 지역 — 기록 등록([+])·색칠·리캡 대상에서 모두 빠진다.
+// 울릉군: 리캡 프레임에서 울릉도·독도를 뺀 것과 맞춰 일단 등록도 받지 않는다
+const EXCLUDED_REGIONS = new Set(["울릉군"])
+
 let cached: Promise<KoreaGeo> | null = null
 
 export function loadKoreaGeoJson(): Promise<KoreaGeo> {
@@ -89,7 +93,9 @@ async function buildKoreaGeoJson(): Promise<KoreaGeo> {
   ) as unknown as GeoJSON.FeatureCollection
   const gunFeatures = muniRaw.features.filter((f) => {
     const name = f.properties?.name as string | undefined
-    if (!name || cityGroups.has(name)) return false
+    if (!name || cityGroups.has(name) || EXCLUDED_REGIONS.has(name)) {
+      return false
+    }
     return name.endsWith("군") || name.endsWith("시")
   })
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 
 /**
  * TicketPrintStage — 티켓 등장 인터랙션 공통 래퍼 (graphic_interaction GIF).
@@ -11,12 +11,30 @@ import type { ReactNode } from "react"
  * inset + (100% - inset)×25% = inset×0.75 + 25%로 상태줄 아래 영역 기준 비율을 유지한다.
  * 부모는 position 컨텍스트(relative)여야 한다.
  *
+ * 화면이 낮으면 하단 고정 영역(bottomReserve)을 가리지 않도록 위로 끌어올리고,
+ * 그래도 모자라면 남는 높이에 맞춰 축소한다 (styles.css `.ticket-print-stage`).
+ * `align="center"`는 25% 지점 대신 제목과 하단 고정 영역 사이 정중앙에 둔다.
+ *
  * children에는 TicketCard를 `rotate-none`으로 넣는다 — 기울임은 안착 애니메이션
  * 래퍼가 담당하고, 카드 자체는 정방향으로 인쇄돼야 한다.
  */
-export function TicketPrintStage({ children }: { children: ReactNode }) {
+export function TicketPrintStage({
+  bottomReserve,
+  align,
+  children,
+}: {
+  /** 티켓 아래 하단 고정 영역(CTA·툴팁) 높이(px) — 하단 safe-area 패딩 제외. */
+  bottomReserve: number
+  /** "center" — 제목과 하단 고정 영역 사이 정중앙 (팟 생성 완료 시안 3065-13044). */
+  align?: "center"
+  children: ReactNode
+}) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)*0.75+25%)] flex justify-center">
+    <div
+      className="ticket-print-stage-position pointer-events-none absolute inset-x-0 flex justify-center"
+      data-align={align}
+      style={{ "--ticket-reserve": `${bottomReserve}px` } as CSSProperties}
+    >
       <div className="ticket-print-stage relative h-[375px] w-full max-w-[375px] overflow-hidden">
         {/* 출력창 — 슬롯 라인(상단 edge) 위를 잘라 티켓이 프린터에서 인쇄되듯 내려온다.
             좌우/하단 패딩은 카드 그림자·기울기 몫 */}

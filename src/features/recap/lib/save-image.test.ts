@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { RECAP_CARD_LAYOUT } from "./recap-layout"
-import { buildRecapTextMarkup, staticMapImageMarkup } from "./save-image"
+import { buildRecapTextMarkup, staticMapTiles } from "./save-image"
 
 const { labels } = RECAP_CARD_LAYOUT
 
@@ -45,23 +45,32 @@ describe("buildRecapTextMarkup", () => {
   })
 })
 
-describe("staticMapImageMarkup", () => {
-  it("뷰보다 길게 받은 정적 지도를 위아래 똑같이 넘치게 깔아 하단 로고 띠를 카드 밖으로 보낸다", () => {
-    const view = {
-      center: { lat: 36, lng: 128 },
-      zoom: 6,
-      width: 324,
-      height: 576,
-    }
-    const markup = staticMapImageMarkup(view, 640, "data:map")
-    // 카드 폭 270 = 뷰 폭 324 × 0.8333 → 이미지 높이 640 × 0.8333, 넘침 64 × 0.8333 / 2
-    expect(markup).toContain('x="0"')
-    expect(markup).toContain('width="270"')
-    expect(markup).toContain(`height="${(640 * 270) / 324}"`)
-    expect(markup).toContain(`y="${(-32 * 270) / 324}"`)
-    // 뷰 높이만큼만 카드 안에 보인다: y + height − 카드 높이 = 위쪽 넘침과 같다
-    const y = (-32 * 270) / 324
-    const height = (640 * 270) / 324
-    expect(y + height - 480).toBeCloseTo(-y)
+describe("staticMapTiles", () => {
+  const view = {
+    center: { lat: 36.43, lng: 127.7 },
+    zoom: 6,
+    width: 220,
+    height: 391.111,
+  }
+  const [top, bottom] = staticMapTiles(view)
+
+  it("한 단계 높은 줌의 두 장이 카드 전체(0~480)를 덮는다", () => {
+    expect(top.zoom).toBe(7)
+    expect(top.width).toBe(440)
+    expect(top.cardY).toBe(0)
+    expect(bottom.cardY).toBeLessThan(top.cardY + top.cardHeight)
+    expect(bottom.cardY + bottom.cardHeight).toBeGreaterThan(480)
+  })
+
+  it("위 장의 로고 띠는 아래 장이 덮고, 아래 장의 로고 띠는 카드 밖으로 나간다", () => {
+    const band = (40 * 270) / 440
+    expect(bottom.cardY).toBeLessThan(top.cardY + top.cardHeight - band)
+    expect(bottom.cardY + bottom.cardHeight - band).toBeCloseTo(480, 0)
+  })
+
+  it("두 장의 중심은 뷰 중심을 사이에 두고 위·아래에 있다", () => {
+    expect(top.center.lat).toBeGreaterThan(view.center.lat)
+    expect(bottom.center.lat).toBeLessThan(view.center.lat)
+    expect(top.center.lng).toBe(view.center.lng)
   })
 })
