@@ -27,7 +27,7 @@ export const POPULAR_REGIONS = new Set([
   "하동군", // 22 하동
   "광주광역시", // 23 광주
   "목포시", // 24 목포
-  "울릉군", // 25 울릉
+  // 25 울릉 — 지도에서 제외한 지역이라 뺀다 (loadKoreaGeoJson EXCLUDED_REGIONS)
   "대전광역시", // 26 대전
   "양양군", // 27 양양
   "평창군", // 28 평창
