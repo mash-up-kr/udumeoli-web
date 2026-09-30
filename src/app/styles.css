@@ -574,6 +574,40 @@
 }
 
 @layer utilities {
+    /* 티켓 스테이지 — 기본은 상태줄 아래 영역의 25% 지점. 화면이 낮으면 하단 고정 영역
+       (--ticket-reserve + 하단 패딩) 위로 끌어올리고, 제목 아래 공간보다 티켓이 크면
+       남는 높이 비율로 축소한다. 140px = 상단 바(76) + 제목(80) - 슬롯 여유(16),
+       354px = 안착한 티켓 하단(기울임 포함). tan(atan2())는 길이÷길이를 비율로 바꾼다 */
+    .ticket-print-stage-position {
+        --ticket-floor: calc(env(safe-area-inset-top) + 140px);
+        --ticket-bottom: calc(
+            var(--ticket-reserve) + max(env(safe-area-inset-bottom), 34px)
+        );
+        top: max(
+            var(--ticket-floor),
+            min(
+                calc(env(safe-area-inset-top) * 0.75 + 25%),
+                calc(100% - var(--ticket-bottom) - 354px)
+            )
+        );
+    }
+
+    .ticket-print-stage {
+        transform-origin: top center;
+        scale: min(
+            1,
+            tan(
+                atan2(
+                    calc(
+                        var(--app-vh) - var(--ticket-floor) -
+                            var(--ticket-bottom)
+                    ),
+                    354px
+                )
+            )
+        );
+    }
+
     /* 600px 전후의 모바일 높이에서는 폼을 축소하고, 넘치면 터치 스크롤로 보완한다. */
     @media (min-height: 600px) {
         .travel-record-photo-content {

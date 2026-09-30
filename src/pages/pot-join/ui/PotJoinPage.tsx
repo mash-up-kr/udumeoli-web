@@ -89,7 +89,8 @@ function ConfirmStep({
           확인해 주세요
         </h1>
       </main>
-      <TicketPrintStage>
+      {/* 하단 고정 영역: CTA 56 */}
+      <TicketPrintStage bottomReserve={56}>
         <TicketCard
           name={preview.name}
           // preview 응답에 리더 필드가 없다 — 서버가 owner를 먼저 내려주는 순서에 의존해 첫 멤버 표기

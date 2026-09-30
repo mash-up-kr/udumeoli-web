@@ -69,7 +69,8 @@ function CreatedStep({
           여행팟이 만들어졌어요!
         </h1>
       </main>
-      <TicketPrintStage>
+      {/* 하단 고정 영역: 툴팁 32 + 간격 25 + CTA 56×2 + 간격 10 */}
+      <TicketPrintStage bottomReserve={179}>
         <TicketCard
           name={name}
           leaderName={leaderName}
