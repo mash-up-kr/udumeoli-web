@@ -13,21 +13,26 @@ import type { CSSProperties, ReactNode } from "react"
  *
  * 화면이 낮으면 하단 고정 영역(bottomReserve)을 가리지 않도록 위로 끌어올리고,
  * 그래도 모자라면 남는 높이에 맞춰 축소한다 (styles.css `.ticket-print-stage`).
+ * `align="center"`는 25% 지점 대신 제목과 하단 고정 영역 사이 정중앙에 둔다.
  *
  * children에는 TicketCard를 `rotate-none`으로 넣는다 — 기울임은 안착 애니메이션
  * 래퍼가 담당하고, 카드 자체는 정방향으로 인쇄돼야 한다.
  */
 export function TicketPrintStage({
   bottomReserve,
+  align,
   children,
 }: {
   /** 티켓 아래 하단 고정 영역(CTA·툴팁) 높이(px) — 하단 safe-area 패딩 제외. */
   bottomReserve: number
+  /** "center" — 제목과 하단 고정 영역 사이 정중앙 (팟 생성 완료 시안 3065-13044). */
+  align?: "center"
   children: ReactNode
 }) {
   return (
     <div
       className="ticket-print-stage-position pointer-events-none absolute inset-x-0 flex justify-center"
+      data-align={align}
       style={{ "--ticket-reserve": `${bottomReserve}px` } as CSSProperties}
     >
       <div className="ticket-print-stage relative h-[375px] w-full max-w-[375px] overflow-hidden">

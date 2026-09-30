@@ -70,7 +70,7 @@ function CreatedStep({
         </h1>
       </main>
       {/* 하단 고정 영역: 툴팁 32 + 간격 25 + CTA 56×2 + 간격 10 */}
-      <TicketPrintStage bottomReserve={179}>
+      <TicketPrintStage bottomReserve={179} align="center">
         <TicketCard
           name={name}
           leaderName={leaderName}

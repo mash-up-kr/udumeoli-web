@@ -580,6 +580,7 @@
        354px = 안착한 티켓 하단(기울임 포함). tan(atan2())는 길이÷길이를 비율로 바꾼다 */
     .ticket-print-stage-position {
         --ticket-floor: calc(env(safe-area-inset-top) + 140px);
+        --ticket-fit: 354px;
         --ticket-bottom: calc(
             var(--ticket-reserve) + max(env(safe-area-inset-bottom), 34px)
         );
@@ -589,6 +590,16 @@
                 calc(env(safe-area-inset-top) * 0.75 + 25%),
                 calc(100% - var(--ticket-bottom) - 354px)
             )
+        );
+    }
+
+    /* center — 제목 아래(상단 바 76 + 제목 80)와 하단 고정 영역 사이 정중앙 (시안 3065-13044).
+       스테이지(375) 중심 = 안착한 티켓 중심이라 위아래 간격이 같고, 모자라면 중심 기준으로 축소 */
+    .ticket-print-stage-position[data-align="center"] {
+        --ticket-floor: calc(env(safe-area-inset-top) + 156px);
+        --ticket-fit: 375px;
+        top: calc(
+            (var(--ticket-floor) + 100% - var(--ticket-bottom) - 375px) / 2
         );
     }
 
@@ -602,10 +613,14 @@
                         var(--app-vh) - var(--ticket-floor) -
                             var(--ticket-bottom)
                     ),
-                    354px
+                    var(--ticket-fit)
                 )
             )
         );
+    }
+
+    [data-align="center"] > .ticket-print-stage {
+        transform-origin: center;
     }
 
     /* 600px 전후의 모바일 높이에서는 폼을 축소하고, 넘치면 터치 스크롤로 보완한다. */
