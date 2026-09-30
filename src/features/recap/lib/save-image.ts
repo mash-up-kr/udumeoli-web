@@ -345,7 +345,7 @@ async function buildExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="55%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="34.6%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${locationIconMarkup}${buildRecapTextMarkup(model)}</svg>`
   return inlineSvgImages(svg)
 }
 
@@ -369,7 +369,7 @@ async function buildFallbackExportSvg(
     ? removeMapBackground(mapMarkup)
     : softenFallbackMap(mapMarkup)
   const fontStyle = await exportFontStyle()
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="55%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480">${fontStyle}<defs><linearGradient id="recap-top-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0.8"/><stop offset="34.6%" stop-color="white" stop-opacity="0"/></linearGradient></defs><rect width="270" height="480" fill="#79d5e6"/><g>${staticMapMarkup}${mapWithBackground}</g><rect width="270" height="480" fill="url(#recap-top-glow)" pointer-events="none"/>${buildLocationIconMarkup(element)}${buildRecapTextMarkup(model)}</svg>`
 }
 
 interface CanvasText {
