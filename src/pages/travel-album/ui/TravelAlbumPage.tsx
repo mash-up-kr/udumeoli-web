@@ -12,6 +12,7 @@ import { useAllPhotos, usePhotos } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { formatRegionName } from "@/entities/region"
+import { trackEvent } from "@/shared/api/analytics"
 
 function TravelAlbumPageContent() {
   const router = useRouter()
@@ -23,6 +24,10 @@ function TravelAlbumPageContent() {
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
   const myId = useSessionStore((s) => s.currentUser?.id ?? null)
+
+  React.useEffect(() => {
+    trackEvent("travel_album_viewed")
+  }, [])
 
   // 지역별 카드 데이터 — 멤버 자리(가입 순 고정)·미기록 Alert (시안 3065-14470).
   // 자리는 팟 멤버 수만큼 항상 만들고, 안 올린 멤버 자리는 thumbnailUrl이 null이다.

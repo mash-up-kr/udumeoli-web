@@ -14,6 +14,7 @@ import {
 import type { TravelPot } from "../model/types"
 import type { QueryOptions } from "@/shared/api/client"
 import { USE_MOCK } from "@/shared/api/client"
+import { trackEvent } from "@/shared/api/analytics"
 
 export const travelPotKeys = {
   all: ["travel-pot"] as const,
@@ -46,7 +47,8 @@ export function usePartyMapOverview(partyId: string) {
 
 /** 생성·참여 결과를 목록 맨 앞에 반영 — 최근 입장 팟이 최상단 (Figma 1959-5326 #2) */
 function useUpsertingMutation(
-  mutationFn: (input: string) => Promise<TravelPot>
+  mutationFn: (input: string) => Promise<TravelPot>,
+  eventName: "pot_created" | "pot_joined"
 ) {
   const queryClient = useQueryClient()
   const replacePots = usePotStore((s) => s.replacePots)
@@ -54,6 +56,7 @@ function useUpsertingMutation(
   return useMutation({
     mutationFn,
     onSuccess: (pot) => {
+      trackEvent(eventName)
       const cached =
         queryClient.getQueryData<Array<TravelPot>>(travelPotKeys.myParties()) ??
         []
@@ -68,11 +71,11 @@ function useUpsertingMutation(
 }
 
 export function useCreateParty() {
-  return useUpsertingMutation(createParty)
+  return useUpsertingMutation(createParty, "pot_created")
 }
 
 export function useJoinParty() {
-  return useUpsertingMutation(joinParty)
+  return useUpsertingMutation(joinParty, "pot_joined")
 }
 
 /** 팟 이름 변경 — 성공 시 store와 myParties 캐시의 이름을 함께 갱신. */

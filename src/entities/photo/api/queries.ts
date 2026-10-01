@@ -5,6 +5,7 @@ import { applyPhotoEdits, usePhotoEditStore } from "../model/edit.store"
 import { usePhotoUploadStore } from "../model/upload.store"
 import { createPhoto, deletePhoto, fetchPhotos } from "./photo.api"
 import type { Photo } from "../model/types"
+import { trackEvent } from "@/shared/api/analytics"
 
 export const photoKeys = {
   all: ["photo"] as const,
@@ -51,6 +52,9 @@ export function useCreatePhoto() {
   return useMutation({
     mutationFn: createPhoto,
     onSuccess: (photo) => {
+      trackEvent("travel_record_created", {
+        metadata: { region: photo.region },
+      })
       queryClient.invalidateQueries({ queryKey: photoKeys.list(photo.potId) })
       queryClient.invalidateQueries({
         queryKey: ["travel-pot", "map-overview", photo.potId],
