@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { trackPageViewForRoute } from "./analytics-runtime"
+import { trackPageViewForPath } from "./analytics-runtime"
 
 const { trackEventMock } = vi.hoisted(() => ({
   trackEventMock: vi.fn(),
@@ -14,11 +14,11 @@ describe("AnalyticsRuntime", () => {
     trackEventMock.mockReset()
   })
 
-  it("tracks the initial route and distinct route changes only once", () => {
-    trackPageViewForRoute("/")
-    trackPageViewForRoute("/")
-    trackPageViewForRoute("/map-google")
-    trackPageViewForRoute("/map-google")
+  it("tracks the initial path and distinct path changes only once", () => {
+    trackPageViewForPath("/")
+    trackPageViewForPath("/")
+    trackPageViewForPath("/map-google")
+    trackPageViewForPath("/map-google")
 
     expect(trackEventMock).toHaveBeenCalledTimes(2)
     expect(trackEventMock).toHaveBeenNthCalledWith(1, "page_view")

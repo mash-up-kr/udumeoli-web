@@ -13,12 +13,15 @@ describe("analytics client", () => {
       "https://pinnned-analytics-production.up.railway.app"
     )
     vi.stubGlobal("fetch", fetchMock)
+    fetchMock.mockReset()
     fetchMock.mockResolvedValue(new Response(null, { status: 202 }))
     window.localStorage.clear()
     window.sessionStorage.clear()
+    window.history.replaceState(null, "", "/")
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
@@ -43,5 +46,38 @@ describe("analytics client", () => {
 
     expect(() => trackEvent("login_completed")).not.toThrow()
     await Promise.resolve()
+  })
+
+  it("sends the pathname without query and reduces referrer to its origin", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/map-google?utm_source=google&inviteCode=secret"
+    )
+    vi.spyOn(document, "referrer", "get").mockReturnValue(
+      "https://example.com/private?token=secret"
+    )
+
+    trackEvent("page_view")
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const payload = JSON.parse(fetchMock.mock.calls[1][1].body as string)
+    expect(payload.path).toBe("/map-google")
+    expect(payload.referrer).toBe("https://example.com")
+    expect(payload.utmSource).toBe("google")
+  })
+
+  it("keeps tracking when localStorage is unavailable", async () => {
+    vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
+      throw new Error("blocked")
+    })
+
+    expect(() => trackEvent("page_view")).not.toThrow()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const payload = JSON.parse(fetchMock.mock.calls[1][1].body as string)
+    expect(payload.anonymousId).toBeTruthy()
   })
 })

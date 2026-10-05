@@ -95,6 +95,17 @@ function getSessionId(): string {
   })
 }
 
+function referrerOrigin(referrer: string): string {
+  try {
+    const url = new URL(referrer)
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.origin
+      : ""
+  } catch {
+    return ""
+  }
+}
+
 function currentContext(): Omit<
   AnalyticsPayload,
   "eventId" | "eventName" | "occurredAt" | "metadata"
@@ -118,7 +129,7 @@ function currentContext(): Omit<
     anonymousId: getAnonymousId(),
     sessionId: getSessionId(),
     path: window.location.pathname,
-    referrer: document.referrer,
+    referrer: referrerOrigin(document.referrer),
     utmSource: params.get("utm_source"),
     utmMedium: params.get("utm_medium"),
     utmCampaign: params.get("utm_campaign"),
