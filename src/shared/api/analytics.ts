@@ -169,23 +169,25 @@ async function send(payload: AnalyticsPayload): Promise<void> {
   const url = analyticsUrl()
   if (!url) return
 
-  const controller = new AbortController()
-  const timeout = window.setTimeout(
-    () => controller.abort(),
-    REQUEST_TIMEOUT_MS
-  )
+  const controller =
+    typeof AbortController === "undefined" ? null : new AbortController()
+  const timeout = controller
+    ? window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    : null
+  const request: RequestInit = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }
+  if (controller) request.signal = controller.signal
+
   try {
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-      keepalive: true,
-    })
+    await fetch(url, request)
   } catch {
     // Analytics는 best-effort이며 서비스 기능에 영향을 주면 안 된다.
   } finally {
-    window.clearTimeout(timeout)
+    if (timeout !== null) window.clearTimeout(timeout)
   }
 }
 

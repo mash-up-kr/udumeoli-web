@@ -80,4 +80,16 @@ describe("analytics client", () => {
     const payload = JSON.parse(fetchMock.mock.calls[1][1].body as string)
     expect(payload.anonymousId).toBeTruthy()
   })
+
+  it("sends without timeout when AbortController is unavailable", async () => {
+    vi.stubGlobal("AbortController", undefined)
+
+    expect(() => trackEvent("page_view")).not.toThrow()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("signal")
+    expect(fetchMock.mock.calls[1][1]).not.toHaveProperty("signal")
+  })
 })
