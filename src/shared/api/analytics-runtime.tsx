@@ -11,7 +11,7 @@ export function trackPageViewForRoute(routeKey: string): void {
   trackEvent("page_view")
 }
 
-/** Sends one page_view for the initial route and each distinct SPA location. */
+/** 초기 경로와 SPA에서 변경된 각 경로에 page_view를 한 번씩 전송한다. */
 export function AnalyticsRuntime() {
   const location = useRouterState({
     select: (state) => state.location,

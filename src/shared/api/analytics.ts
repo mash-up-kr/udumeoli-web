@@ -37,7 +37,7 @@ function createId(): string {
       return crypto.randomUUID()
     }
   } catch {
-    // Fall through to the non-cryptographic browser fallback.
+    // 암호화 UUID를 사용할 수 없으면 브라우저 fallback으로 진행한다.
   }
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
@@ -65,7 +65,7 @@ function getOrCreateId(
       storage.setItem(key, id)
       return id
     } catch {
-      // Storage may be disabled or full. Continue with an in-memory ID.
+      // 저장소가 비활성화되었거나 가득 찬 경우 메모리 ID를 사용한다.
     }
   }
 
@@ -145,16 +145,13 @@ function markSessionStarted(): void {
   try {
     storage?.setItem(SESSION_STARTED_KEY, "true")
   } catch {
-    // Analytics state must never affect the application.
+    // Analytics 상태가 애플리케이션 동작에 영향을 주면 안 된다.
   }
 }
 
 function analyticsUrl(): string {
-  return (
-    import.meta.env.VITE_ANALYTICS_API_URL as string | undefined
-  )?.replace(/\/$/, "")
-    ? `${(import.meta.env.VITE_ANALYTICS_API_URL as string).replace(/\/$/, "")}/api/events`
-    : ""
+  const baseUrl = import.meta.env.VITE_ANALYTICS_API_URL as string | undefined
+  return baseUrl ? `${baseUrl.replace(/\/$/, "")}/api/events` : ""
 }
 
 async function send(payload: AnalyticsPayload): Promise<void> {
@@ -175,7 +172,7 @@ async function send(payload: AnalyticsPayload): Promise<void> {
       keepalive: true,
     })
   } catch {
-    // Analytics is best-effort and must not affect product functionality.
+    // Analytics는 best-effort이며 서비스 기능에 영향을 주면 안 된다.
   } finally {
     window.clearTimeout(timeout)
   }
@@ -194,7 +191,7 @@ function buildPayload(
   }
 }
 
-/** Fire-and-forget analytics event. It never rejects or blocks the caller. */
+/** 호출을 막거나 reject하지 않는 fire-and-forget 분석 이벤트 전송. */
 export function trackEvent(eventName: string, data: TrackEventData = {}): void {
   if (typeof window === "undefined") return
 
