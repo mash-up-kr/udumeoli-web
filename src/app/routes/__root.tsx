@@ -7,6 +7,7 @@ import appCss from "../styles.css?url"
 import { DesktopGuide } from "@/widgets/desktop-guide"
 
 import { QueryProvider } from "@/shared/api/QueryProvider"
+import { AnalyticsRuntime } from "@/shared/api/analytics-runtime"
 import { PwaRuntime } from "@/shared/ui/pwa-runtime"
 
 // Microsoft Clarity 사용자 행동 분석 스니펫
@@ -84,6 +85,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <PwaRuntime />
+        <AnalyticsRuntime />
         <QueryProvider>
           <DesktopGuide>
             <OverlayProvider>{children}</OverlayProvider>

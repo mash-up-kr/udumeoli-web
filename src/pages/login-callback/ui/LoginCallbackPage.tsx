@@ -6,6 +6,7 @@ import { showToast } from "@/shared/ui/toast"
 import { getPendingInviteCode } from "@/entities/travel-pot"
 import { fetchMe, useSessionStore } from "@/entities/user"
 import { exchangeLoginCode, setSignupToken } from "@/features/auth"
+import { trackEvent } from "@/shared/api/analytics"
 
 /** 백엔드 카카오 콜백이 ?code(성공) 또는 ?error(실패)를 붙여 보내는 착지 페이지. */
 export function LoginCallbackPage() {
@@ -41,6 +42,7 @@ export function LoginCallbackPage() {
         if (result.status === "AUTHENTICATED" && result.tokens) {
           setTokens(result.tokens)
           login(await fetchMe())
+          trackEvent("login_completed")
           // 초대링크로 왔다가 로그인한 경우 — 지도 대신 참여 플로우로 복귀.
           // 이미 팟이 있는 유저는 지도가 pot-start로 보내주지 않아 여기서 갈라야 한다
           const pendingCode = getPendingInviteCode()

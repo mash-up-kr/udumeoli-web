@@ -31,6 +31,7 @@ import {
   usePotsHydrated,
 } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
+import { trackEvent } from "@/shared/api/analytics"
 
 function MapGooglePageContent() {
   const router = useRouter()
@@ -81,6 +82,7 @@ function MapGooglePageContent() {
 
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
+  const trackedDetailRegion = React.useRef<string | null>(null)
   const [canOpenAlbum, setCanOpenAlbum] = React.useState(false)
   const [mapZoomStage, setMapZoomStage] = React.useState<ZoomStage>(0)
   const showMapChrome = !decorating && detailRegion === null
@@ -125,7 +127,14 @@ function MapGooglePageContent() {
         <TravelMapGoogle
           className="absolute inset-0"
           onAlbumAvailabilityChange={setCanOpenAlbum}
-          onRegionDetailChange={setDetailRegion}
+          onRegionDetailChange={(region) => {
+            setDetailRegion(region)
+            if (region && trackedDetailRegion.current !== region) {
+              trackedDetailRegion.current = region
+              trackEvent("map_viewed", { metadata: { region } })
+            }
+            if (!region) trackedDetailRegion.current = null
+          }}
           onZoomStageChange={setMapZoomStage}
           onMapReady={setMapReady}
           onMapTipsStart={() => {
