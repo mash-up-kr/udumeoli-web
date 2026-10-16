@@ -16,6 +16,13 @@ The web app sends `page_view`, `session_started`, `login_completed`,
 `travel_album_viewed` events to `/api/events`. Analytics requests are
 fire-and-forget and failures do not affect product flows.
 
+Google Analytics (`G-0D3HZ92ZME`) loads in production builds only. Enable
+**Enhanced measurement → Page views → Page changes based on browser history
+events** in the GA web data stream to measure SPA navigation. GA page views use
+automatic measurement; the existing `/api/events` analytics remains separate.
+GA initializes after hydration and waits until the login callback has completed
+to avoid collecting its one-time code. Referrers are reduced to their origin.
+
 ## Adding components
 
 To add components to your app, run the following command:

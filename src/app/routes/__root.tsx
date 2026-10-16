@@ -22,11 +22,17 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       {
+        name: "google-site-verification",
+        content: "kJI4AB8_CY9womKjgUYYOAsyrFh-KpYbV7HD8xShLBI",
+      },
+      {
         name: "viewport",
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
       },
       { title: "Pinnned" },
+      // 앱 화면은 기본 색인 제외. 공개 페이지는 각 라우트의 head에서 명시적으로 허용한다.
+      { name: "robots", content: "noindex, follow" },
       {
         name: "description",
         content:
@@ -35,7 +41,11 @@ export const Route = createRootRoute({
       // 카카오톡 등 링크 공유 미리보기용 OG 태그 — og:image는 절대 URL 필수
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Pinnned" },
-      { property: "og:description", content: "🩵 👉 Pinnned 사용해보기 👈 🩵" },
+      {
+        property: "og:description",
+        content:
+          "친구들과 팟을 만들어 여행 기록으로 우리만의 지도를 채워보세요. 함께 만드는 여행 지도, Pinnned.",
+      },
       {
         property: "og:image",
         content: "https://www.pinnned.co.kr/og-image.jpg",
