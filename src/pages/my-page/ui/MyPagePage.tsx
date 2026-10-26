@@ -12,6 +12,7 @@ import { openConfirm, openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
 import { clearTokens, getRefreshToken } from "@/shared/api/token-storage"
+import { landingToastClassName } from "@/shared/lib/landing-toast"
 import {
   removeSeedPhotosByUploader,
   usePhotoUploadStore,
@@ -33,9 +34,6 @@ const TERMS_URL =
 const PRIVACY_URL =
   import.meta.env.VITE_PRIVACY_NOTION_URL ??
   "https://app.notion.com/p/3c9bee7f5996804f817eeae28111d964"
-
-// 스플래시(랜딩) CTA(카카오로 시작하기, 바닥 34px + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-const SPLASH_TOAST_POSITION = "bottom-[106px]"
 
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
@@ -207,7 +205,7 @@ function MyPageContent() {
       message: "로그아웃이 완료됐어요.",
       // 검정 ✓ — 완료 안내 (Figma 3065-20961)
       icon: "check-neutral",
-      className: SPLASH_TOAST_POSITION,
+      className: landingToastClassName(),
     })
   }
 
@@ -250,7 +248,7 @@ function MyPageContent() {
               message: "계정 삭제가 완료되었습니다. 감사합니다.",
               // 검정 ✓ — 에러가 아닌 종료 안내 (Figma 3065-20990)
               icon: "check-neutral",
-              className: SPLASH_TOAST_POSITION,
+              className: landingToastClassName(),
             })
           }}
         />

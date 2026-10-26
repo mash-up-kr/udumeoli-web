@@ -7,8 +7,9 @@ import { getPendingInviteCode } from "@/entities/travel-pot"
 import { fetchMe, useSessionStore } from "@/entities/user"
 import { exchangeLoginCode, setSignupToken } from "@/features/auth"
 import { trackEvent } from "@/shared/api/analytics"
+import { landingToastClassName } from "@/shared/lib/landing-toast"
 
-/** 백엔드 카카오 콜백이 ?code(성공) 또는 ?error(실패)를 붙여 보내는 착지 페이지. */
+/** 백엔드 소셜 로그인(카카오·Apple·Google) 콜백이 ?code(성공) 또는 ?error(실패)를 붙여 보내는 착지 페이지. */
 export function LoginCallbackPage() {
   const router = useRouter()
   const login = useSessionStore((s) => s.login)
@@ -21,13 +22,12 @@ export function LoginCallbackPage() {
     ran.current = true
 
     const fail = (message: string) => {
-      // 랜딩(카카오 CTA bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-      showToast({ message, icon: "alert", className: "bottom-[106px]" })
+      showToast({ message, icon: "alert", className: landingToastClassName() })
       void router.navigate({ to: "/", replace: true })
     }
 
     if (error || !code) {
-      fail("카카오 로그인에 실패했어요. 다시 시도해 주세요.")
+      fail("로그인에 실패했어요. 다시 시도해 주세요.")
       return
     }
 
@@ -57,7 +57,7 @@ export function LoginCallbackPage() {
           }
           return
         }
-        fail("카카오 로그인에 실패했어요. 다시 시도해 주세요.")
+        fail("로그인에 실패했어요. 다시 시도해 주세요.")
       } catch {
         // 교환 코드 만료(2분)·재사용 포함
         fail("로그인이 만료됐어요. 다시 시도해 주세요.")
