@@ -1,4 +1,4 @@
-// 카카오 로그인 REST API (노션 스펙). 상대경로 — dev는 vite proxy, prod는 nitro가 백엔드로 프록시.
+// 소셜 로그인 REST API (노션 스펙). 상대경로 — dev는 vite proxy, prod는 nitro가 백엔드로 프록시.
 
 export class AuthApiError extends Error {
   constructor(
