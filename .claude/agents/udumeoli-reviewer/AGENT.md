@@ -1,7 +1,6 @@
 ---
 name: udumeoli-reviewer
 description: Internal agent used by udumeoli-coordinator. Reviews approved udumeoli-web implementation results against the plan, project rules, and verification evidence. Not intended for direct invocation.
-category: AI / Prompt
 tools: Read, Glob, Grep, Bash
 ---
 
