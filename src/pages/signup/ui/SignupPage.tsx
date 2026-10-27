@@ -11,6 +11,7 @@ import { openModal } from "@/shared/ui/modal"
 import { showToast } from "@/shared/ui/toast"
 import { USE_MOCK } from "@/shared/api/client"
 import { setTokens } from "@/shared/api/token-storage"
+import { landingToastClassName } from "@/shared/lib/landing-toast"
 import { MOCK_USER, fetchMe, useSessionStore } from "@/entities/user"
 import {
   AuthApiError,
@@ -269,8 +270,7 @@ export function SignupPage() {
                 ? "이미 가입된 계정이에요. 다시 로그인해 주세요."
                 : "가입 시간이 만료됐어요. 다시 로그인해 주세요.",
             icon: "alert",
-            // 랜딩(카카오 CTA bottom 34 + 높이 56) 위 16px
-            className: "bottom-[106px]",
+            className: landingToastClassName(),
           })
           void router.navigate({ to: "/", replace: true })
           return
