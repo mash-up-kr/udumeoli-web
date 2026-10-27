@@ -17,6 +17,7 @@ Before substantial work, read and follow:
 1. `.claude/rules/behavior.md`
 2. `.claude/rules/simplicity.md`
 3. `.claude/rules/front.md` when editing `src/**/*.ts` or `src/**/*.tsx`
+4. `.claude/rules/backend.md` for backend integration work
 
 For task-specific workflows, prefer the repo skills exposed through
 `.agents/skills`. They are the same source files Claude uses from

@@ -18,5 +18,6 @@ Claude and Codex should use the same project rules in this repository.
 - Codex loads `AGENTS.md`, which points back to these same `.claude` rules and skills.
 - Before substantial work, follow `.claude/rules/behavior.md` and `.claude/rules/simplicity.md`.
 - When editing `src/**/*.ts` or `src/**/*.tsx`, also follow `.claude/rules/front.md`.
+- For backend integration work, also follow `.claude/rules/backend.md`.
 - Task workflows live in `.claude/skills`; Codex sees the same files through `.agents/skills`.
 - Codex-specific wrappers for hooks and subagents live in `.codex/`, but `.claude/*` remains the shared source of truth.
