@@ -5,6 +5,8 @@ description: Use when writing or modifying mobile UI layout - screen height/widt
 
 # Mobile Layout 안정성
 
+기준 뷰포트·단위 계약·검증 명령은 `.claude/rules/ui.md`. 여기는 깨지는 패턴과 고치는 법.
+
 단일 타겟: 모바일 뷰(`MobileLayout`, `max-w-md`). 기기마다 높이·너비가 다르고 주소창 접힘으로 뷰포트가 실시간으로 변한다. "내 화면에서만 맞는" 매직 넘버는 깨진다.
 
 ## 1. 뷰포트 높이는 `dvh`
