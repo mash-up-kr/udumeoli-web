@@ -1,12 +1,12 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/post-edit-check.mjs"
+            "command": "node .claude/hooks/stop-verify.mjs",
+            "timeout": 300
           }
         ]
       }

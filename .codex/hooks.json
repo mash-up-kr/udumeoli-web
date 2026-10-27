@@ -1,15 +1,15 @@
 {
-  "description": "Codex compatibility hooks for udumeoli-web. Shared hook logic lives in .claude/hooks.",
+  "description": "Codex mirror of .claude/settings.json hooks. Script lives in .claude/hooks.",
   "hooks": {
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/post-edit-check.mjs\"",
-            "timeout": 600,
-            "statusMessage": "Running udumeoli post-edit checks"
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/stop-verify.mjs\"",
+            "commandWindows": "node .claude/hooks/stop-verify.mjs",
+            "timeout": 300,
+            "statusMessage": "typecheck + eslint on changed ts/tsx"
           }
         ]
       }
