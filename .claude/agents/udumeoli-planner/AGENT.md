@@ -1,7 +1,6 @@
 ---
 name: udumeoli-planner
 description: Internal agent used by udumeoli-coordinator. Designs an udumeoli-web implementation plan with scoped steps, project-aware risks, and per-step implementer instructions. Not intended for direct invocation.
-category: AI / Prompt
 tools: Read, Glob, Grep, Bash
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: udumeoli-implementer
 description: Internal agent used by udumeoli-coordinator. Implements one approved udumeoli-web task step within the requested file scope and reports verification precisely. Not intended for direct invocation.
-category: AI / Prompt
 tools: Read, Glob, Grep, Bash, Write, Edit
 ---
 

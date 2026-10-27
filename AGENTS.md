@@ -1,52 +1,39 @@
-# AGENTS.md
+# AGENTS.md (Codex entrypoint)
 
-## Shared Agent Guidance
+Source of truth is `.claude/`. This file is a map. Do not restate rules here.
 
-This repository keeps Claude and Codex behavior aligned through shared source
-files under `.claude/`.
+## Commands
 
-- Claude entrypoint: `CLAUDE.md`
-- Codex entrypoint: `AGENTS.md`
-- Shared rules: `.claude/rules/*.md`
-- Shared skills: `.claude/skills/*/SKILL.md`
-- Codex skill bridge: `.agents/skills` symlinked to `.claude/skills`
-- Codex hook/agent wrappers: `.codex/`
+- dev `pnpm dev` (3000) · storybook `pnpm storybook` (6006)
+- verify `pnpm typecheck` · `pnpm lint` · `pnpm test` · `pnpm build` · one test `pnpm vitest run <path>`
+- UI screenshots/measure `pnpm ui:shot <route>` → `.ui-shots/` (contract in `.claude/rules/ui.md`; run `pnpm exec playwright install chromium` once)
 
-Before substantial work, read and follow:
+## Read before substantial work (in order)
 
 1. `.claude/rules/behavior.md`
 2. `.claude/rules/simplicity.md`
 3. `.claude/rules/front.md` when editing `src/**/*.ts` or `src/**/*.tsx`
+4. `.claude/rules/backend.md` for backend integration work
+5. `.claude/rules/ui.md` when editing `src/**/*.tsx` or `src/app/styles.css`
 
-For task-specific workflows, prefer the repo skills exposed through
-`.agents/skills`. They are the same source files Claude uses from
-`.claude/skills`.
+## Non-negotiable
 
-## Repository Rules
+- No `git commit` without the user approving that specific commit. `/gone-gaming` is the only exception.
+- Any commit request → follow `.claude/skills/commit/SKILL.md`. Any PR request → `.claude/skills/pr/SKILL.md`. Natural-language skill triggers are unreliable; follow the file regardless.
+- Change only what the request requires. Reuse `src/shared` code and design tokens before adding anything new.
 
-- Keep changes surgical and directly tied to the user request.
-- Prefer existing code, common components, and design tokens before adding new
-  abstractions.
-- Follow FSD boundaries documented in `.claude/rules/front.md`.
-- For UI work, apply `good-code`, `good-a11y`, and `good-responsive` guidance
-  before finalizing.
-- For bug fixes, identify the shared root cause before patching symptoms.
-- Run verification appropriate to the change: `pnpm typecheck`, focused tests,
-  `pnpm lint`, and `pnpm build` when routing/build/runtime behavior may be
-  affected.
-- Do not run `git commit` unless the user explicitly approves that specific
-  commit.
+## Skills, agents, hooks
 
-## Commit And PR Requests
+- Skills: `.claude/skills/*/SKILL.md`. Codex discovers them through `.agents/skills`, a symlink to `.claude/skills`. On Windows the link checks out as a text file unless `git config core.symlinks true` is set before checkout (`git checkout -- .agents/skills` to repair).
+- Codex agent wrappers: `.codex/agents/*.toml` point at `.claude/agents/*/AGENT.md`.
+- Hooks: `.codex/hooks.json` mirrors `.claude/settings.json`. The Stop hook runs typecheck + eslint on changed ts/tsx; exit 2 means fix the reported errors and continue.
 
-Natural-language skill auto-triggering can be unreliable. Any request to commit
-or open a PR must follow the shared skill procedures:
+## Search
 
-- Commit requests: `.agents/skills/commit/SKILL.md`
-- PR requests: `.agents/skills/pr/SKILL.md`
+- Prefer gitignore-aware search. With `find`/`grep -r`, exclude `node_modules`, `.output`, `storybook-static`, `.ui-shots`.
+- Open `node_modules` only for a specific package API, by its direct path. Never scan it.
+- If the same search repeats with the same result, stop and change approach or ask.
 
-## Figma Work
+## Figma
 
-When the user gives a Figma URL or asks for design implementation, use Figma MCP
-first, inspect existing components/tokens, and keep mobile layout details
-aligned with the referenced frame.
+- Given a Figma URL, use Figma MCP first, check existing components and tokens, and match the referenced frame on mobile layout.
