@@ -20,6 +20,7 @@ import { Route as TravelAlbumIndexRouteImport } from './app/routes/travel-album.
 import { Route as TravelAlbumRegionRouteImport } from './app/routes/travel-album.$region'
 import { Route as MyPageProfileEditRouteImport } from './app/routes/my-page.profile-edit'
 import { Route as LoginCallbackRouteImport } from './app/routes/login.callback'
+import { Route as LoginAppStartRouteImport } from './app/routes/login.app-start'
 import { Route as MyPagePotPotIdRouteImport } from './app/routes/my-page.pot.$potId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -77,6 +78,11 @@ const LoginCallbackRoute = LoginCallbackRouteImport.update({
   path: '/login/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginAppStartRoute = LoginAppStartRouteImport.update({
+  id: '/login/app-start',
+  path: '/login/app-start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyPagePotPotIdRoute = MyPagePotPotIdRouteImport.update({
   id: '/pot/$potId',
   path: '/pot/$potId',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/pot-join': typeof PotJoinRoute
   '/pot-start': typeof PotStartRoute
   '/signup': typeof SignupRoute
+  '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/pot-join'
     | '/pot-start'
     | '/signup'
+    | '/login/app-start'
     | '/login/callback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/pot-join'
     | '/pot-start'
     | '/signup'
+    | '/login/app-start'
     | '/login/callback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/pot-join'
     | '/pot-start'
     | '/signup'
+    | '/login/app-start'
     | '/login/callback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   PotJoinRoute: typeof PotJoinRoute
   PotStartRoute: typeof PotStartRoute
   SignupRoute: typeof SignupRoute
+  LoginAppStartRoute: typeof LoginAppStartRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   TravelAlbumRegionRoute: typeof TravelAlbumRegionRoute
   TravelAlbumIndexRoute: typeof TravelAlbumIndexRoute
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/app-start': {
+      id: '/login/app-start'
+      path: '/login/app-start'
+      fullPath: '/login/app-start'
+      preLoaderRoute: typeof LoginAppStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my-page/pot/$potId': {
       id: '/my-page/pot/$potId'
       path: '/pot/$potId'
@@ -294,6 +314,7 @@ const rootRouteChildren: RootRouteChildren = {
   PotJoinRoute: PotJoinRoute,
   PotStartRoute: PotStartRoute,
   SignupRoute: SignupRoute,
+  LoginAppStartRoute: LoginAppStartRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   TravelAlbumRegionRoute: TravelAlbumRegionRoute,
   TravelAlbumIndexRoute: TravelAlbumIndexRoute,
