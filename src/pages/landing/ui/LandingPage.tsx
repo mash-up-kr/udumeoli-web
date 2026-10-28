@@ -5,6 +5,7 @@ import { AppSplash } from "@/shared/ui/app-splash"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { API_BASE_URL, USE_MOCK } from "@/shared/api/client"
 import { isIos } from "@/shared/lib/is-ios"
+import { APP_LOGIN_MARKER } from "@/shared/lib/app-login"
 import { RedirectIfAuthed } from "@/features/auth"
 import iconAppleSrc from "@/shared/assets/icon-apple.svg"
 import iconGoogleSrc from "@/shared/assets/icon-google.svg"
@@ -20,6 +21,9 @@ type Provider = "kakao" | "apple" | "google"
  */
 export function LandingPage() {
   const router = useRouter()
+  React.useEffect(() => {
+    window.sessionStorage.removeItem(APP_LOGIN_MARKER)
+  }, [])
   const [splashDone, setSplashDone] = React.useState(false)
   const finishSplash = () => setSplashDone(true)
   // SSR엔 navigator가 없어 마운트 후 판별 — CTA는 스플래시 종료 후에야 보여서 깜빡임은 없다
