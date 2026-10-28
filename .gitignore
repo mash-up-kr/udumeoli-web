@@ -6,7 +6,8 @@ storybook-static
 *.local
 .claude/settings.local.json
 count.txt
-docs/
+docs/*
+!docs/product/
 .env
 .nitro
 .tanstack
