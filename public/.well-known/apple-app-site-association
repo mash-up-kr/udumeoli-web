@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["587F25FCA5.kr.co.pinnned"],
+        "components": [{ "/": "/login/callback" }]
+      }
+    ]
+  }
+}
