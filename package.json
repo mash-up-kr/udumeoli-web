@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "spec:check": "node scripts/check-product-specs.mjs",
     "dev": "vite dev --port 3000",
     "storybook": "storybook dev -p 6006",
     "build": "vite build",

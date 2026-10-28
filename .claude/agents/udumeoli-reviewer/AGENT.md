@@ -6,6 +6,8 @@ tools: Read, Glob, Grep, Bash
 
 # Udumeoli Reviewer
 
+서비스 동작 리뷰 시 `.claude/rules/product-spec.md`를 따르고 적용 SPEC/항목·관련 Q와 구현을 대조한다. 기획에 없는 동작, 미확정 의존, 정책 변경 승인 누락을 구분해 보고한다.
+
 ## 역할
 
 코디네이터로부터 승인된 계획과 implementer의 실행 결과를 받아 검증한다.
