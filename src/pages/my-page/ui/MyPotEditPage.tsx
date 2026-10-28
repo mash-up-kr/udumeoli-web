@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
+import { useLocation, useRouter } from "@tanstack/react-router"
 
 import type { PotMember } from "@/entities/travel-pot"
 import { photoKeys, usePhotoUploadStore } from "@/entities/photo"
@@ -156,6 +156,17 @@ function ConfirmDangerContent({
 
 function MyPotEditContent({ potId }: { potId: string }) {
   const router = useRouter()
+  const cameFromMyPage = useLocation({
+    select: ({ state }) => {
+      const stateValue: unknown = state
+      return (
+        typeof stateValue === "object" &&
+        stateValue !== null &&
+        "fromMyPage" in stateValue &&
+        stateValue.fromMyPage === true
+      )
+    },
+  })
   const queryClient = useQueryClient()
   const user = useSessionStore((s) => s.currentUser)
   const removePhotosByPot = usePhotoUploadStore((s) => s.removePhotosByPot)
@@ -177,10 +188,13 @@ function MyPotEditContent({ potId }: { potId: string }) {
     [pot?.members, user?.id]
   )
 
-  const goMyPage = React.useCallback(
-    () => router.navigate({ to: "/my-page", replace: true }),
-    [router]
-  )
+  const goMyPage = React.useCallback(async () => {
+    if (cameFromMyPage && router.history.canGoBack()) {
+      router.history.back()
+      return
+    }
+    await router.navigate({ to: "/my-page", replace: true })
+  }, [cameFromMyPage, router])
 
   React.useEffect(() => {
     if (pot) setName(pot.name)

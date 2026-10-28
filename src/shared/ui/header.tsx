@@ -47,7 +47,7 @@ function Header({
 
   // pt: 설치형 PWA 상태바 safe-area + 기본 12px. 브라우저 탭에선 inset=0.
   const base =
-    "flex w-full items-center gap-6 bg-transparent px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] pb-3"
+    "flex w-full items-center gap-6 bg-transparent px-4 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] frame:pt-[calc(env(safe-area-inset-top)_+_1.25rem)] pb-3"
   const titleCls = "min-w-0 flex-1 truncate text-h5-1 text-fg-neutral-bold"
 
   if (direction === "center") {

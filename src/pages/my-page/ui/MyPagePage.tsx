@@ -259,7 +259,15 @@ function MyPageContent() {
 
   const handlePotClick = (pot: TravelPot) => {
     selectPot(pot.id)
-    router.navigate({ to: "/my-page/pot/$potId", params: { potId: pot.id } })
+    router.navigate({
+      to: "/my-page/pot/$potId",
+      params: { potId: pot.id },
+      state: (state) =>
+        ({
+          ...state,
+          fromMyPage: true,
+        }) as typeof state & { fromMyPage: true },
+    })
   }
 
   return (
