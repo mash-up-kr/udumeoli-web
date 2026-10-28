@@ -13,8 +13,6 @@ import {
   APP_LOGIN_SCHEME,
   isAppLoginPending,
 } from "@/shared/lib/app-login"
-import { ButtonCta } from "@/shared/ui/button-cta"
-import { MobileLayout } from "@/shared/ui/mobile-layout"
 
 /** 백엔드 소셜 로그인(카카오·Apple·Google) 콜백이 ?code(성공) 또는 ?error(실패)를 붙여 보내는 착지 페이지. */
 export function LoginCallbackPage() {
@@ -28,6 +26,15 @@ export function LoginCallbackPage() {
       isAppLoginPending(window.sessionStorage.getItem(APP_LOGIN_MARKER))
     )
   }, [])
+
+  const appRedirected = React.useRef(false)
+  React.useEffect(() => {
+    if (!returnToApp || !code || error || appRedirected.current) return
+    appRedirected.current = true
+    window.location.replace(
+      `${APP_LOGIN_SCHEME}://login/callback?code=${encodeURIComponent(code)}`
+    )
+  }, [code, error, returnToApp])
 
   // StrictMode 이중 실행 방지 — 교환 코드는 1회용이라 두 번 부르면 두 번째가 401이 된다
   const ran = React.useRef(false)
@@ -80,36 +87,5 @@ export function LoginCallbackPage() {
     })()
   }, [code, error, login, returnToApp, router])
 
-  if (!returnToApp || !code || error) return null
-
-  return (
-    <MobileLayout className="flex flex-col justify-center gap-6 px-4 text-center">
-      <div>
-        <h1 className="text-h3 text-fg-neutral-bold">
-          로그인을 이어서 진행해 주세요
-        </h1>
-        <p className="mt-2 text-b7 text-fg-neutral-subtle">
-          Pinnned 앱으로 돌아가 로그인을 완료할 수 있어요.
-        </p>
-      </div>
-      <div className="flex flex-col gap-3">
-        <ButtonCta
-          onClick={() => {
-            window.location.href = `${APP_LOGIN_SCHEME}://login/callback?code=${encodeURIComponent(code)}`
-          }}
-        >
-          Pinnned 앱에서 계속
-        </ButtonCta>
-        <ButtonCta
-          variant="secondary"
-          onClick={() => {
-            window.sessionStorage.removeItem(APP_LOGIN_MARKER)
-            setReturnToApp(false)
-          }}
-        >
-          웹에서 계속
-        </ButtonCta>
-      </div>
-    </MobileLayout>
-  )
+  return null
 }
