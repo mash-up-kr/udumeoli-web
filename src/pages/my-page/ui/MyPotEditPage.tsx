@@ -157,9 +157,15 @@ function ConfirmDangerContent({
 function MyPotEditContent({ potId }: { potId: string }) {
   const router = useRouter()
   const cameFromMyPage = useLocation({
-    select: (location) =>
-      (location.state as typeof location.state & { fromMyPage?: boolean })
-        .fromMyPage === true,
+    select: ({ state }) => {
+      const stateValue: unknown = state
+      return (
+        typeof stateValue === "object" &&
+        stateValue !== null &&
+        "fromMyPage" in stateValue &&
+        stateValue.fromMyPage === true
+      )
+    },
   })
   const queryClient = useQueryClient()
   const user = useSessionStore((s) => s.currentUser)
@@ -182,12 +188,12 @@ function MyPotEditContent({ potId }: { potId: string }) {
     [pot?.members, user?.id]
   )
 
-  const goMyPage = React.useCallback(() => {
+  const goMyPage = React.useCallback(async () => {
     if (cameFromMyPage && router.history.canGoBack()) {
       router.history.back()
       return
     }
-    return router.navigate({ to: "/my-page", replace: true })
+    await router.navigate({ to: "/my-page", replace: true })
   }, [cameFromMyPage, router])
 
   React.useEffect(() => {
