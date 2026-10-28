@@ -7,7 +7,9 @@ import { APP_LOGIN_MARKER } from "@/shared/lib/app-login"
 export const Route = createFileRoute("/login/app-start")({
   validateSearch: (search: Record<string, unknown>) => ({
     provider:
-      search.provider === "kakao" || search.provider === "apple"
+      search.provider === "kakao" ||
+      search.provider === "apple" ||
+      search.provider === "google"
         ? search.provider
         : undefined,
   }),
