@@ -54,46 +54,51 @@ export function LandingPage() {
   }
 
   return (
-    <RedirectIfAuthed>
-      <AppSplash onMotionEnd={finishSplash}>
-        {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위. 스플래시 모션 종료 후 페이드인.
+    <>
+      {/* 페이지 유일한 제목 — 스플래시는 영상뿐이라 스크린리더·검색엔진이 읽을 텍스트가 없다.
+          RedirectIfAuthed 안에 두면 하이드레이션 전엔 렌더되지 않아 SSR HTML에서 빠진다 */}
+      <h1 className="sr-only">Pinnned — 친구와 함께 만드는 여행 기록 지도</h1>
+      <RedirectIfAuthed>
+        <AppSplash onMotionEnd={finishSplash}>
+          {/* CTA — Action Area px-16, 홈 인디케이터 영역(34px) 위. 스플래시 모션 종료 후 페이드인.
             absolute가 아니라 fixed다 — 스플래시는 100dvh + overflow-hidden이라 스크롤로
             만회할 수 없는데, 아이폰 사파리 "단일 탭"(검색창 위) 설정은 하단 툴바가 따로 떠서
             버튼 아래 여유 34px을 넘겨 잘렸다. fixed는 사파리가 툴바 위로 올려준다.
             하단 내비(TravelAlbumPage)가 이미 쓰는 방식이다.
             mx-auto max-w-md는 MobileLayout과 같은 폭·정렬이라 위치는 그대로다. */}
-        <div
-          className={
-            splashDone
-              ? "fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md animate-in flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom),34px)] duration-300 fade-in-0"
-              : "hidden"
-          }
-        >
-          {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
-          <ButtonCta
-            className="gap-2 bg-[#FDE500] text-[#3C1E1E]"
-            onClick={() => startLogin("kakao")}
+          <div
+            className={
+              splashDone
+                ? "fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md animate-in flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom),34px)] duration-300 fade-in-0"
+                : "hidden"
+            }
           >
-            <img src={iconKakaoSrc} alt="" className="size-6" />
-            카카오로 시작하기
-          </ButtonCta>
-          {/* Apple 버튼 가이드: 다른 로그인 버튼과 같은 크기, 검정 배경·흰 로고 — primary 토큰이 그대로 맞는다 */}
-          {showApple && (
-            <ButtonCta className="gap-2" onClick={() => startLogin("apple")}>
-              <img src={iconAppleSrc} alt="" className="size-6" />
-              Apple로 시작하기
+            {/* 카카오 브랜드 색(#FDE500/#3C1E1E)은 디자인 시스템 팔레트 밖이라 예외적으로 hex 사용 */}
+            <ButtonCta
+              className="gap-2 bg-[#FDE500] text-[#3C1E1E]"
+              onClick={() => startLogin("kakao")}
+            >
+              <img src={iconKakaoSrc} alt="" className="size-6" />
+              카카오로 시작하기
             </ButtonCta>
-          )}
-          {/* Google 버튼 가이드: 흰 배경 + 컬러 G 로고. G는 24px 박스를 꽉 채워 카카오(16px 글리프)보다 커 보여 18px로 */}
-          <ButtonCta
-            className="gap-2 bg-bg-neutral-weak text-fg-neutral-bold"
-            onClick={() => startLogin("google")}
-          >
-            <img src={iconGoogleSrc} alt="" className="size-4.5" />
-            Google로 시작하기
-          </ButtonCta>
-        </div>
-      </AppSplash>
-    </RedirectIfAuthed>
+            {/* Apple 버튼 가이드: 다른 로그인 버튼과 같은 크기, 검정 배경·흰 로고 — primary 토큰이 그대로 맞는다 */}
+            {showApple && (
+              <ButtonCta className="gap-2" onClick={() => startLogin("apple")}>
+                <img src={iconAppleSrc} alt="" className="size-6" />
+                Apple로 시작하기
+              </ButtonCta>
+            )}
+            {/* Google 버튼 가이드: 흰 배경 + 컬러 G 로고. G는 24px 박스를 꽉 채워 카카오(16px 글리프)보다 커 보여 18px로 */}
+            <ButtonCta
+              className="gap-2 bg-bg-neutral-weak text-fg-neutral-bold"
+              onClick={() => startLogin("google")}
+            >
+              <img src={iconGoogleSrc} alt="" className="size-4.5" />
+              Google로 시작하기
+            </ButtonCta>
+          </div>
+        </AppSplash>
+      </RedirectIfAuthed>
+    </>
   )
 }

@@ -40,6 +40,8 @@ export const Route = createRootRoute({
       },
       // 카카오톡 등 링크 공유 미리보기용 OG 태그 — og:image는 절대 URL 필수
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Pinnned" },
+      { property: "og:locale", content: "ko_KR" },
       { property: "og:title", content: "Pinnned" },
       {
         property: "og:description",
@@ -50,6 +52,8 @@ export const Route = createRootRoute({
         property: "og:image",
         content: "https://www.pinnned.co.kr/og-image.jpg",
       },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { property: "og:url", content: "https://www.pinnned.co.kr/" },
       { name: "twitter:card", content: "summary_large_image" },
       {
