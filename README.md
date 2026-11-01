@@ -70,19 +70,6 @@ Pinnned는 이 두 칸을 채웁니다. 우리만의 여행팟을 만들고, 여
 | 구조   | FSD 레이어: `app · pages · widgets · features · entities · shared`         |
 | 품질   | Vitest · ESLint · Storybook · Playwright 스크린샷(`pnpm ui:shot`)          |
 
-- 지역 경계 데이터는 **Promise 자체를 모듈 스코프에 캐싱**해 지도 안팎에서 동시에 호출해도 한 번만 내려받고, 실패 시 캐시를 비워 재시도가 가능하게 했습니다.
-- 지도 집계 API 하나가 줌 0~3단계 데이터를 한 번에 내려줘 줌·이동 시 재호출이 없습니다.
-
-<br/>
-
-## 팀
-
-Mash-Up 16기 **우두머리** 팀
-
-| Design         | Web            | Spring                 |
-| -------------- | -------------- | ---------------------- |
-| 이유지, 홍정민 | 이용훈, 최경일 | 이가연, 조성아, 최준혁 |
-
 <br/>
 
 ## 개발
@@ -97,27 +84,7 @@ pnpm ui:shot <route> [--measure "<sel>"]   # 화면 스크린샷 → .ui-shots/
 ```
 
 `.env.example`을 복사해 `.env.local`을 만들고 API·지도 키를 채웁니다.
-
-### Analytics
-
-Set `VITE_ANALYTICS_API_URL` to the Analytics server origin before running the
-web app:
-
-```bash
-VITE_ANALYTICS_API_URL=https://pinnned-analytics-production.up.railway.app
-```
-
-The web app sends `page_view`, `session_started`, `login_completed`,
-`pot_created`, `pot_joined`, `travel_record_created`, `map_viewed`, and
-`travel_album_viewed` events to `/api/events`. Analytics requests are
-fire-and-forget and failures do not affect product flows.
-
-Google Analytics (`G-0D3HZ92ZME`) loads in production builds only. Enable
-**Enhanced measurement → Page views → Page changes based on browser history
-events** in the GA web data stream to measure SPA navigation. GA page views use
-automatic measurement; the existing `/api/events` analytics remains separate.
-GA initializes after hydration and waits until the login callback has completed
-to avoid collecting its one-time code. Referrers are reduced to their origin.
+`VITE_ANALYTICS_API_URL`은 비워 두면 분석 이벤트를 보내지 않습니다.
 
 <br/>
 
