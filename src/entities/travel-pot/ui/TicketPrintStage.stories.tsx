@@ -14,7 +14,12 @@ export const Default: Story = {
   render: () => (
     <div className="relative h-[812px] w-[375px] overflow-hidden bg-bg-neutral-subtle">
       <TicketPrintStage bottomReserve={56}>
-        <TicketCard name="서울" leaderName="우두머리" seatLabel="01">
+        <TicketCard
+          name="서울"
+          leaderName="우두머리"
+          seatLabel="01"
+          qrValue="HTTPS://WWW.PINNNED.CO.KR/I/D0WVEQ"
+        >
           <div aria-hidden="true" className="flex gap-[6px]">
             {"d0wveq".split("").map((char, index) => (
               <span

@@ -5,6 +5,7 @@ import { useLocation, useRouter } from "@tanstack/react-router"
 import type { PotMember } from "@/entities/travel-pot"
 import { photoKeys, usePhotoUploadStore } from "@/entities/photo"
 import {
+  inviteLinkFor,
   useDeleteParty,
   useLeaveParty,
   usePotStore,
@@ -56,11 +57,6 @@ async function copyToClipboard(text: string) {
   } catch {
     // 클립보드 권한이 없거나 미지원이어도 사용 흐름은 토스트까지 유지한다.
   }
-}
-
-function inviteLinkFor(code: string): string {
-  const origin = window.location.origin
-  return `${origin}/pot-start?inviteCode=${encodeURIComponent(code)}`
 }
 
 function RoleBadge({ leader }: { leader: boolean }) {

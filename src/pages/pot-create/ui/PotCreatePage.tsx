@@ -14,6 +14,8 @@ import {
   POT_CAPACITY,
   TicketCard,
   TicketPrintStage,
+  inviteLinkFor,
+  inviteQrValueFor,
   useCreateParty,
   usePotStore,
 } from "@/entities/travel-pot"
@@ -32,7 +34,7 @@ function CreatedStep({
 }) {
   // 시스템 공유 시트(카톡 등) 노출, 미지원 브라우저는 클립보드 복사로 폴백
   const share = async () => {
-    const link = `${window.location.origin}/pot-start?inviteCode=${encodeURIComponent(code)}`
+    const link = inviteLinkFor(code)
     // 데스크톱 등 Web Share API 미지원 환경 감지 (타입상으론 항상 존재)
     if (typeof navigator.share === "function") {
       try {
@@ -75,6 +77,7 @@ function CreatedStep({
           name={name}
           leaderName={leaderName}
           seatLabel="01"
+          qrValue={inviteQrValueFor(code)}
           // 기울임은 등장 애니메이션 래퍼(TicketPrintStage)가 담당 — 카드는 정방향으로 인쇄
           className="pointer-events-auto rotate-none"
         >

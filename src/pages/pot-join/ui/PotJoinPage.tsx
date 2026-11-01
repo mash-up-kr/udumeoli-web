@@ -17,6 +17,7 @@ import {
   TicketCard,
   TicketPrintStage,
   fetchPartyPreview,
+  inviteQrValueFor,
   takePendingInviteCode,
   useJoinParty,
   usePotStore,
@@ -97,6 +98,7 @@ function ConfirmStep({
           leaderName={preview.members.at(0)?.nickname ?? "-"}
           // 내가 앉을 자리 = 현재 인원 + 1
           seatLabel={String(preview.memberCount + 1).padStart(2, "0")}
+          qrValue={inviteQrValueFor(code)}
           // 기울임은 안착 애니메이션 래퍼(TicketPrintStage)가 담당 — 카드는 정방향으로 인쇄
           className="pointer-events-auto rotate-none"
         >
