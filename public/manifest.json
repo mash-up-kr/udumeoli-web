@@ -2,6 +2,7 @@
   "id": "/",
   "short_name": "Pinnned",
   "name": "Pinnned",
+  "description": "친구들과 팟을 만들어 여행 기록으로 우리만의 지도를 채워보세요. 함께 만드는 여행 지도, Pinnned.",
   "icons": [
     {
       "src": "favicon.svg",
