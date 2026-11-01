@@ -7,8 +7,9 @@ import appIconSrc from "@/shared/assets/logo-app-icon.svg"
 import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
 const CODE_CELLS = ["P", "i", "n", "n", "n", "e", "d"]
-// QR은 운영 주소 고정 — SSR에서도 렌더되므로 window.location을 쓰지 않는다
-const SITE_URL = "https://www.pinnned.co.kr/"
+// QR은 운영 주소 고정 — SSR에서도 렌더되므로 window.location을 쓰지 않는다.
+// 대문자는 QR 영숫자 모드용 (격자 21×21로 선명) — 스킴·호스트는 대소문자 무관
+const SITE_QR_VALUE = "HTTPS://WWW.PINNNED.CO.KR"
 
 /**
  * 세로가 짧은 노트북(맥북 브라우저 뷰포트 ~800px)에서는 시안 높이(874px)를 고집하면
@@ -47,7 +48,7 @@ function DesktopAside() {
             ["DATE", "제공하고 있어요"],
           ]}
           fieldsFit="content"
-          qrValue={SITE_URL}
+          qrValue={SITE_QR_VALUE}
           className="origin-top-left scale-[1.41]"
         >
           <div className="flex gap-1">

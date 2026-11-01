@@ -151,15 +151,16 @@ export function TicketCard({
       />
       <div className="absolute top-[206px] left-0 flex w-full items-center gap-[10px] px-6 pt-4 pb-6">
         <div className="flex w-[211px] flex-col gap-2">{children}</div>
-        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white text-neutral-900">
-          {/* 61px 안에 들어가야 해서 오류정정 L + 여백 1모듈로 셀을 최대한 키운다 */}
+        <div className="flex size-[64px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white text-neutral-900">
+          {/* 기존 시안 에셋과 같은 비율 — 64px 박스 가운데 40px(사방 ~10px 여백).
+              바깥 흰 여백이 QR 조용 영역(quiet zone)이라 자체 여백은 0, 오류정정 L로 셀을 키운다 */}
           <QRCodeSVG
             value={qrValue}
+            size={40}
             level="L"
-            marginSize={1}
+            marginSize={0}
             fgColor="currentColor"
             aria-hidden="true"
-            className="absolute inset-0 size-full"
           />
         </div>
       </div>

@@ -18,7 +18,7 @@ export const Default: Story = {
           name="서울"
           leaderName="우두머리"
           seatLabel="01"
-          qrValue="https://www.pinnned.co.kr/pot-start?inviteCode=d0wveq"
+          qrValue="HTTPS://WWW.PINNNED.CO.KR/I/D0WVEQ"
         >
           <div aria-hidden="true" className="flex gap-[6px]">
             {"d0wveq".split("").map((char, index) => (

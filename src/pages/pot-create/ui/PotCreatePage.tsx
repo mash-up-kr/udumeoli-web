@@ -15,6 +15,7 @@ import {
   TicketCard,
   TicketPrintStage,
   inviteLinkFor,
+  inviteQrValueFor,
   useCreateParty,
   usePotStore,
 } from "@/entities/travel-pot"
@@ -76,7 +77,7 @@ function CreatedStep({
           name={name}
           leaderName={leaderName}
           seatLabel="01"
-          qrValue={inviteLinkFor(code)}
+          qrValue={inviteQrValueFor(code)}
           // 기울임은 등장 애니메이션 래퍼(TicketPrintStage)가 담당 — 카드는 정방향으로 인쇄
           className="pointer-events-auto rotate-none"
         >
