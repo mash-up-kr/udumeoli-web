@@ -52,8 +52,8 @@ export const Route = createRootRoute({
         property: "og:image",
         content: "https://www.pinnned.co.kr/og-image.jpg",
       },
-      { property: "og:image:width", content: "2048" },
-      { property: "og:image:height", content: "623" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { property: "og:url", content: "https://www.pinnned.co.kr/" },
       { name: "twitter:card", content: "summary_large_image" },
       {
