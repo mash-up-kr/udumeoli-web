@@ -26,6 +26,10 @@ export const Route = createRootRoute({
         content: "kJI4AB8_CY9womKjgUYYOAsyrFh-KpYbV7HD8xShLBI",
       },
       {
+        name: "naver-site-verification",
+        content: "e7bd974cd6749cd7e68a89bc5d2d86831dee4d39",
+      },
+      {
         name: "viewport",
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
