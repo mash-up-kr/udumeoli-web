@@ -161,6 +161,8 @@ export function TicketCard({
             marginSize={0}
             fgColor="currentColor"
             aria-hidden="true"
+            // 라이브러리 기본 crispEdges는 안티앨리어싱을 꺼서 기울어진 카드에서 셀 가장자리가 계단처럼 깨진다
+            className="[&_path]:[shape-rendering:geometricPrecision]"
           />
         </div>
       </div>
