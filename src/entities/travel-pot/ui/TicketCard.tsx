@@ -1,10 +1,10 @@
+import { QRCodeSVG } from "qrcode.react"
 import type { ReactNode } from "react"
 
 import ticketPinSrc from "@/shared/assets/ticket-pin.svg"
 import ticketRouteArrowSrc from "@/shared/assets/ticket-route-arrow.svg"
 import ticketRouteDashSrc from "@/shared/assets/ticket-route-dash.svg"
 import ticketPerforationSrc from "@/shared/assets/ticket-perforation.svg"
-import ticketQrSrc from "@/shared/assets/ticket-qr.svg"
 import { cn } from "@/shared/lib/utils"
 
 /**
@@ -12,7 +12,7 @@ import { cn } from "@/shared/lib/utils"
  * (Figma 팟 생성 완료 2588-38543 · 참여 확인 2588-37965, 골격 동일)
  *
  * 고정 335×311, -3.71° 기울임, 절취선으로 상/하 스텁 분리.
- * 하단 스텁 좌측 내용만 화면별로 다르다 — children으로 주입 (QR은 공통).
+ * 하단 스텁 좌측 내용만 화면별로 다르다 — children으로 주입. QR은 qrValue를 실제로 인코딩한다.
  */
 export function TicketCard({
   name,
@@ -20,10 +20,13 @@ export function TicketCard({
   seatLabel,
   fields,
   fieldsFit = "equal",
+  qrValue,
   className,
   children,
 }: {
   name: string
+  /** QR에 담을 주소 — 팟 티켓은 초대 링크, 데스크톱 안내는 사이트 주소. */
+  qrValue: string
   leaderName?: string
   /** SEAT 칸 값 — 생성 완료는 "01", 참여 확인은 내가 앉을 자리 번호. */
   seatLabel?: string
@@ -148,10 +151,14 @@ export function TicketCard({
       />
       <div className="absolute top-[206px] left-0 flex w-full items-center gap-[10px] px-6 pt-4 pb-6">
         <div className="flex w-[211px] flex-col gap-2">{children}</div>
-        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white">
-          <img
-            src={ticketQrSrc}
-            alt=""
+        <div className="relative size-[64px] shrink-0 overflow-hidden rounded-[12px] border-[1.5px] border-neutral-200 bg-white text-neutral-900">
+          {/* 61px 안에 들어가야 해서 오류정정 L + 여백 1모듈로 셀을 최대한 키운다 */}
+          <QRCodeSVG
+            value={qrValue}
+            level="L"
+            marginSize={1}
+            fgColor="currentColor"
+            aria-hidden="true"
             className="absolute inset-0 size-full"
           />
         </div>

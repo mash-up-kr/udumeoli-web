@@ -6,8 +6,9 @@ import { PortalContainerProvider } from "@/shared/ui/portal-container"
 import appIconSrc from "@/shared/assets/logo-app-icon.svg"
 import logoSrc from "@/shared/assets/logo-pinnned.svg"
 
-/** ponytail: QR은 티켓 공용 에셋 그대로 — 실제 접속 URL 확정되면 교체 */
 const CODE_CELLS = ["P", "i", "n", "n", "n", "e", "d"]
+// QR은 운영 주소 고정 — SSR에서도 렌더되므로 window.location을 쓰지 않는다
+const SITE_URL = "https://www.pinnned.co.kr/"
 
 /**
  * 세로가 짧은 노트북(맥북 브라우저 뷰포트 ~800px)에서는 시안 높이(874px)를 고집하면
@@ -46,6 +47,7 @@ function DesktopAside() {
             ["DATE", "제공하고 있어요"],
           ]}
           fieldsFit="content"
+          qrValue={SITE_URL}
           className="origin-top-left scale-[1.41]"
         >
           <div className="flex gap-1">
