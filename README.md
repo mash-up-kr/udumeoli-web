@@ -1,6 +1,9 @@
-# TanStack Start + shadcn/ui
+# Pinnned
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+**Pinnned** — 친구들과 팟을 만들어 여행 기록으로 우리만의 지도를 채우는 여행 기록 서비스.
+https://www.pinnned.co.kr
+
+TanStack Start(SSR) · React 19 · TypeScript · Tailwind 4 · shadcn/ui
 
 ## Analytics
 
