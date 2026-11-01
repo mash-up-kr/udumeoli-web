@@ -43,7 +43,8 @@ const STRUCTURED_DATA = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pinnned | 친구와 함께 만드는 여행 기록 지도" },
+      // 탭에서 잘리지 않게 브랜드명만 — 키워드는 h1·description·구조화 데이터가 담당
+      { title: "Pinnned" },
       { name: "robots", content: "index, follow" },
     ],
     links: [{ rel: "canonical", href: SITE_URL }],
