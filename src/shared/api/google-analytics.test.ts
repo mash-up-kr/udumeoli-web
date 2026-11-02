@@ -3,6 +3,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { initializeGoogleAnalytics } from "./google-analytics"
 
+const { initializeAnalyticsMock } = vi.hoisted(() => ({
+  initializeAnalyticsMock: vi.fn(),
+}))
+
+vi.mock("firebase/analytics", () => ({
+  initializeAnalytics: initializeAnalyticsMock,
+}))
+
+const FIREBASE_ENV = {
+  VITE_FIREBASE_API_KEY: "test-api-key",
+  VITE_FIREBASE_PROJECT_ID: "test-project",
+  VITE_FIREBASE_APP_ID: "1:1:web:test",
+  VITE_FIREBASE_MEASUREMENT_ID: "G-TEST",
+}
+
 describe("Google Analytics initialization", () => {
   beforeEach(() => {
     vi.stubEnv("PROD", true)
@@ -16,11 +31,12 @@ describe("Google Analytics initialization", () => {
     delete window.gtag
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+    initializeAnalyticsMock.mockReset()
   })
 
   it("does not load in development", () => {
     vi.stubEnv("PROD", false)
-    initializeGoogleAnalytics()
+    expect(initializeGoogleAnalytics()).toBe(false)
     expect(window.gtag).toBeUndefined()
     expect(document.getElementById("google-analytics")).toBeNull()
   })
@@ -29,13 +45,13 @@ describe("Google Analytics initialization", () => {
     "waits for authentication to leave %s before loading once",
     (pathname) => {
       window.history.replaceState(null, "", `${pathname}?code=private-code`)
-      initializeGoogleAnalytics()
+      expect(initializeGoogleAnalytics()).toBe(false)
       expect(window.gtag).toBeUndefined()
       expect(document.getElementById("google-analytics")).toBeNull()
 
       window.history.replaceState(null, "", "/signup")
-      initializeGoogleAnalytics()
-      initializeGoogleAnalytics()
+      expect(initializeGoogleAnalytics()).toBe(true)
+      expect(initializeGoogleAnalytics()).toBe(true)
       window.history.replaceState(null, "", "/pot-start")
       initializeGoogleAnalytics()
 
@@ -65,6 +81,29 @@ describe("Google Analytics initialization", () => {
     expect(window.dataLayer?.[1][2]).toEqual({
       page_referrer: "https://www.pinnned.co.kr",
     })
+  })
+
+  it("uses Firebase Analytics instead of the manual loader when configured", () => {
+    Object.entries(FIREBASE_ENV).forEach(([key, value]) =>
+      vi.stubEnv(key, value)
+    )
+    vi.spyOn(document, "referrer", "get").mockReturnValue(
+      "https://www.pinnned.co.kr/login/callback?code=private-code"
+    )
+
+    expect(initializeGoogleAnalytics()).toBe(true)
+    initializeGoogleAnalytics()
+
+    expect(initializeAnalyticsMock).toHaveBeenCalledTimes(2)
+    expect(initializeAnalyticsMock.mock.calls[0][0]?.options).toMatchObject({
+      projectId: "test-project",
+      measurementId: "G-TEST",
+    })
+    expect(initializeAnalyticsMock.mock.calls[0][1]).toEqual({
+      config: { page_referrer: "https://www.pinnned.co.kr" },
+    })
+    expect(window.gtag).toBeUndefined()
+    expect(document.getElementById("google-analytics")).toBeNull()
   })
 
   it("does not access browser APIs during SSR", () => {
