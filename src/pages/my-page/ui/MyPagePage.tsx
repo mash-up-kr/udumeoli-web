@@ -319,17 +319,17 @@ function MyPageContent() {
           <div className="h-px w-full bg-stroke-neutral-weak" />
 
           <section className="flex w-full flex-col gap-1">
+            {/* Figma 4200-8279 — 구분선 아래 첫 행, 좌측 말풍선 아이콘 20 · gap 4 */}
+            <button
+              type="button"
+              className={menuRowCls}
+              onClick={() => router.navigate({ to: "/my-page/feedback" })}
+            >
+              <img src={iconFeedbackSrc} alt="" className="size-5" />
+              <span className={menuLabelCls}>서비스 피드백 보내기</span>
+              <img src={iconChevronRightSrc} alt="" className="size-5" />
+            </button>
             <div className={menuRowCls}>
-              {/* Figma 4200-8279 — 구분선 아래 첫 행, 좌측 말풍선 아이콘 20 · gap 4 */}
-              <button
-                type="button"
-                className={menuRowCls}
-                onClick={() => router.navigate({ to: "/my-page/feedback" })}
-              >
-                <img src={iconFeedbackSrc} alt="" className="size-5" />
-                <span className={menuLabelCls}>서비스 피드백 보내기</span>
-                <img src={iconChevronRightSrc} alt="" className="size-5" />
-              </button>
               <span className={menuLabelCls}>버전 정보</span>
               <span className="text-b5 text-fg-neutral-bold">
                 {APP_VERSION}
