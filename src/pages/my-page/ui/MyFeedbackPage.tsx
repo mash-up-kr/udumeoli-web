@@ -93,7 +93,7 @@ function MyFeedbackContent() {
           }}
         />
       ),
-      { className: popupModalClassName }
+      { className: popupModalClassName, showCloseButton: false }
     )
   }
 
