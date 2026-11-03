@@ -23,10 +23,9 @@ import { useMe, useSessionStore, withdrawAccount } from "@/entities/user"
 import { RequireAuth, logoutSession } from "@/features/auth"
 import { resetMapTipsSeen, resetOnboardingSeen } from "@/features/onboarding"
 import { resetCompletionTips } from "@/widgets/travel-map-google"
+import { APP_VERSION } from "@/shared/config/app"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
-
-const APP_VERSION = "v 1.0.0"
 
 const TERMS_URL =
   import.meta.env.VITE_TERMS_NOTION_URL ??
