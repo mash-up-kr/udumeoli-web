@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './app/routes/index'
 import { Route as TravelAlbumIndexRouteImport } from './app/routes/travel-album.index'
 import { Route as TravelAlbumRegionRouteImport } from './app/routes/travel-album.$region'
 import { Route as MyPageProfileEditRouteImport } from './app/routes/my-page.profile-edit'
+import { Route as MyPageFeedbackRouteImport } from './app/routes/my-page.feedback'
 import { Route as LoginCallbackRouteImport } from './app/routes/login.callback'
 import { Route as LoginAppStartRouteImport } from './app/routes/login.app-start'
 import { Route as ICodeRouteImport } from './app/routes/i.$code'
@@ -74,6 +75,11 @@ const MyPageProfileEditRoute = MyPageProfileEditRouteImport.update({
   path: '/profile-edit',
   getParentRoute: () => MyPageRoute,
 } as any)
+const MyPageFeedbackRoute = MyPageFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => MyPageRoute,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login/callback',
   path: '/login/callback',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album/': typeof TravelAlbumIndexRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album': typeof TravelAlbumIndexRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
   '/travel-album/': typeof TravelAlbumIndexRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album/'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
     | '/travel-album/'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyPageProfileEditRouteImport
       parentRoute: typeof MyPageRoute
     }
+    '/my-page/feedback': {
+      id: '/my-page/feedback'
+      path: '/feedback'
+      fullPath: '/my-page/feedback'
+      preLoaderRoute: typeof MyPageFeedbackRouteImport
+      parentRoute: typeof MyPageRoute
+    }
     '/login/callback': {
       id: '/login/callback'
       path: '/login/callback'
@@ -314,11 +333,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface MyPageRouteChildren {
+  MyPageFeedbackRoute: typeof MyPageFeedbackRoute
   MyPageProfileEditRoute: typeof MyPageProfileEditRoute
   MyPagePotPotIdRoute: typeof MyPagePotPotIdRoute
 }
 
 const MyPageRouteChildren: MyPageRouteChildren = {
+  MyPageFeedbackRoute: MyPageFeedbackRoute,
   MyPageProfileEditRoute: MyPageProfileEditRoute,
   MyPagePotPotIdRoute: MyPagePotPotIdRoute,
 }
