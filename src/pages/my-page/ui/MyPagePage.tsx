@@ -26,6 +26,7 @@ import { resetCompletionTips } from "@/widgets/travel-map-google"
 import { APP_VERSION } from "@/shared/config/app"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconChevronRightSrc from "@/shared/assets/icon-chevron-right.svg"
+import iconFeedbackSrc from "@/shared/assets/icon-feedback.svg"
 
 const TERMS_URL =
   import.meta.env.VITE_TERMS_NOTION_URL ??
@@ -319,6 +320,16 @@ function MyPageContent() {
 
           <section className="flex w-full flex-col gap-1">
             <div className={menuRowCls}>
+              {/* Figma 4200-8279 — 구분선 아래 첫 행, 좌측 말풍선 아이콘 20 · gap 4 */}
+              <button
+                type="button"
+                className={menuRowCls}
+                onClick={() => router.navigate({ to: "/my-page/feedback" })}
+              >
+                <img src={iconFeedbackSrc} alt="" className="size-5" />
+                <span className={menuLabelCls}>서비스 피드백 보내기</span>
+                <img src={iconChevronRightSrc} alt="" className="size-5" />
+              </button>
               <span className={menuLabelCls}>버전 정보</span>
               <span className="text-b5 text-fg-neutral-bold">
                 {APP_VERSION}
