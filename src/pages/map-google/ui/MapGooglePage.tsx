@@ -157,7 +157,7 @@ function MapGooglePageContent() {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-white/80 to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[180px] bg-gradient-to-b from-transparent via-white/60 via-[36.47%] to-white opacity-90" />
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[env(safe-area-inset-top)]">
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 pt-[var(--safe-top)]">
               {showPersistentMapActions ? (
                 <>
                   {/* 헤더 박스 자체는 클릭 통과(AppHeader 기본 pointer-events-none) —

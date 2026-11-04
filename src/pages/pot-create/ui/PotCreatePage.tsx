@@ -59,7 +59,7 @@ function CreatedStep({
   return (
     // 폼 → 완료 화면 교체가 한 프레임에 일어나 하단 CTA가 위로 '확' 튀어 보인다 — 화면째 페이드인
     <MobileLayout className="relative flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
+      <div className="flex w-full items-center px-4 pt-[calc(var(--safe-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
         </ButtonIcon>
@@ -197,7 +197,7 @@ export function PotCreatePage() {
 
   return (
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
+      <div className="flex w-full items-center px-4 pt-[calc(var(--safe-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
         </ButtonIcon>

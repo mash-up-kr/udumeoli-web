@@ -92,9 +92,11 @@ describe("Google Analytics initialization", () => {
     )
 
     expect(initializeGoogleAnalytics()).toBe(true)
-    initializeGoogleAnalytics()
+    // SDK가 넘겨준 config 객체를 초기화 중 제자리에서 바꾼다(firebase_origin·update·firebase_id 추가).
+    // 경로가 바뀔 때마다 새 옵션으로 다시 부르면 analytics/already-initialized로 던지므로 한 번만 불러야 한다.
+    expect(initializeGoogleAnalytics()).toBe(true)
 
-    expect(initializeAnalyticsMock).toHaveBeenCalledTimes(2)
+    expect(initializeAnalyticsMock).toHaveBeenCalledTimes(1)
     expect(initializeAnalyticsMock.mock.calls[0][0]?.options).toMatchObject({
       projectId: "test-project",
       measurementId: "G-TEST",

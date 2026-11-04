@@ -5,6 +5,8 @@ import { getFirebaseApp } from "./firebase"
 const MEASUREMENT_ID = "G-0D3HZ92ZME"
 const SCRIPT_ID = "google-analytics"
 
+let firebaseAnalyticsInitialized = false
+
 declare global {
   interface Window {
     dataLayer?: Array<IArguments>
@@ -24,7 +26,9 @@ export function initializeGoogleAnalytics(): boolean {
   ) {
     return false
   }
-  if (document.getElementById(SCRIPT_ID)) return true
+  if (firebaseAnalyticsInitialized || document.getElementById(SCRIPT_ID)) {
+    return true
+  }
 
   // 자체 분석과 동일하게 referrer는 origin만 사용해 인증 쿼리를 제외한다.
   const pageReferrer = document.referrer
@@ -34,8 +38,10 @@ export function initializeGoogleAnalytics(): boolean {
   const app = getFirebaseApp()
   if (app) {
     // Firebase Analytics가 gtag.js를 직접 로드한다. 수동 로더와 함께 쓰면 page_view가 두 번 찍힌다.
-    // 같은 옵션으로 다시 불러도 기존 인스턴스를 돌려주므로 호출마다 안전하다.
+    // SDK는 넘긴 config 객체를 초기화 중 제자리에서 바꾸므로(firebase_origin·update·firebase_id)
+    // 경로 변경마다 새 옵션으로 다시 부르면 analytics/already-initialized를 던진다. 한 번만 부른다.
     initializeAnalytics(app, { config: { page_referrer: pageReferrer } })
+    firebaseAnalyticsInitialized = true
     return true
   }
 

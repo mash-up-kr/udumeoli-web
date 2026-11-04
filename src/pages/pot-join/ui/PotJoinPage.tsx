@@ -78,7 +78,7 @@ function ConfirmStep({
   return (
     // 시안 배경 #eff1f5 = neutral-100 (bg-neutral-solid) — 흰 티켓이 도드라지도록 입력 스텝보다 한 단계 진함
     <MobileLayout className="relative flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-solid">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
+      <div className="flex w-full items-center px-4 pt-[calc(var(--safe-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="닫기" onClick={onClose}>
           <X />
         </ButtonIcon>
@@ -366,7 +366,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
 
   return (
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
-      <div className="flex w-full items-center px-4 pt-[calc(env(safe-area-inset-top)_+_17px)] pb-[17px]">
+      <div className="flex w-full items-center px-4 pt-[calc(var(--safe-top)_+_17px)] pb-[17px]">
         <ButtonIcon aria-label="뒤로 가기" onClick={goBack}>
           <ArrowLeft />
         </ButtonIcon>

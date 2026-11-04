@@ -371,7 +371,7 @@ function PhotoViewerContent({
             uiHidden && "opacity-0"
           )}
           style={{
-            top: `max(calc(env(safe-area-inset-top) + 82px), ${imageBox.top - CHIP_OFFSET}px)`,
+            top: `max(calc(var(--safe-top) + 82px), ${imageBox.top - CHIP_OFFSET}px)`,
           }}
         >
           <UploaderChip uploader={photo.uploader} />
@@ -396,7 +396,7 @@ function PhotoViewerContent({
       {/* Header — 좌 X(닫기) · 우 ⋯(더보기, 내 사진만) */}
       <div
         className={cn(
-          "absolute inset-x-0 top-0 z-20 pt-[env(safe-area-inset-top)] transition-opacity",
+          "absolute inset-x-0 top-0 z-20 pt-[var(--safe-top)] transition-opacity",
           uiHidden && "pointer-events-none opacity-0"
         )}
       >
@@ -431,7 +431,7 @@ function PhotoViewerContent({
           <div
             role="menu"
             className="absolute right-4 z-40 flex w-[238px] flex-col rounded-[34px] bg-white/85 py-2.5 shadow-[0px_8px_48px_0px_rgba(0,0,0,0.25)] backdrop-blur-xl"
-            style={{ top: "calc(env(safe-area-inset-top) + 67px)" }}
+            style={{ top: "calc(var(--safe-top) + 67px)" }}
           >
             <button
               type="button"

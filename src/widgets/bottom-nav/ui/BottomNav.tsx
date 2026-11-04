@@ -17,8 +17,8 @@ function BottomNav({
   albumDisabled = false,
   ...props
 }: ComponentProps<"nav"> & {
-  /** 현재 화면 탭 — 앨범 페이지(시안 1846-3645)에선 여행 앨범 활성(흰색) */
-  active?: "album"
+  /** 현재 화면 탭 — 앨범 페이지(시안 1846-3645)·마이페이지(시안 3065-17083)에선 해당 탭 활성(흰색) */
+  active?: "album" | "my-page"
   onAlbumClick?: () => void
   onMyPageClick?: () => void
   /** 중앙 지구본 클릭 — 지정 시 버튼으로 렌더 (앨범 → 지도 이동) */
@@ -60,7 +60,11 @@ function BottomNav({
         <button
           type="button"
           onClick={onMyPageClick}
-          className="flex w-[60px] flex-col items-center gap-1 py-1 text-fg-neutral-subtle"
+          className={cn(
+            "flex w-[60px] flex-col items-center gap-1 py-1",
+            active === "my-page" ? "text-white" : "text-fg-neutral-subtle"
+          )}
+          aria-current={active === "my-page" ? "page" : undefined}
         >
           {/* 마이페이지 아이콘 (시안 2897-19253 icon-person) — 활성/비활성 색을 따라가도록 currentColor */}
           <svg aria-hidden viewBox="0 0 24 24" fill="none" className="size-6">
