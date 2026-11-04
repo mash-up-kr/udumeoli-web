@@ -35,3 +35,12 @@ export const AlbumActive: Story = {
     </div>
   ),
 }
+
+/** 마이페이지(시안 3065-17083) — 마이페이지 탭 활성, 지구본 클릭 시 지도로 이동. */
+export const MyPageActive: Story = {
+  render: () => (
+    <div className="flex h-60 items-end justify-center bg-bg-neutral-subtle pb-8">
+      <BottomNav active="my-page" onGlobeClick={() => {}} />
+    </div>
+  ),
+}
