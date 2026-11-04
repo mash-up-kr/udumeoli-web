@@ -116,8 +116,12 @@ function MyFeedbackContent() {
       return
     }
     await goMyPage()
-    // 파란 ✓ — 완료 (Figma 4200-19156)
-    showToast({ message: "소중한 의견 감사드립니다!", icon: "check" })
+    // 파란 ✓ — 완료 (Figma 4200-19156). 마이페이지 하단 내비(바닥 34 + 바 75) 위 16px = 125
+    showToast({
+      message: "소중한 의견 감사드립니다!",
+      icon: "check",
+      className: "bottom-[calc(max(env(safe-area-inset-bottom),34px)+91px)]",
+    })
   }
 
   return (
