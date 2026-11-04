@@ -1,4 +1,6 @@
 import * as React from "react"
+
+import { PhoneChrome } from "./PhoneChrome"
 import type { ReactNode } from "react"
 
 import { TicketCard } from "@/entities/travel-pot"
@@ -101,6 +103,7 @@ export function DesktopGuide({ children }: { children: ReactNode }) {
             {children}
           </PortalContainerProvider>
         </div>
+        <PhoneChrome />
       </div>
     </div>
   )

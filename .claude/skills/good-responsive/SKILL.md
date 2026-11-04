@@ -41,7 +41,7 @@ description: Use when writing or modifying mobile UI layout - screen height/widt
 
 ## 5. 최상단/최하단 요소는 safe-area 반영
 
-노치·홈 인디케이터·PWA 상태바와 겹치지 않게 padding에 반영한다. 기존 패턴(`header.tsx`): `pt-[calc(env(safe-area-inset-top)_+_0.75rem)]`.
+노치·홈 인디케이터·PWA 상태바와 겹치지 않게 padding에 반영한다. 기존 패턴(`header.tsx`): `pt-[calc(var(--safe-top)_+_0.75rem)]`.
 
 ## 체크리스트
 
