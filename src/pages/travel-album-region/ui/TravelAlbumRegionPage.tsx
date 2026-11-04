@@ -166,7 +166,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
 
   return (
     <MobileLayout className="bg-bg-neutral-subtle pb-[max(env(safe-area-inset-bottom),34px)]">
-      <div className="pt-[env(safe-area-inset-top)]">
+      <div className="pt-[var(--safe-top)]">
         <div className="relative flex flex-col items-center gap-1 pt-5 pb-4">
           <ButtonIcon
             aria-label="뒤로 가기"

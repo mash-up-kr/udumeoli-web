@@ -67,6 +67,8 @@
        앱 코드는 100dvh/100vw 대신 반드시 이 변수를 쓴다. */
     --app-vh: 100dvh;
     --app-vw: 100dvw;
+    /* 상단 safe-area. 데스크톱 폰 프레임은 OS 상태바가 없어 가상 상태바 높이로 덮어쓴다 (PhoneChrome). */
+    --safe-top: env(safe-area-inset-top);
     /* 시맨틱 토큰 → 디자인 시스템 팔레트 매핑 (v1.0.0) */
     --background: #ffffff; /* neutral-0 */
     --foreground: #141820; /* neutral-900 */
@@ -144,6 +146,8 @@
         /* 프레임 내용 박스 크기. 프레임은 box-content + border 6px라 바깥 크기는 +12px(440×956). */
         --app-vw: min(428px, calc(100dvw - 44px));
         --app-vh: min(944px, calc(100dvh - 44px));
+        /* 가상 상태바(Figma 3065-13737) 높이. 앱 콘텐츠가 이 아래부터 시작한다. */
+        --safe-top: 54px;
     }
 }
 
@@ -580,7 +584,7 @@
        남는 높이 비율로 축소한다. 140px = 상단 바(76) + 제목(80) - 슬롯 여유(16),
        354px = 안착한 티켓 하단(기울임 포함). tan(atan2())는 길이÷길이를 비율로 바꾼다 */
     .ticket-print-stage-position {
-        --ticket-floor: calc(env(safe-area-inset-top) + 140px);
+        --ticket-floor: calc(var(--safe-top) + 140px);
         --ticket-fit: 354px;
         --ticket-bottom: calc(
             var(--ticket-reserve) + max(env(safe-area-inset-bottom), 34px)
@@ -588,7 +592,7 @@
         top: max(
             var(--ticket-floor),
             min(
-                calc(env(safe-area-inset-top) * 0.75 + 25%),
+                calc(var(--safe-top) * 0.75 + 25%),
                 calc(100% - var(--ticket-bottom) - 354px)
             )
         );
@@ -597,7 +601,7 @@
     /* center — 제목 아래(상단 바 76 + 제목 80)와 하단 고정 영역 사이 정중앙 (시안 3065-13044).
        스테이지(375) 중심 = 안착한 티켓 중심이라 위아래 간격이 같고, 모자라면 중심 기준으로 축소 */
     .ticket-print-stage-position[data-align="center"] {
-        --ticket-floor: calc(env(safe-area-inset-top) + 156px);
+        --ticket-floor: calc(var(--safe-top) + 156px);
         --ticket-fit: 375px;
         top: calc(
             (var(--ticket-floor) + 100% - var(--ticket-bottom) - 375px) / 2

@@ -141,7 +141,7 @@ function MapTipsOverlay({
           오버레이가 열리고 닫힐 때 로고가 튀지 않는다 */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md px-4 pt-[env(safe-area-inset-top)]"
+        className="pointer-events-none fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md px-4 pt-[var(--safe-top)]"
       >
         <div className="flex h-[58px] items-center">
           <img src={logoSrc} alt="" className="h-7" />

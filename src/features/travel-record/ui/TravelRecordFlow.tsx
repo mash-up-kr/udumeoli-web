@@ -235,7 +235,7 @@ export function TravelRecordFlow({
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/65 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white/65 to-transparent" />
 
-      <div className="relative z-10 mt-[env(safe-area-inset-top)] flex h-[76px] shrink-0 items-center px-4">
+      <div className="relative z-10 mt-[var(--safe-top)] flex h-[76px] shrink-0 items-center px-4">
         <ButtonIcon
           aria-label="뒤로 가기"
           onClick={handleBack}

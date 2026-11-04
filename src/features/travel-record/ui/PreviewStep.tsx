@@ -181,7 +181,7 @@ export function PreviewStep({
           ))
         : null}
 
-      <div className="relative z-20 mt-[env(safe-area-inset-top)] flex h-[76px] shrink-0 items-center px-4">
+      <div className="relative z-20 mt-[var(--safe-top)] flex h-[76px] shrink-0 items-center px-4">
         <ButtonIcon aria-label="뒤로 가기" onClick={onBack}>
           <img src={iconArrowLeftSrc} alt="" className="size-6" />
         </ButtonIcon>
