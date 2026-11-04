@@ -141,8 +141,9 @@
    조건을 다시 적지 않고 변형을 재사용해야 게이트가 한 곳에서만 정의된다. */
 [data-app-frame] {
     @variant frame {
-        --app-vw: min(440px, calc(100dvw - 32px));
-        --app-vh: min(956px, calc(100dvh - 32px));
+        /* 프레임 내용 박스 크기. 프레임은 box-content + border 6px라 바깥 크기는 +12px(440×956). */
+        --app-vw: min(428px, calc(100dvw - 44px));
+        --app-vh: min(944px, calc(100dvh - 44px));
     }
 }
 

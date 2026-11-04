@@ -92,7 +92,9 @@ export function DesktopGuide({ children }: { children: ReactNode }) {
       <div
         ref={setFrame}
         data-app-frame
-        className="contents frame:relative frame:block frame:h-[var(--app-vh)] frame:w-[var(--app-vw)] frame:shrink-0 frame:[transform:translate(0)] frame:overflow-hidden frame:rounded-[56px] frame:border-[6px] frame:border-neutral-300 frame:bg-bg-neutral-weak"
+        // box-content: border 6px를 뺀 내용 박스가 정확히 app-vh×app-vw. border-box면 내용이 12px 작아져
+        // `h-[var(--app-vh)]`(지도)와 `fixed`(앨범·마이페이지)의 하단 내비 기준이 12px 어긋난다
+        className="contents frame:relative frame:box-content frame:block frame:h-[var(--app-vh)] frame:w-[var(--app-vw)] frame:shrink-0 frame:[transform:translate(0)] frame:overflow-hidden frame:rounded-[56px] frame:border-[6px] frame:border-neutral-300 frame:bg-bg-neutral-weak"
       >
         <div className="min-h-[var(--app-vh)] bg-background">
           <PortalContainerProvider container={frame}>
