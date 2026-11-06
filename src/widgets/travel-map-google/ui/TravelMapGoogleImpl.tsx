@@ -18,6 +18,7 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps"
 import { ArrowRight, UserRound } from "lucide-react"
+import { filterBlockedMapOverview } from "../lib/filterBlockedMapOverview"
 
 import {
   buildCollaborationTrips,
@@ -56,7 +57,12 @@ import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { RegionFill } from "@/entities/region"
 import type { DecoratePreview } from "@/features/travel-record"
 import type { TravelKeyword, TravelKeywordId } from "@/entities/photo"
-import { findKeyword, useAllPhotos } from "@/entities/photo"
+import {
+  findKeyword,
+  useAllPhotos,
+  useBlockedAuthors,
+  usePhotos,
+} from "@/entities/photo"
 import {
   formatProvinceBadgeName,
   formatRegionName,
@@ -1087,15 +1093,26 @@ function TravelMapGoogleInner({
   const currentPotName = usePotStore(
     (s) => s.pots.find((pot) => pot.id === s.currentPotId)?.name ?? "우리 팟"
   )
-  const photos = useAllPhotos(currentPotId)
+  const currentUser = useSessionStore((s) => s.currentUser)
+  const currentUserId = currentUser?.id ?? null
+  const blocked = useBlockedAuthors(currentUserId)
+  const photos = useAllPhotos(currentPotId, currentUserId)
   const mapOverviewQuery = usePartyMapOverview(currentPotId)
-  const mapOverview = mapOverviewQuery.data
+  const { data: allPhotos } = usePhotos(currentPotId)
+  const mapOverview = React.useMemo(
+    () =>
+      filterBlockedMapOverview({
+        overview: mapOverviewQuery.data,
+        photos: allPhotos,
+        blockedAuthorIds: blocked.map((author) => author.id),
+        potId: currentPotId,
+      }),
+    [mapOverviewQuery.data, allPhotos, blocked, currentPotId]
+  )
   const fills = useRegionColorStore(
     (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
   )
   const partyMembers = usePotStore(selectCurrentPotMembers)
-  const currentUser = useSessionStore((s) => s.currentUser)
-  const currentUserId = currentUser?.id ?? null
 
   const mapRef = React.useRef<google.maps.Map | null>(null)
   const geojsonRef = React.useRef<GeoJSON.FeatureCollection | null>(null)

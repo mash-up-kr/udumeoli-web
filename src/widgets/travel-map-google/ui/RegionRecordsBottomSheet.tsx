@@ -12,6 +12,7 @@ import {
   findKeyword,
   groupTrips,
   useAllPhotos,
+  useBlockedAuthors,
   useDeletePhoto,
 } from "@/entities/photo"
 import { usePotStore } from "@/entities/travel-pot"
@@ -182,13 +183,18 @@ export function RegionRecordsBottomSheet({
   const potId = usePotStore((s) => s.currentPotId)
   const deletePhotoMutation = useDeletePhoto()
   const startRecord = useRecordStore((state) => state.start)
-  const livePhotos = useAllPhotos(potId).filter(
+  const blocked = useBlockedAuthors(currentUserId)
+  const livePhotos = useAllPhotos(potId, currentUserId).filter(
     (photo) => photo.region === region
   )
   const regionPhotos =
     livePhotos.length > 0
       ? livePhotos
-      : photos.filter((photo) => photo.region === region)
+      : photos.filter(
+          (photo) =>
+            photo.region === region &&
+            !blocked.some((author) => author.id === photo.uploaderId)
+        )
   const latestTrip = groupTrips(regionPhotos)[0]
   const [expanded, setExpanded] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -329,6 +335,7 @@ export function RegionRecordsBottomSheet({
     const member = members.find((m) => m.id === photo.uploaderId)
     if (isMe) {
       return {
+        id: photo.uploaderId,
         nickname: currentUser?.nickname ?? member?.nickname ?? "",
         profileImageUrl:
           currentUser?.profileImageUrl ?? member?.profileImageUrl ?? null,
@@ -337,6 +344,7 @@ export function RegionRecordsBottomSheet({
     }
     if (!member) return undefined
     return {
+      id: photo.uploaderId,
       nickname: member.nickname,
       profileImageUrl: member.profileImageUrl,
       isMe: false,
@@ -351,6 +359,14 @@ export function RegionRecordsBottomSheet({
         const uploader = uploaderOf(item)
         return {
           id: item.id,
+          ...(!uploader?.isMe && uploader && item.tripId
+            ? {
+                reportTarget: {
+                  tripId: item.tripId,
+                  imageId: item.imageId,
+                },
+              }
+            : {}),
           imageUrl: item.thumbnailUrl,
           ...(item.comment != null ? { comment: item.comment } : {}),
           ...(uploader ? { uploader } : {}),

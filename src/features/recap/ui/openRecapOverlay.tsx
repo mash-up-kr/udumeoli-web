@@ -9,7 +9,7 @@ import { RECAP_COUNTRY_LABEL, RECAP_COUNTRY_NAME } from "../lib/recap-model"
 import { RecapMapPreview } from "./RecapMapPreview"
 import type { RecapCardModel } from "../lib/recap-model"
 
-import { useAllPhotos } from "@/entities/photo"
+import { useAllPhotos, useBlockedAuthors } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { ButtonCta } from "@/shared/ui/button-cta"
@@ -60,7 +60,8 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   )
   const members = usePotStore(selectCurrentPotMembers)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
-  const photos = useAllPhotos(currentPotId)
+  const blocked = useBlockedAuthors(currentUserId)
+  const photos = useAllPhotos(currentPotId, currentUserId)
   const recapCardRef = React.useRef<HTMLDivElement>(null)
   const [mapReady, setMapReady] = React.useState(false)
   const [mapRetryKey, setMapRetryKey] = React.useState(0)
@@ -93,9 +94,10 @@ function RecapOverlay({ unmount }: { unmount: () => void }) {
   const recapStatsQuery = useRecapStats(currentPotId)
   // 지도는 지역당 스티커 1개만 그린다(visibleStickerTrips) — 툴팁·카드의 "핀 개수"는
   // 여행 횟수가 아니라 기록한 지역 수다 (시안 3065-17817 #1 "핀(장소) 총 개수")
-  const { regionCount: pinCount } = USE_MOCK
-    ? localStats
-    : (recapStatsQuery.data ?? localStats)
+  const { regionCount: pinCount } =
+    USE_MOCK || blocked.length > 0
+      ? localStats
+      : (recapStatsQuery.data ?? localStats)
   const orderedMembers = React.useMemo(
     () =>
       [...members].sort((a, b) => {

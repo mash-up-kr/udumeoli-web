@@ -1,9 +1,14 @@
 import * as React from "react"
+import { Ban, Ellipsis } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useRouter } from "@tanstack/react-router"
 
 import type { PotMember } from "@/entities/travel-pot"
-import { photoKeys, usePhotoUploadStore } from "@/entities/photo"
+import {
+  photoKeys,
+  useBlockedAuthors,
+  usePhotoUploadStore,
+} from "@/entities/photo"
 import {
   inviteLinkFor,
   useDeleteParty,
@@ -14,12 +19,19 @@ import {
 } from "@/entities/travel-pot"
 import { useSessionStore } from "@/entities/user"
 import { getGraphQLErrorCode } from "@/shared/api/client"
+import { confirmBlockAuthor } from "@/features/photo-gallery"
 import { RequireAuth } from "@/features/auth"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 import iconContentCopySrc from "@/shared/assets/icon-content-copy.svg"
 import { cn } from "@/shared/lib/utils"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { ButtonIcon } from "@/shared/ui/button-icon"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu"
 import { DialogTitle } from "@/shared/ui/dialog"
 import { Header } from "@/shared/ui/header"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
@@ -85,6 +97,9 @@ function MemberRow({
   isMe: boolean
   isLeader: boolean
 }) {
+  const accountId = useSessionStore((state) => state.currentUser?.id)
+  const blocked = useBlockedAuthors(accountId)
+  const isBlocked = blocked.some((author) => author.id === member.id)
   return (
     <li className="flex min-h-14 w-full items-center rounded-[24px] border border-stroke-neutral-weak bg-bg-neutral-weak px-4 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -101,6 +116,33 @@ function MemberRow({
           <RoleBadge leader={isLeader} />
         </div>
       </div>
+      {!isMe && accountId ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ButtonIcon
+              aria-label={member.nickname + " 더보기"}
+              className="shrink-0 shadow-none"
+            >
+              <Ellipsis />
+            </ButtonIcon>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              disabled={isBlocked}
+              className="text-fg-danger-solid"
+              onSelect={() => {
+                void confirmBlockAuthor(accountId, {
+                  id: member.id,
+                  nickname: member.nickname,
+                })
+              }}
+            >
+              {isBlocked ? "차단됨" : "차단하기"}
+              <Ban className="size-4" />
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </li>
   )
 }

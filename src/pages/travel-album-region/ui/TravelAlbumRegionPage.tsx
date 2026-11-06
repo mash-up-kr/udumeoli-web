@@ -41,7 +41,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const currentUser = useSessionStore((s) => s.currentUser)
   const myId = currentUser?.id ?? null
 
-  const regionPhotos = useRegionAlbumPhotos(currentPotId, region)
+  const regionPhotos = useRegionAlbumPhotos(currentPotId, region, myId)
   const deletePhotoMutation = useDeletePhoto()
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
@@ -118,6 +118,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
     const member = orderedMembers.find((m) => m.memberId === photo.uploaderId)
     if (!member) return undefined
     return {
+      id: photo.uploaderId,
       nickname: member.nickname,
       profileImageUrl: member.profileImageUrl,
       isMe: member.isMe,
@@ -133,6 +134,14 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         const keywordIconSrc = findKeyword(p.keyword)?.emojiSrc
         return {
           id: p.id,
+          ...(!uploader?.isMe && uploader && p.tripId
+            ? {
+                reportTarget: {
+                  tripId: p.tripId,
+                  imageId: p.imageId,
+                },
+              }
+            : {}),
           imageUrl: p.thumbnailUrl,
           ...(p.comment != null ? { comment: p.comment } : {}),
           ...(keywordIconSrc ? { keywordIconSrc } : {}),

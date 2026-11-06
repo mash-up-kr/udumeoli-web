@@ -92,7 +92,7 @@ function MapGooglePageContent() {
   // 줌인 가이드(시안 2822-8047) — 사진 0장 && 줌 3단계 미만일 때만 노출,
   // 온보딩을 본 뒤 재접속한 무기록 유저에게 노출한다.
   const currentPotId = usePotStore((s) => s.currentPotId)
-  const photoCount = useAllPhotos(currentPotId).length
+  const photoCount = useAllPhotos(currentPotId, currentUserId).length
   const { isPending: isPhotosPending, isError: isPhotosError } =
     usePhotos(currentPotId)
   const [zoomGuideDismissedPotId, setZoomGuideDismissedPotId] = React.useState<

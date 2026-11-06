@@ -20,6 +20,7 @@ import { Route as TravelAlbumIndexRouteImport } from './app/routes/travel-album.
 import { Route as TravelAlbumRegionRouteImport } from './app/routes/travel-album.$region'
 import { Route as MyPageProfileEditRouteImport } from './app/routes/my-page.profile-edit'
 import { Route as MyPageFeedbackRouteImport } from './app/routes/my-page.feedback'
+import { Route as MyPageBlockedUsersRouteImport } from './app/routes/my-page.blocked-users'
 import { Route as LoginCallbackRouteImport } from './app/routes/login.callback'
 import { Route as LoginAppStartRouteImport } from './app/routes/login.app-start'
 import { Route as ICodeRouteImport } from './app/routes/i.$code'
@@ -80,6 +81,11 @@ const MyPageFeedbackRoute = MyPageFeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => MyPageRoute,
 } as any)
+const MyPageBlockedUsersRoute = MyPageBlockedUsersRouteImport.update({
+  id: '/blocked-users',
+  path: '/blocked-users',
+  getParentRoute: () => MyPageRoute,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login/callback',
   path: '/login/callback',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/blocked-users': typeof MyPageBlockedUsersRoute
   '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/blocked-users': typeof MyPageBlockedUsersRoute
   '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/i/$code': typeof ICodeRoute
   '/login/app-start': typeof LoginAppStartRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/my-page/blocked-users': typeof MyPageBlockedUsersRoute
   '/my-page/feedback': typeof MyPageFeedbackRoute
   '/my-page/profile-edit': typeof MyPageProfileEditRoute
   '/travel-album/$region': typeof TravelAlbumRegionRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/blocked-users'
     | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/blocked-users'
     | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/i/$code'
     | '/login/app-start'
     | '/login/callback'
+    | '/my-page/blocked-users'
     | '/my-page/feedback'
     | '/my-page/profile-edit'
     | '/travel-album/$region'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyPageFeedbackRouteImport
       parentRoute: typeof MyPageRoute
     }
+    '/my-page/blocked-users': {
+      id: '/my-page/blocked-users'
+      path: '/blocked-users'
+      fullPath: '/my-page/blocked-users'
+      preLoaderRoute: typeof MyPageBlockedUsersRouteImport
+      parentRoute: typeof MyPageRoute
+    }
     '/login/callback': {
       id: '/login/callback'
       path: '/login/callback'
@@ -333,12 +352,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface MyPageRouteChildren {
+  MyPageBlockedUsersRoute: typeof MyPageBlockedUsersRoute
   MyPageFeedbackRoute: typeof MyPageFeedbackRoute
   MyPageProfileEditRoute: typeof MyPageProfileEditRoute
   MyPagePotPotIdRoute: typeof MyPagePotPotIdRoute
 }
 
 const MyPageRouteChildren: MyPageRouteChildren = {
+  MyPageBlockedUsersRoute: MyPageBlockedUsersRoute,
   MyPageFeedbackRoute: MyPageFeedbackRoute,
   MyPageProfileEditRoute: MyPageProfileEditRoute,
   MyPagePotPotIdRoute: MyPagePotPotIdRoute,
