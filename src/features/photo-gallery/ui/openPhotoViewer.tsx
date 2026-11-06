@@ -1,9 +1,19 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import { overlay } from "overlay-kit"
-import { ChevronRight, Ellipsis, Trash2 } from "lucide-react"
+import { Ban, ChevronRight, Ellipsis, Trash2 } from "lucide-react"
 
+import { reportMailto } from "../lib/report-mailto"
+import { confirmBlockAuthor } from "../lib/confirm-block-author"
+import { useBlockedAuthors } from "@/entities/photo"
+import { useSessionStore } from "@/entities/user"
 import { cn } from "@/shared/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { ButtonCta } from "@/shared/ui/button-cta"
 import { Profile } from "@/shared/ui/profile"
@@ -22,6 +32,7 @@ import iconCloseBoldSrc from "@/shared/assets/icon-close-bold.svg"
 import iconAlertDangerSrc from "@/shared/assets/icon-alert-danger.svg"
 
 export interface PhotoViewerUploader {
+  id?: string
   nickname: string
   profileImageUrl: string | null
   /** 본인 사진 여부 — ME! 뱃지 + 더보기(수정/삭제) 노출 조건 */
@@ -30,6 +41,10 @@ export interface PhotoViewerUploader {
 
 export interface PhotoViewerItem {
   id: string
+  reportTarget?: {
+    tripId: string
+    imageId?: string
+  }
   imageUrl: string
   /** 사진 하단 말풍선에 노출되는 코멘트 */
   comment?: string
@@ -182,6 +197,9 @@ function PhotoViewerContent({
   unmount: () => void
 }) {
   const { photos, initialId, onEdit, onDelete } = options
+  const accountId = useSessionStore((state) => state.currentUser?.id)
+  const blocked = useBlockedAuthors(accountId)
+  const viewerAccount = React.useRef(accountId)
   const initialIndex = Math.max(
     0,
     photos.findIndex((p) => p.id === initialId)
@@ -205,7 +223,16 @@ function PhotoViewerContent({
   const deletePendingRef = React.useRef(false)
 
   const photo = photos[index]
+  React.useEffect(() => {
+    if (
+      accountId !== viewerAccount.current ||
+      blocked.some((author) => author.id === photo.uploader?.id)
+    )
+      close()
+  }, [accountId, blocked, close, photo.uploader?.id])
   const isMine = photo.uploader?.isMe ?? false
+  const authorId = photo.uploader?.id
+  const authorName = photo.uploader?.nickname
   const comment = photo.comment ?? ""
 
   // object-contain으로 렌더된 사진의 실제 상/하단 위치 계산 (letterbox ↔ full-bleed 대응)
@@ -229,7 +256,15 @@ function PhotoViewerContent({
   }, [measure])
 
   const goTo = (next: number) => {
+    const direction = next > index ? 1 : -1
+    while (
+      next >= 0 &&
+      next < photos.length &&
+      blocked.some((author) => author.id === photos[next].uploader?.id)
+    )
+      next += direction
     if (next < 0 || next >= photos.length || next === index) return
+    setMenuOpen(false)
     setIndex(next)
     setFailed(false)
     setImageBox(null)
@@ -393,7 +428,7 @@ function PhotoViewerContent({
         </div>
       ) : null}
 
-      {/* Header — 좌 X(닫기) · 우 ⋯(더보기, 내 사진만) */}
+      {/* Header — 좌 X(닫기) · 우 ⋯(기록 메뉴) */}
       <div
         className={cn(
           "absolute inset-x-0 top-0 z-20 pt-[var(--safe-top)] transition-opacity",
@@ -406,55 +441,71 @@ function PhotoViewerContent({
               <img src={iconCloseBoldSrc} alt="" className="size-6" />
             </ButtonIcon>
           </DialogPrimitive.Close>
-          {isMine && !failed ? (
-            <ButtonIcon
-              aria-label="더보기"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <Ellipsis />
-            </ButtonIcon>
+          {(isMine && !failed) ||
+          (!isMine && (photo.reportTarget || authorId)) ? (
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <ButtonIcon aria-label="더보기">
+                  <Ellipsis />
+                </ButtonIcon>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {isMine ? (
+                  <DropdownMenuItem onSelect={handleEdit}>
+                    수정하기
+                    <ChevronRight className="size-4" />
+                  </DropdownMenuItem>
+                ) : photo.reportTarget ? (
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={reportMailto(photo.reportTarget)}
+                      onClick={() => {
+                        setMenuOpen(false)
+                        showToast({
+                          message:
+                            "메일 앱이 열리지 않으면 pinnned.dev@gmail.com으로 직접 신고해 주세요.",
+                          duration: 6000,
+                        })
+                      }}
+                    >
+                      신고하기
+                      <ChevronRight className="size-4" />
+                    </a>
+                  </DropdownMenuItem>
+                ) : null}
+                {!isMine && authorId && authorName && accountId ? (
+                  <DropdownMenuItem
+                    className="text-fg-danger-solid"
+                    onSelect={async () => {
+                      setMenuOpen(false)
+                      if (
+                        await confirmBlockAuthor(accountId, {
+                          id: authorId,
+                          nickname: authorName,
+                        })
+                      )
+                        close()
+                    }}
+                  >
+                    차단하기
+                    <Ban className="size-4" />
+                  </DropdownMenuItem>
+                ) : null}
+                {isMine ? (
+                  <DropdownMenuItem
+                    onSelect={handleDelete}
+                    disabled={deletePending}
+                    className="text-fg-danger-solid"
+                  >
+                    삭제하기
+                    <Trash2 className="size-4" />
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : null}
         </div>
       </div>
-
-      {/* 수정/삭제 드롭다운 (Figma case 2-1, iOS 시스템 메뉴 스타일) */}
-      {menuOpen ? (
-        <>
-          {/* 드롭다운 열림 중 화면 클릭(X 포함)은 드롭다운 닫기만 수행 */}
-          <div
-            className="absolute inset-0 z-30"
-            onClick={() => setMenuOpen(false)}
-            aria-hidden
-          />
-          <div
-            role="menu"
-            className="absolute right-4 z-40 flex w-[238px] flex-col rounded-[34px] bg-white/85 py-2.5 shadow-[0px_8px_48px_0px_rgba(0,0,0,0.25)] backdrop-blur-xl"
-            style={{ top: "calc(var(--safe-top) + 67px)" }}
-          >
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleEdit}
-              className="flex h-[42px] items-center justify-between px-4 text-left text-[17px] tracking-[-0.43px] text-fg-neutral-bold"
-            >
-              수정하기
-              <ChevronRight className="size-4" />
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleDelete}
-              disabled={deletePending}
-              className="flex h-[42px] items-center justify-between px-4 text-left text-[17px] tracking-[-0.43px] text-fg-danger-solid"
-            >
-              삭제하기
-              <Trash2 className="size-4" />
-            </button>
-          </div>
-        </>
-      ) : null}
     </DialogPrimitive.Content>
   )
 }

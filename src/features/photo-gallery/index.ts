@@ -4,3 +4,5 @@ export type {
   PhotoViewerOptions,
   PhotoViewerUploader,
 } from "./ui/openPhotoViewer"
+
+export { confirmBlockAuthor } from "./lib/confirm-block-author"

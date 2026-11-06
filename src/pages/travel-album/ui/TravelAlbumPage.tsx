@@ -20,10 +20,10 @@ function TravelAlbumPageContent() {
   // 자리 순서는 팟 가입 순 — 스토어가 그 순서로 내려준다
   const members = usePotStore(selectCurrentPotMembers)
   // 앨범 목 시드는 fetchPhotos(목)에서 병합 — 지도와 동일한 목록을 본다
-  const photos = useAllPhotos(currentPotId)
+  const myId = useSessionStore((s) => s.currentUser?.id ?? null)
+  const photos = useAllPhotos(currentPotId, myId)
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
   const { isPending: isPhotosPending } = usePhotos(currentPotId)
-  const myId = useSessionStore((s) => s.currentUser?.id ?? null)
 
   React.useEffect(() => {
     trackEvent("travel_album_viewed")

@@ -34,3 +34,9 @@ export {
   removeSeedPhotosByUploader,
   uploadErrorMessage,
 } from "./api/photo.api"
+
+export {
+  useBlockedAuthors,
+  useBlockedAuthorStore,
+} from "./model/blocked-authors.store"
+export type { BlockedAuthor } from "./model/blocked-authors.store"

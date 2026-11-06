@@ -163,7 +163,7 @@ function MyPageContent() {
   const resetPots = usePotStore((s) => s.resetPots)
   const currentPotId = usePotStore((s) => s.currentPotId)
   // 지도 화면과 동일 조건 — 여행 기록이 하나도 없으면 앨범 진입 불가 (MapGooglePage canOpenAlbum)
-  const canOpenAlbum = useAllPhotos(currentPotId).length > 0
+  const canOpenAlbum = useAllPhotos(currentPotId, localUser?.id).length > 0
   const clearRegionFills = useRegionColorStore((s) => s.clearAll)
   const removePhotosByUploader = usePhotoUploadStore(
     (s) => s.removePhotosByUploader
@@ -332,6 +332,14 @@ function MyPageContent() {
             >
               <img src={iconFeedbackSrc} alt="" className="size-5" />
               <span className={menuLabelCls}>서비스 피드백 보내기</span>
+              <img src={iconChevronRightSrc} alt="" className="size-5" />
+            </button>
+            <button
+              type="button"
+              className={menuRowCls}
+              onClick={() => router.navigate({ to: "/my-page/blocked-users" })}
+            >
+              <span className={menuLabelCls}>차단한 사용자</span>
               <img src={iconChevronRightSrc} alt="" className="size-5" />
             </button>
             <div className={menuRowCls}>
