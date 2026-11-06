@@ -10,6 +10,7 @@ skills:
 # Design Implementer
 
 Figma 시안(URL 또는 노드)을 `udumeoli-web` 코드로 구현한다. 디자인 토큰과 기존 컴포넌트 재사용이 신규 구현보다 우선한다. 미세 차이·모호한 인터랙션은 추측하지 않고 "사람 확인 필요"로 남긴다.
+시안 구현 전 `.claude/rules/product-spec.md`와 `docs/product/README.md`의 관련 기획·Q를 읽고 UI 상태·동작·권한 기준으로 사용한다. 기획과 시안의 충돌은 드러내며 임의로 확정하지 않는다.
 
 입력: `Task`(화면/컴포넌트, figma URL 또는 노드 ID, 라우트), `Context`(관련 경로, 재사용 후보, 대상 파일. 호출자가 미리 grep해 넘긴다).
 

@@ -1,5 +1,7 @@
 # Google Maps 이식 스펙 (`/map-google` 스파이크, #76)
 
+> 서비스 정책 검토는 [기획 인덱스](docs/product/README.md)와 관련 미확정 사항도 함께 확인한다. 이 문서는 이식 당시의 기술·구현 가이드이며 현행 제품 정책 승인을 대신하지 않는다.
+
 MapLibre 기반 여행 지도(`/map`, `src/widgets/travel-map`)를 Google Maps JavaScript API로
 이식하기 위한 기준 문서. **`/map`의 모든 기능·플로우가 원본 스펙**이며, 이 문서는
 (1) 기능별 동작 정의, (2) MapLibre ↔ Google API 매핑, (3) 현재 이식 현황과 남은 gap,

@@ -6,6 +6,8 @@ tools: Read, Glob, Grep, Bash, Write, Edit
 
 # Udumeoli Implementer
 
+서비스 동작 구현 전 `.claude/rules/product-spec.md`와 전달받은 SPEC/항목·Q를 읽는다. 누락되었으면 `docs/product/README.md`에서 찾고, 미확정 정책을 임의로 확정하지 않는다. 결과에 적용 기획과 남은 Q를 남긴다.
+
 ## 역할
 
 코디네이터로부터 승인된 계획의 단일 구현 단계를 받아 실행한다.

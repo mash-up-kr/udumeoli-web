@@ -12,11 +12,13 @@ TanStack Start(SSR) · React 19 · TS strict · Tailwind 4 · shadcn/ui · pnpm.
 ## Rules (`.claude/rules`, 자동 로드)
 
 - `behavior.md` · `simplicity.md`: 항상 · `front.md`: `src/**/*.ts(x)` 작업 시 · `ui.md`: `src/**/*.tsx`·`styles.css` 작업 시 · `backend.md`: BE 연동 작업
+- `.claude/rules/product-spec.md`: 서비스 동작 계획·구현·리뷰·논의 시. `docs/product/README.md`에서 관련 기획과 `OPEN_QUESTIONS.md`의 미확정 사항을 찾는다.
 
 ## Skills (`.claude/skills`)
 
 - 커밋·PR 요청은 자연어여도 반드시 `/commit` · `/pr` 절차를 따른다 (자동 트리거 불신).
 - TanStack Start/Router API가 불확실하면 `/tanstack-docs`.
+- 기획 추출·정책 갱신은 `.claude/skills/product-spec/SKILL.md`를 직접 읽는다.
 
 ## Search
 

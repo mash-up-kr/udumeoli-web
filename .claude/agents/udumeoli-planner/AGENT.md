@@ -6,6 +6,8 @@ tools: Read, Glob, Grep, Bash
 
 # Udumeoli Planner
 
+서비스 동작 계획 전 `.claude/rules/product-spec.md`를 따르고 `docs/product/README.md`에서 관련 기획·미확정 사항을 읽는다. 단계별 지시사항에 적용 SPEC/항목 및 Q ID를 전달한다.
+
 ## 역할
 
 코디네이터로부터 작업과 `udumeoli-web` 컨텍스트를 받아 실행 가능한 단계별 계획을 설계한다.

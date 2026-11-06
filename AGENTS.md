@@ -15,6 +15,12 @@ Source of truth is `.claude/`. This file is a map. Do not restate rules here.
 3. `.claude/rules/front.md` when editing `src/**/*.ts` or `src/**/*.tsx`
 4. `.claude/rules/backend.md` for backend integration work
 5. `.claude/rules/ui.md` when editing `src/**/*.tsx` or `src/app/styles.css`
+6. `.claude/rules/product-spec.md` when planning, implementing, reviewing, or discussing service behavior
+
+Product specs start at `docs/product/README.md`; unresolved policies live in
+`docs/product/OPEN_QUESTIONS.md`. For spec extraction or policy updates, read
+`.claude/skills/product-spec/SKILL.md` directly. If `.agents/skills` is checked
+out as a text pointer instead of a symlink, use `.claude/skills` directly.
 
 ## Non-negotiable
 
