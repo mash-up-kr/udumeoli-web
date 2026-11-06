@@ -18,6 +18,7 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps"
 import { ArrowRight, UserRound } from "lucide-react"
+import { filterBlockedMapOverview } from "../lib/filterBlockedMapOverview"
 
 import {
   buildCollaborationTrips,
@@ -56,7 +57,12 @@ import type { ImageFillOverlay } from "../lib/ImageFillOverlay"
 import type { RegionFill } from "@/entities/region"
 import type { DecoratePreview } from "@/features/travel-record"
 import type { TravelKeyword, TravelKeywordId } from "@/entities/photo"
-import { findKeyword, useAllPhotos, useBlockedAuthors } from "@/entities/photo"
+import {
+  findKeyword,
+  useAllPhotos,
+  useBlockedAuthors,
+  usePhotos,
+} from "@/entities/photo"
 import {
   formatProvinceBadgeName,
   formatRegionName,
@@ -1092,7 +1098,17 @@ function TravelMapGoogleInner({
   const blocked = useBlockedAuthors(currentUserId)
   const photos = useAllPhotos(currentPotId, currentUserId)
   const mapOverviewQuery = usePartyMapOverview(currentPotId)
-  const mapOverview = blocked.length ? undefined : mapOverviewQuery.data
+  const { data: allPhotos } = usePhotos(currentPotId)
+  const mapOverview = React.useMemo(
+    () =>
+      filterBlockedMapOverview({
+        overview: mapOverviewQuery.data,
+        photos: allPhotos,
+        blockedAuthorIds: blocked.map((author) => author.id),
+        potId: currentPotId,
+      }),
+    [mapOverviewQuery.data, allPhotos, blocked, currentPotId]
+  )
   const fills = useRegionColorStore(
     (s) => s.fillsByPot[currentPotId] ?? EMPTY_FILLS
   )
