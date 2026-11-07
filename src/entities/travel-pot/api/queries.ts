@@ -164,7 +164,13 @@ export function useMyPots(
     pots: myPots,
     hasPot: hasFallback,
     // 보여줄 폴백이 있으면 로딩·에러 상태를 노출하지 않는다
-    isPending: enabled && query.isPending && !hasFallback,
+    // 응답을 store로 옮기는 effect까지 기다려 '팟 없음' 리다이렉트와 경합하지 않게 한다.
+    isPending:
+      enabled &&
+      !hasFallback &&
+      (query.isPending || (query.isSuccess && query.data !== pots)),
     isError: enabled && query.isError && !hasFallback,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
   }
 }

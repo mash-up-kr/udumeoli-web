@@ -7,6 +7,7 @@ import { AppHeader } from "@/widgets/app-header"
 import { BottomNav } from "@/widgets/bottom-nav"
 import { PotSelector } from "@/widgets/pot-dropdown"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { QueryFeedback } from "@/shared/ui/query-feedback"
 import { RequireAuth } from "@/features/auth"
 import { useAllPhotos, usePhotos } from "@/entities/photo"
 import { selectCurrentPotMembers, usePotStore } from "@/entities/travel-pot"
@@ -23,7 +24,12 @@ function TravelAlbumPageContent() {
   const myId = useSessionStore((s) => s.currentUser?.id ?? null)
   const photos = useAllPhotos(currentPotId, myId)
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
-  const { isPending: isPhotosPending } = usePhotos(currentPotId)
+  const {
+    isPending: isPhotosPending,
+    isError,
+    isFetching,
+    refetch,
+  } = usePhotos(currentPotId)
 
   React.useEffect(() => {
     trackEvent("travel_album_viewed")
@@ -70,6 +76,23 @@ function TravelAlbumPageContent() {
 
       {/* 지역 카드 리스트 — 하단 내비(지구본 포함)와 겹치지 않게 바닥 여백 확보 */}
       <main className="mt-2 flex flex-1 flex-col gap-3 px-4 pb-[190px]">
+        {isError ? (
+          <QueryFeedback
+            message={
+              regions.length > 0
+                ? "새 사진을 불러오지 못했어요. 이전 기록을 표시하고 있어요."
+                : "사진을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요."
+            }
+            onAction={() => void refetch()}
+            pending={isFetching}
+          />
+        ) : !isPhotosPending && regions.length === 0 ? (
+          <QueryFeedback
+            message="아직 여행 기록이 없어요. 지도에 첫 기록을 남겨 보세요."
+            actionLabel="지도에 기록하기"
+            onAction={() => void router.navigate({ to: "/map-google" })}
+          />
+        ) : null}
         {/* 첫 로딩(캐시·세션 업로드도 없을 때)만 스켈레톤 — 데이터가 있으면 바로 카드 */}
         {isPhotosPending && regions.length === 0
           ? [0, 1, 2].map((i) => <RegionAlbumCardSkeleton key={i} />)
