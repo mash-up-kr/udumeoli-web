@@ -1,5 +1,5 @@
 import { overlay } from "overlay-kit"
-import type { ReactNode } from "react"
+import type { ComponentProps, ReactNode } from "react"
 
 import { Button } from "@/shared/ui/button"
 import { ButtonCta } from "@/shared/ui/button-cta"
@@ -126,6 +126,7 @@ type ModalOptions = {
   className?: string
   /** 기본 닫기(X) 버튼 노출 여부. 커스텀 닫기 아이콘을 쓸 때 false. */
   showCloseButton?: boolean
+  onOpenAutoFocus?: ComponentProps<typeof DialogContent>["onOpenAutoFocus"]
 }
 
 /**
@@ -141,6 +142,7 @@ export function openModal(
       <DialogContent
         className={options?.className}
         showCloseButton={options?.showCloseButton}
+        onOpenAutoFocus={options?.onOpenAutoFocus}
         onCloseAutoFocus={() => unmount()}
         // 커스텀 콘텐츠 모달 — DialogDescription 미사용이므로 경고 억제
         aria-describedby={undefined}

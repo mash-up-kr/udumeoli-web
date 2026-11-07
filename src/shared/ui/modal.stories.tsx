@@ -108,7 +108,7 @@ export const PermissionContent: Story = {
               <button
                 type="button"
                 aria-label="닫기"
-                className="absolute top-4 right-4 flex size-7 items-center justify-center"
+                className="absolute top-2 right-2 flex size-11 items-center justify-center"
                 onClick={close}
               >
                 <img src={iconCloseSrc} alt="" className="size-5" />
@@ -147,6 +147,10 @@ export const PermissionContent: Story = {
             className:
               "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]",
             showCloseButton: false,
+            onOpenAutoFocus: (event) => {
+              event.preventDefault()
+              if (event.target instanceof HTMLElement) event.target.focus()
+            },
           }
         )
       }
