@@ -75,10 +75,10 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
       className={cn(
         // z-[60]: 모달/시트(z-50, body 끝 portal)가 열려 있어도 토스트가 항상 위에 보이도록
         // — 앱 내 최고 z는 50이라 토스트가 어떤 컴포넌트에도 가려지지 않는다.
-        // bottom-[34px]: Case 1(하단 고정 요소 없음) 기본 위치. Case 2는 className으로 오버라이드.
+        // 하단 고정 요소가 없으면 safe-area 이상 띄운다. CTA 위 위치는 className으로 지정.
         // inset-x-0 + flex 중앙 정렬: left-1/2 방식은 abspos shrink-to-fit 폭이 뷰포트
         // 절반으로 잡혀 긴 메시지가 절반 폭에서 잘린다. 클릭은 아래로 통과(pill은 표시 전용).
-        "pointer-events-none fixed inset-x-0 bottom-[34px] z-[60] flex justify-center px-4",
+        "pointer-events-none fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),34px)] z-[60] flex justify-center px-4",
         className
       )}
     >
@@ -87,7 +87,7 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
         aria-live="polite"
         className={cn(
           "inline-flex max-w-[343px] items-start justify-center gap-2",
-          "rounded-full bg-bg-neutral-weak px-5 py-3",
+          "rounded-[24px] bg-bg-neutral-weak px-5 py-3",
           "shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
         )}
       >
@@ -103,7 +103,7 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
         {icon === "check-neutral" ? (
           <CheckIcon className="text-fg-neutral-bold" />
         ) : null}
-        <span className="min-w-0 flex-1 truncate text-b5 text-fg-neutral-bold">
+        <span className="min-w-0 flex-1 text-b5 break-words text-fg-neutral-bold">
           {message}
         </span>
       </div>
@@ -111,19 +111,39 @@ function Toast({ message, icon, duration, className, onDismiss }: ToastProps) {
   )
 }
 
-export function showToast({
-  message,
-  icon,
-  duration = DEFAULT_DURATION_MS,
-  className,
-}: ToastOptions) {
+const pendingToasts: Array<ToastOptions> = []
+let activeToast: ToastOptions | undefined
+
+function showNextToast() {
+  if (activeToast) return
+  const next = pendingToasts.shift()
+  if (!next) return
+  activeToast = next
   overlay.open(({ unmount }) => (
     <Toast
-      message={message}
-      icon={icon}
-      duration={duration}
-      className={className}
-      onDismiss={unmount}
+      message={next.message}
+      icon={next.icon}
+      duration={next.duration ?? DEFAULT_DURATION_MS}
+      className={next.className}
+      onDismiss={() => {
+        unmount()
+        if (activeToast !== next) return
+        activeToast = undefined
+        showNextToast()
+      }}
     />
   ))
+}
+
+export function showToast(options: ToastOptions) {
+  // 연속 탭의 같은 안내는 합치되, 서로 다른 오류를 덮어쓰지 않고 차례로 보여준다.
+  if (
+    [activeToast, ...pendingToasts].some(
+      (toast) =>
+        toast?.message === options.message && toast.icon === options.icon
+    )
+  )
+    return
+  pendingToasts.push(options)
+  showNextToast()
 }

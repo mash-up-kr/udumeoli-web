@@ -107,3 +107,33 @@ export const CustomDuration: Story = {
     </Button>
   ),
 }
+
+export const LongError: Story = {
+  render: () => (
+    <Button
+      onClick={() =>
+        showToast({
+          message:
+            "사진을 불러오지 못했어요. 인터넷 연결 상태를 확인하고 다시 시도해 주세요.",
+          icon: "alert",
+        })
+      }
+    >
+      긴 오류 안내
+    </Button>
+  ),
+}
+
+export const ConsecutiveMessages: Story = {
+  render: () => (
+    <Button
+      onClick={() => {
+        showToast({ message: "첫 번째 안내예요" })
+        showToast({ message: "첫 번째 안내예요" })
+        showToast({ message: "두 번째 안내예요", icon: "alert" })
+      }}
+    >
+      중복은 합치고 순서대로 표시
+    </Button>
+  ),
+}
