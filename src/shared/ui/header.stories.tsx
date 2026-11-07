@@ -31,7 +31,7 @@ const meta: Meta<typeof Header> = {
     docs: {
       description: {
         component:
-          "화면 상단 헤더 (Figma Header v1.0.0). type(screen-info/close) × direction(left/center) × icon 조합. padding 16/12 · gap 24, 타이틀 text-h5-1 · fg-neutral-bold, 상단 safe-area 반영.",
+          "화면 상단 헤더 (Figma Header v1.0.0). type(screen-info/close) × direction(left/center) × icon 조합. 아이콘 24px, 터치 영역 44px(시각 위치 유지). padding 16/12 · gap 24, 상단 safe-area 반영.",
       },
     },
   },

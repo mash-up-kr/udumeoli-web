@@ -217,6 +217,7 @@ export function PotCreatePage() {
             label="여행팟 이름"
             placeholder="우리 팟의 이름을 입력해주세요."
             value={name}
+            disabled={isCreating}
             onChange={(e) => setName(e.target.value)}
           />
         </main>
@@ -224,6 +225,7 @@ export function PotCreatePage() {
           <ButtonCta
             type="button"
             disabled={!name.trim() || isCreating}
+            aria-busy={isCreating}
             onClick={() => void handleCreate()}
           >
             {isCreating ? "생성 중..." : "팟 만들기"}

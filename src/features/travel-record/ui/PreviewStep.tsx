@@ -182,7 +182,7 @@ export function PreviewStep({
         : null}
 
       <div className="relative z-20 mt-[var(--safe-top)] flex h-[76px] shrink-0 items-center px-4">
-        <ButtonIcon aria-label="뒤로 가기" onClick={onBack}>
+        <ButtonIcon aria-label="뒤로 가기" disabled={pending} onClick={onBack}>
           <img src={iconArrowLeftSrc} alt="" className="size-6" />
         </ButtonIcon>
 
@@ -287,7 +287,7 @@ export function PreviewStep({
       </div>
 
       <div className="relative z-20 shrink-0 px-4 pt-6 pb-[max(env(safe-area-inset-bottom),34px)]">
-        <ButtonCta disabled={pending} onClick={onConfirm}>
+        <ButtonCta disabled={pending} aria-busy={pending} onClick={onConfirm}>
           {pending ? "기록 중..." : "지도에 기록하기"}
         </ButtonCta>
       </div>

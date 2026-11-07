@@ -130,7 +130,7 @@ function MyFeedbackContent() {
 
       <form className="flex flex-1 flex-col" onSubmit={handleSubmit} noValidate>
         {/* 상단 고정 블록(인트로·별점) / 가변 영역(내용 입력) / 하단 고정(CTA) — Figma 4203-6333 */}
-        <main className="flex flex-1 flex-col gap-8 px-4 pt-3">
+        <main className="flex flex-1 flex-col gap-8 px-4 pt-3" inert={sending}>
           <div className="flex flex-col gap-1.5">
             <h2 className="text-h3 text-fg-neutral-bold">
               Pinnned, 어떠셨나요?
@@ -206,8 +206,9 @@ function MyFeedbackContent() {
           <ButtonCta
             type="submit"
             disabled={!canSubmit(rating, content) || sending}
+            aria-busy={sending}
           >
-            피드백 보내기
+            {sending ? "보내는 중…" : "피드백 보내기"}
           </ButtonCta>
         </div>
       </form>

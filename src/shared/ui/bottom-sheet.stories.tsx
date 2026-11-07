@@ -27,7 +27,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          "overlay-kit 기반 하단 슬라이드업 시트. floating=Figma Bottom Sheet v1.0.0 카드(Header·Title·Description·GraphicSlot·Actions 조합), default=풀폭 상단둥금(date picker·갤러리류). 텍스트는 예시 placeholder.",
+          "overlay-kit 기반 하단 슬라이드업 시트. 화면형 헤더의 아이콘 터치 영역은 44px이며 아이콘 위치는 유지한다. floating=떠있는 카드, default=풀폭 상단둥금. 텍스트는 예시 placeholder.",
       },
       story: { inline: false, height: "480px" },
     },

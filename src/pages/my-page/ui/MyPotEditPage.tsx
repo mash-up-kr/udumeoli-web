@@ -371,6 +371,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
             <input
               id="pot-name"
               value={name}
+              disabled={renamePartyMutation.isPending}
               placeholder="우리 팟의 이름을 입력해주세요."
               className="min-w-0 flex-1 bg-transparent text-b4 text-fg-neutral-bold outline-none placeholder:text-fg-neutral-bold-disabled"
               onChange={(e) => setName(e.target.value)}
@@ -378,11 +379,12 @@ function MyPotEditContent({ potId }: { potId: string }) {
             {nameChanged ? (
               <button
                 type="button"
-                disabled={!canSave}
+                disabled={!canSave || renamePartyMutation.isPending}
+                aria-busy={renamePartyMutation.isPending}
                 className="flex h-[34px] shrink-0 items-center justify-center rounded-full bg-bg-neutral-inverse px-3 text-h9 text-fg-neutral-inverse transition-colors disabled:bg-bg-neutral-inverse-disabled disabled:text-fg-neutral-inverse-disabled"
                 onClick={handleSave}
               >
-                저장
+                {renamePartyMutation.isPending ? "저장 중…" : "저장"}
               </button>
             ) : null}
           </div>

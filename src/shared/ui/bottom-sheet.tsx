@@ -90,7 +90,7 @@ function BottomSheetScreenHeader({
         type="button"
         aria-label={icon === "close" ? "닫기" : "뒤로 가기"}
         onClick={onIconClick}
-        className="flex size-6 shrink-0 items-center justify-center text-fg-neutral-bold"
+        className="-m-2.5 flex size-11 shrink-0 items-center justify-center text-fg-neutral-bold"
       >
         <Icon className="size-6" />
       </button>
