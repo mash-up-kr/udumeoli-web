@@ -33,6 +33,12 @@ const NICKNAME_INPUT_MAX = NICKNAME_MAX + 1
 const popupModalClassName =
   "w-[343px] max-w-[calc(100%-2rem)] gap-4 rounded-[32px] p-4 shadow-[0px_0px_20px_0px_rgba(142,150,169,0.12)]"
 
+// 자동으로 뜨는 권한 안내는 X 대신 팝업 자체에 포커스를 둔다.
+function focusPermissionDialog(event: Event) {
+  event.preventDefault()
+  if (event.target instanceof HTMLElement) event.target.focus()
+}
+
 function PermissionContent({
   onClose,
   onCancel,
@@ -45,7 +51,7 @@ function PermissionContent({
       <button
         type="button"
         aria-label="닫기"
-        className="absolute top-4 right-4 flex size-7 items-center justify-center"
+        className="absolute top-2 right-2 flex size-11 items-center justify-center"
         onClick={onClose}
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
@@ -96,7 +102,7 @@ function PermissionRequiredContent({
       <button
         type="button"
         aria-label="닫기"
-        className="absolute top-4 right-4 flex size-7 items-center justify-center"
+        className="absolute top-2 right-2 flex size-11 items-center justify-center"
         onClick={onClose}
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
@@ -134,12 +140,20 @@ function openPermissionFlow() {
                 }}
               />
             ),
-            { className: popupModalClassName, showCloseButton: false }
+            {
+              className: popupModalClassName,
+              showCloseButton: false,
+              onOpenAutoFocus: focusPermissionDialog,
+            }
           )
         }}
       />
     ),
-    { className: popupModalClassName, showCloseButton: false }
+    {
+      className: popupModalClassName,
+      showCloseButton: false,
+      onOpenAutoFocus: focusPermissionDialog,
+    }
   )
 }
 
@@ -159,7 +173,7 @@ function SignupCompleteContent({
       <button
         type="button"
         aria-label="닫기"
-        className="absolute top-4 right-4 flex size-7 items-center justify-center"
+        className="absolute top-2 right-2 flex size-11 items-center justify-center"
         onClick={onClose}
       >
         <img src={iconCloseSrc} alt="" className="size-5" />
@@ -183,14 +197,15 @@ export function SignupPage() {
   const router = useRouter()
   const login = useSessionStore((s) => s.login)
   // 실서버 모드: 콜백에서 받은 signupToken 없이는 가입 불가 — 랜딩으로 돌려보낸다
-  const [signupToken] = React.useState(() =>
-    USE_MOCK ? null : getSignupToken()
-  )
+  const [signupToken, setSignupToken] = React.useState<string | null>(null)
   React.useEffect(() => {
-    if (!USE_MOCK && !signupToken) {
+    if (USE_MOCK) return
+    const token = getSignupToken()
+    setSignupToken(token)
+    if (!token) {
       void router.navigate({ to: "/", replace: true })
     }
-  }, [router, signupToken])
+  }, [router])
   const [submitting, setSubmitting] = React.useState(false)
   const [nickname, setNickname] = React.useState("")
   // 입력은 막지 않고(한글 IME 조합 안전), 초과 시 에러 표시 + 다음 버튼만 비활성.
@@ -319,7 +334,10 @@ export function SignupPage() {
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col">
       <Header direction="center" icon={false} title="프로필 선택" />
 
-      <main className="flex flex-1 flex-col items-center gap-5 px-4 pt-7">
+      <main
+        className="flex flex-1 flex-col items-center gap-5 px-4 pt-7"
+        inert={submitting}
+      >
         {/* 프로필 이미지·카메라 배지 클릭 → 갤러리/파일에서 사진 선택 */}
         <Profile
           size="xl"
@@ -327,6 +345,7 @@ export function SignupPage() {
           src={profileImage ?? undefined}
           className="cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
+          onImageClick={() => fileInputRef.current?.click()}
         />
         <input
           ref={fileInputRef}
@@ -385,10 +404,11 @@ export function SignupPage() {
 
       <div className="px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
         <ButtonCta
-          disabled={!nickname.trim() || nicknameTooLong}
+          disabled={!nickname.trim() || nicknameTooLong || submitting}
+          aria-busy={submitting}
           onClick={() => void handleSubmit()}
         >
-          다음
+          {submitting ? "가입 중…" : "다음"}
         </ButtonCta>
       </div>
     </MobileLayout>

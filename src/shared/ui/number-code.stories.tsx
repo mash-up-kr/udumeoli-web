@@ -58,6 +58,11 @@ export const ReadOnly: Story = {
   render: () => <NumberCode length={6} value="121ha1" readOnly />,
 }
 
+/** 조회 중에는 코드가 바뀌지 않는다. */
+export const Disabled: Story = {
+  render: () => <NumberCode mode="alphanumeric" value="abc123" disabled />,
+}
+
 /** 320px 기기에서 좌우 16px 여백 안에 들어가는 좁은 폭 예시. */
 export const NarrowWidth: Story = {
   render: () => (

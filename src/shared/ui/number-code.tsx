@@ -15,6 +15,7 @@ export interface NumberCodeProps {
   readOnly?: boolean
   /** 에러 상태 — stroke-danger-solid 테두리 (포커스 시에도 유지). */
   error?: boolean
+  disabled?: boolean
   className?: string
 }
 
@@ -32,6 +33,7 @@ export function NumberCode({
   mode = "numeric",
   readOnly = false,
   error = false,
+  disabled = false,
   className,
 }: NumberCodeProps) {
   const refs = React.useRef<Array<HTMLInputElement | null>>([])
@@ -44,17 +46,23 @@ export function NumberCode({
       : raw.replace(/\D/g, "")
 
   const handleChange = (index: number, raw: string) => {
+    if (raw === "") {
+      onChange?.(value.slice(0, index) + value.slice(index + 1))
+      return
+    }
     const char = sanitize(raw).slice(-1)
     if (!char) return
-    const next = value.slice(0, index) + char + value.slice(index + 1)
+    const position = Math.min(index, value.length)
+    const next = value.slice(0, position) + char + value.slice(position + 1)
     onChange?.(next)
-    if (index < length - 1) refs.current[index + 1]?.focus()
+    refs.current[Math.min(position + 1, length - 1)]?.focus()
   }
 
   const handleKeyDown = (
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
+    if (e.nativeEvent.isComposing) return
     if (e.key === "Backspace") {
       e.preventDefault()
       if (value[index]) {
@@ -73,6 +81,7 @@ export function NumberCode({
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
     const pasted = sanitize(e.clipboardData.getData("text")).slice(0, length)
+    if (!pasted) return
     onChange?.(pasted)
     refs.current[Math.min(pasted.length, length - 1)]?.focus()
   }
@@ -93,14 +102,28 @@ export function NumberCode({
           }}
           type="text"
           inputMode={mode === "numeric" ? "numeric" : "text"}
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           maxLength={1}
           readOnly={readOnly}
+          disabled={disabled}
           tabIndex={readOnly ? -1 : undefined}
           aria-label={`${i + 1}번째 자리`}
           value={value[i] ?? ""}
           onChange={
-            readOnly ? undefined : (e) => handleChange(i, e.target.value)
+            readOnly
+              ? undefined
+              : (e) => {
+                  if (!(e.nativeEvent as InputEvent).isComposing)
+                    handleChange(i, e.target.value)
+                }
           }
+          onCompositionEnd={
+            readOnly ? undefined : (e) => handleChange(i, e.currentTarget.value)
+          }
+          onFocus={(e) => e.currentTarget.select()}
           onKeyDown={readOnly ? undefined : (e) => handleKeyDown(i, e)}
           onPaste={readOnly ? undefined : handlePaste}
           className={cn(

@@ -97,7 +97,10 @@ function MyProfileEditContent() {
     <MobileLayout className="flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-subtle">
       <Header title="프로필 수정" onIconClick={goMyPage} />
 
-      <main className="flex flex-1 flex-col items-center gap-5 px-4 pt-7">
+      <main
+        className="flex flex-1 flex-col items-center gap-5 px-4 pt-7"
+        inert={saving}
+      >
         <Profile
           size="xl"
           type="add-image"
@@ -163,8 +166,12 @@ function MyProfileEditContent() {
       </main>
 
       <div className="w-full px-4 pb-[max(env(safe-area-inset-bottom),34px)]">
-        <ButtonCta disabled={!canSave || saving} onClick={handleSave}>
-          저장
+        <ButtonCta
+          disabled={!canSave || saving}
+          aria-busy={saving}
+          onClick={handleSave}
+        >
+          {saving ? "저장 중…" : "저장"}
         </ButtonCta>
       </div>
     </MobileLayout>

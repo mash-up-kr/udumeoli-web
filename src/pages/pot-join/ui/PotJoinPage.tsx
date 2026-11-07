@@ -79,7 +79,7 @@ function ConfirmStep({
     // 시안 배경 #eff1f5 = neutral-100 (bg-neutral-solid) — 흰 티켓이 도드라지도록 입력 스텝보다 한 단계 진함
     <MobileLayout className="relative flex min-h-[var(--app-vh)] flex-col bg-bg-neutral-solid">
       <div className="flex w-full items-center px-4 pt-[calc(var(--safe-top)_+_17px)] pb-[17px]">
-        <ButtonIcon aria-label="닫기" onClick={onClose}>
+        <ButtonIcon aria-label="닫기" disabled={joinPending} onClick={onClose}>
           <X />
         </ButtonIcon>
       </div>
@@ -139,10 +139,15 @@ function ConfirmStep({
           variant="secondary"
           className="w-[116px] shrink-0"
           onClick={onRetry}
+          disabled={joinPending}
         >
           다시 입력
         </ButtonCta>
-        <ButtonCta disabled={joinPending} onClick={onConfirm}>
+        <ButtonCta
+          disabled={joinPending}
+          aria-busy={joinPending}
+          onClick={onConfirm}
+        >
           {joinPending ? "참여 중..." : "맞아요"}
         </ButtonCta>
       </div>
@@ -380,6 +385,7 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
         <NumberCode
           length={CODE_LENGTH}
           mode="alphanumeric"
+          disabled={previewLoading || previewSubmitPending}
           value={code}
           error={codeError}
           onChange={(next) => {
@@ -399,8 +405,9 @@ function PotJoinPageContent({ initialCode }: { initialCode?: string }) {
             previewSubmitPending
           }
           onClick={() => void handleSubmit()}
+          aria-busy={previewLoading || previewSubmitPending}
         >
-          참여하기
+          {previewLoading || previewSubmitPending ? "확인 중…" : "참여하기"}
         </ButtonCta>
       </div>
     </MobileLayout>

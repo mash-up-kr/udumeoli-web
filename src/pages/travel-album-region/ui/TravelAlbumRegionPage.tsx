@@ -7,6 +7,7 @@ import type { Photo } from "@/entities/photo"
 import type { PhotoViewerUploader } from "@/features/photo-gallery"
 import { cn } from "@/shared/lib/utils"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { QueryFeedback } from "@/shared/ui/query-feedback"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { DEFAULT_PROFILE_SRC } from "@/shared/ui/profile"
 import iconArrowLeftSrc from "@/shared/assets/icon-arrow-left.svg"
@@ -44,7 +45,12 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
   const regionPhotos = useRegionAlbumPhotos(currentPotId, region, myId)
   const deletePhotoMutation = useDeletePhoto()
   // 같은 쿼리 키라 요청은 중복되지 않는다 — 첫 로딩 스켈레톤 판단용
-  const { isPending: isPhotosPending } = usePhotos(currentPotId)
+  const {
+    isPending: isPhotosPending,
+    isError,
+    isFetching,
+    refetch,
+  } = usePhotos(currentPotId)
   // 내 사진 업로드 진행 중 — 내 빈 타일이 스켈레톤으로 전환
 
   // 멤버 정렬 — 나(본인) 최상단 고정, 이후 팟원은 가입 순서대로 (정책 2·4, 마이페이지와 동일)
@@ -189,7 +195,13 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
           </h1>
           {/* 멤버 프로필 나열 + "n/N명 기록 완료" — n은 이 지역에 올린 멤버 수, N은 팟 전체 (정책 2).
               올린 멤버는 실선, 안 올린 멤버는 점선 프로필 */}
-          <div className="flex items-center gap-2">
+          <div
+            aria-hidden={isError && regionPhotos.length === 0}
+            className={cn(
+              "flex items-center gap-2",
+              isError && regionPhotos.length === 0 && "invisible"
+            )}
+          >
             <div className="flex -space-x-2">
               {orderedMembers.map((member) => (
                 <img
@@ -236,6 +248,17 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
         </div>
       ) : null}
 
+      {isError ? (
+        <QueryFeedback
+          message={
+            regionPhotos.length > 0
+              ? "새 사진을 불러오지 못했어요. 이전 기록을 표시하고 있어요."
+              : "사진을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요."
+          }
+          onAction={() => void refetch()}
+          pending={isFetching}
+        />
+      ) : null}
       <main
         className={cn(
           "grid gap-3 px-4",
@@ -248,7 +271,7 @@ function TravelAlbumRegionContent({ region }: { region: string }) {
             <RecordTileSkeleton />
             {single ? null : <RecordTileSkeleton />}
           </>
-        ) : (
+        ) : isError && regionPhotos.length === 0 ? null : (
           cards.map((card) => (
             <RecordTile
               key={card.key}

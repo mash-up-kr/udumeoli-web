@@ -27,6 +27,32 @@ export function TravelMapGoogle({
   const [tilesTimedOut, setTilesTimedOut] = React.useState(false)
   const [retrying, setRetrying] = React.useState(false)
   const [retryCount, setRetryCount] = React.useState(0)
+  const [loadingFontsReady, setLoadingFontsReady] = React.useState(false)
+  const loadingTitleRef = React.useRef<HTMLParagraphElement>(null)
+  const loadingDescriptionRef = React.useRef<HTMLParagraphElement>(null)
+
+  React.useEffect(() => {
+    let active = true
+    // 실제 타이포 토큰의 글꼴·굵기로 로드하고, 숨긴 동안에도 문구 자리는 유지한다.
+    const fonts = [loadingTitleRef.current, loadingDescriptionRef.current]
+    const fontSet = document.fonts as FontFaceSet | undefined
+    void Promise.allSettled(
+      fonts.map((element) => {
+        if (!element || !fontSet) return Promise.resolve()
+        const style = window.getComputedStyle(element)
+        return fontSet.load(
+          `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+          element.textContent
+        )
+      })
+    ).then(() => {
+      if (active) setLoadingFontsReady(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
   const handleReady = React.useCallback(() => setLayerReady(true), [])
   const handleTilesLoaded = React.useCallback(() => {
     setTilesReady(true)
@@ -159,9 +185,23 @@ export function TravelMapGoogle({
                 alt=""
                 className="h-[37.93px] w-8 animate-pin-bounce"
               />
-              <p className="font-eng text-e1 text-fg-neutral-bold">Loading</p>
+              <p
+                ref={loadingTitleRef}
+                className={cn(
+                  "font-eng text-e1 text-fg-neutral-bold",
+                  !loadingFontsReady && "invisible"
+                )}
+              >
+                Loading
+              </p>
             </div>
-            <p className="text-h4 text-fg-neutral-solid">
+            <p
+              ref={loadingDescriptionRef}
+              className={cn(
+                "text-h4 text-fg-neutral-solid",
+                !loadingFontsReady && "invisible"
+              )}
+            >
               잠시만 기다려주세요...
             </p>
           </div>

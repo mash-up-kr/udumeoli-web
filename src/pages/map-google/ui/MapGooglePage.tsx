@@ -14,6 +14,7 @@ import { TravelMapGoogle } from "@/widgets/travel-map-google"
 import { AppSplash } from "@/shared/ui/app-splash"
 import { ButtonIcon } from "@/shared/ui/button-icon"
 import { MobileLayout } from "@/shared/ui/mobile-layout"
+import { QueryFeedback } from "@/shared/ui/query-feedback"
 import { USE_MOCK } from "@/shared/api/client"
 import { RequireAuth } from "@/features/auth"
 import { RecapButton } from "@/features/recap"
@@ -55,9 +56,12 @@ function MapGooglePageContent() {
   const seededTrip100DemoRef = React.useRef(false)
   const currentUserId = useSessionStore((s) => s.currentUser?.id ?? null)
   // 시드 프리뷰는 시드된 store만 본다 — 서버 목록을 덮어써 미리보기가 사라지면 안 된다
-  const { hasPot, isPending } = useMyPots(currentUserId, {
-    enabled: hydrated && !isSeededPreview,
-  })
+  const { hasPot, isPending, isError, isFetching, refetch } = useMyPots(
+    currentUserId,
+    {
+      enabled: hydrated && !isSeededPreview,
+    }
+  )
   const ready = hydrated && !isPending
 
   React.useEffect(() => {
@@ -76,9 +80,9 @@ function MapGooglePageContent() {
   }, [confirmJoin, hydrated, isTrip100Demo, queryClient])
 
   React.useEffect(() => {
-    if (ready && !hasPot && !isSeededPreview)
+    if (ready && !isError && !hasPot && !isSeededPreview)
       router.navigate({ to: "/pot-start", replace: true })
-  }, [hasPot, isSeededPreview, ready, router])
+  }, [hasPot, isError, isSeededPreview, ready, router])
 
   const decorating = useRecordStore((s) => s.region !== null)
   const [detailRegion, setDetailRegion] = React.useState<string | null>(null)
@@ -119,6 +123,17 @@ function MapGooglePageContent() {
 
   // 팟 판정 전(persist 복원 + myParties 응답)과 pot-start 리다이렉트 대기 구간 —
   // 빈 화면 대신 스플래시로 채운다
+  if (hydrated && isError) {
+    return (
+      <MobileLayout className="flex min-h-[var(--app-vh)] items-center">
+        <QueryFeedback
+          message="여행팟을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요."
+          onAction={() => void refetch()}
+          pending={isFetching}
+        />
+      </MobileLayout>
+    )
+  }
   if (!ready || !hasPot) return <AppSplash />
 
   return (

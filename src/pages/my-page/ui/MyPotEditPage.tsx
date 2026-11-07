@@ -38,6 +38,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { openModal } from "@/shared/ui/modal"
 import { Profile } from "@/shared/ui/profile"
 import { showToast } from "@/shared/ui/toast"
+import { copyText } from "@/shared/ui/copy-text"
 
 const sectionTitleCls = "px-2 py-1 text-h8-1 text-neutral-500"
 const popupModalClassName =
@@ -61,14 +62,6 @@ function sortedMembers(
       return a.joinedOrder - b.joinedOrder
     })
     .map(({ member }) => member)
-}
-
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    // 클립보드 권한이 없거나 미지원이어도 사용 흐름은 토스트까지 유지한다.
-  }
 }
 
 function RoleBadge({ leader }: { leader: boolean }) {
@@ -262,22 +255,15 @@ function MyPotEditContent({ potId }: { potId: string }) {
   }
 
   const handleCopyCode = async () => {
-    await copyToClipboard(pot.inviteCode)
-    showToast({
-      message: "초대코드가 복사됐어요",
-      icon: "check",
-    })
+    await copyText(pot.inviteCode, "초대코드가 복사됐어요")
   }
 
   const handleShareInvite = async () => {
     const link = inviteLinkFor(pot.inviteCode)
-    await copyToClipboard(link)
-    showToast({
-      message: "초대 링크가 복사됐어요",
-      icon: "check",
-    })
-
-    if (typeof navigator.share !== "function") return
+    if (typeof navigator.share !== "function") {
+      await copyText(link, "초대 링크가 복사됐어요")
+      return
+    }
 
     try {
       // title을 넣으면 카톡 등에서 "제목 - 본문"으로 이어 붙여 팟 이름이 중복 노출된다
@@ -285,8 +271,13 @@ function MyPotEditContent({ potId }: { potId: string }) {
       await navigator.share({
         text: `${pot.name} 여행팟에 초대합니다.\n${link}`,
       })
-    } catch {
-      // 사용자가 OS 공유 시트를 닫은 경우
+    } catch (error) {
+      if (!(error instanceof Error && error.name === "AbortError")) {
+        showToast({
+          message: "공유하지 못했어요. 다시 시도해 주세요.",
+          icon: "alert",
+        })
+      }
     }
   }
 
@@ -380,6 +371,7 @@ function MyPotEditContent({ potId }: { potId: string }) {
             <input
               id="pot-name"
               value={name}
+              disabled={renamePartyMutation.isPending}
               placeholder="우리 팟의 이름을 입력해주세요."
               className="min-w-0 flex-1 bg-transparent text-b4 text-fg-neutral-bold outline-none placeholder:text-fg-neutral-bold-disabled"
               onChange={(e) => setName(e.target.value)}
@@ -387,11 +379,12 @@ function MyPotEditContent({ potId }: { potId: string }) {
             {nameChanged ? (
               <button
                 type="button"
-                disabled={!canSave}
+                disabled={!canSave || renamePartyMutation.isPending}
+                aria-busy={renamePartyMutation.isPending}
                 className="flex h-[34px] shrink-0 items-center justify-center rounded-full bg-bg-neutral-inverse px-3 text-h9 text-fg-neutral-inverse transition-colors disabled:bg-bg-neutral-inverse-disabled disabled:text-fg-neutral-inverse-disabled"
                 onClick={handleSave}
               >
-                저장
+                {renamePartyMutation.isPending ? "저장 중…" : "저장"}
               </button>
             ) : null}
           </div>
