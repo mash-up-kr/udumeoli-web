@@ -8,6 +8,7 @@ import { MobileLayout } from "@/shared/ui/mobile-layout"
 import { TextField } from "@/shared/ui/text-field"
 import { Tooltip } from "@/shared/ui/tooltip"
 import { showToast } from "@/shared/ui/toast"
+import { copyText } from "@/shared/ui/copy-text"
 import { USE_MOCK } from "@/shared/api/client"
 import { showToastWithMapTips } from "@/features/onboarding"
 import {
@@ -39,21 +40,18 @@ function CreatedStep({
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ text: link })
-      } catch {
-        // 사용자가 공유 시트를 닫은 경우
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "AbortError")) {
+          showToast({
+            message: "공유하지 못했어요. 다시 시도해 주세요.",
+            icon: "alert",
+            className: "bottom-[106px]",
+          })
+        }
       }
       return
     }
-    try {
-      await navigator.clipboard.writeText(link)
-    } catch {
-      // clipboard 미지원 환경에서도 토스트는 노출
-    }
-    // 최하단 CTA(홈으로, bottom 34 + 높이 56) 위 16px — 토스트 위치 규칙(2차 UT)
-    showToast({
-      message: "초대 링크가 복사됐어요",
-      className: "bottom-[106px]",
-    })
+    await copyText(link, "초대 링크가 복사됐어요", "bottom-[106px]")
   }
 
   return (
